@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserStatus {
@@ -25,23 +25,33 @@ model Organization {
   name        String
   slug        String       @unique
   memberships Membership[]
+  invitations Invitation[]
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  passwordHash  String
-  firstName     String
-  lastName      String
-  status        UserStatus     @default(ACTIVE)
+  id                     String         @id @default(cuid())
+  email                  String         @unique
+  passwordHash           String
+  refreshTokenHash       String?
 
-  memberships   Membership[]
+  emailVerifiedAt        DateTime?
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  passwordResetToken     String?
+  passwordResetExpiresAt DateTime?
+
+  firstName              String
+  lastName               String
+
+  status                 UserStatus     @default(ACTIVE)
+
+  memberships            Membership[]
+  createdInvitations     Invitation[]    @relation("InvitationCreator")
+
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 }
 
 model Membership {
@@ -58,4 +68,25 @@ model Membership {
   createdAt       DateTime          @default(now())
 
   @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([organizationId, role])
+}
+
+model Invitation {
+  id             String         @id @default(cuid())
+  organizationId String
+  email          String
+  role           MembershipRole @default(MEMBER)
+  tokenHash      String         @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdBy      String
+
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdByUser  User           @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  createdAt      DateTime       @default(now())
+
+  @@index([organizationId, email])
+  @@index([organizationId, expiresAt])
 }
