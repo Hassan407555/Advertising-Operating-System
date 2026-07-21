@@ -1,73 +1,181 @@
-# Product Overview
+# Advertising OS - Project Blueprint
 
-Advertising Operating System is a centralized platform that helps marketing teams create, manage, automate, and monitor advertising campaigns across multiple brands, countries, languages, and advertising platforms.
+## Vision
 
-Instead of manually creating advertisements for each store, language, and platform, the system automates repetitive work using AI and workflow automation while keeping humans in control through review and approval workflows.
+Build a production-ready AI-powered Advertising & Marketing Operating System.
 
-The platform integrates with advertising platforms such as Meta Ads, Google Ads, TikTok Ads, and e-commerce platforms such as Shopify.
+The platform allows agencies, brands, and marketing teams to manage campaigns, products, analytics, AI, and automations from one unified dashboard while integrating with external platforms such as TikTok, Meta, Google, Shopify, OpenAI, Gmail, Slack, and others.
 
-The goal is to reduce manual work, improve consistency, and allow one marketing team to manage many brands efficiently.
+The platform owns the business logic.
 
-# Problem Statement
+External platforms provide data and execution.
 
-Marketing teams managing multiple brands often repeat the same work across different countries and advertising platforms.
+---
 
-For every campaign they manually:
+# Product Goals
 
-- Create advertisements
-- Translate copy
-- Generate creatives
-- Publish campaigns
-- Monitor performance
-- Prepare reports
+- Unified marketing dashboard
+- Multi-platform campaign management
+- AI-powered marketing assistant
+- Workflow automation
+- Cross-platform analytics
+- Creator & affiliate management
+- Enterprise-ready architecture
 
-As the number of brands and countries grows, this process becomes slow, expensive, and difficult to maintain.
+---
 
-The company needs a centralized system that automates repetitive tasks while allowing human review before campaigns are published.
+# Technology Stack
 
-# Vision
+## Frontend
 
-Build an enterprise-grade advertising operating system that enables one marketing team to manage hundreds of campaigns across multiple brands, countries, and advertising platforms from a single interface.
+- Next.js
+- TypeScript
+- TailwindCSS
+- shadcn/ui
+- TanStack Query
 
-The platform should combine automation, AI, and centralized data management while remaining scalable, maintainable, and transparent.
+## Backend
 
-# Goals
+- NestJS
+- Prisma
+- PostgreSQL
+- JWT Authentication
 
-- Reduce repetitive manual work.
+## Workflow
 
-- Centralize campaign management.
+- n8n
 
-- Automate AI copy generation.
+## AI
 
-- Automate translation.
+- OpenAI
+- Anthropic
+- Gemini
 
-- Reuse approved content.
+---
 
-- Generate advertising creatives automatically.
+# Architecture Principles
 
-- Publish campaigns to advertising platforms.
+## Business First
 
-- Monitor campaign performance.
+Features solve business problems.
 
-- Provide centralized reporting.
+Never build modules simply because an API exists.
 
-- Build a modular architecture that can grow over time.
+---
 
-# Non Goals
+## Platform Agnostic
 
-Version 1 of the platform will not include:
+Core entities remain provider-independent.
 
-- AI media buying decisions
+Examples:
 
-- Automatic budget optimization
+Campaign
 
-- AI image generation from scratch
+Creative
 
-- Customer relationship management (CRM)
+Product
 
-- Inventory management
+Audience
 
-- Accounting features
+Ad Account
 
-- Marketplace integrations beyond the initial scope
+Provider-specific logic belongs inside adapters.
 
+---
+
+## Source of Truth
+
+PostgreSQL is the source of truth.
+
+External APIs synchronize data into our database.
+
+---
+
+## Execution Engine
+
+NestJS owns business logic.
+
+n8n executes workflows.
+
+---
+
+## AI
+
+AI is integrated throughout the product.
+
+It is not a standalone chatbot.
+
+---
+
+# Development Workflow
+
+Every module follows this order:
+
+1. Requirements
+2. Database Design
+3. API Design
+4. Backend
+5. Frontend
+6. Integration
+7. Testing
+8. Review
+
+---
+
+# Current Roadmap
+
+Sprint 1
+
+- User Profile
+- Settings
+- API Keys
+- Dashboard Layout
+
+Sprint 2
+
+- Integration Center
+
+Sprint 3
+
+- Campaign Management
+
+Sprint 4
+
+- Workflow Engine
+
+Sprint 5
+
+- AI Copilot
+
+Sprint 6
+
+- Analytics
+
+Sprint 7
+
+- Reports
+
+Sprint 8
+
+- Creator Management
+
+---
+
+# Code Standards
+
+- Thin Controllers
+- Business Logic in Services
+- DTO Validation
+- Prisma Transactions where required
+- Audit important actions
+- Strong typing
+- Feature-first architecture
+- Clean folder structure
+- Reusable services
+- No duplicated logic
+
+---
+
+# Long-term Goal
+
+Create a commercial-grade Advertising Operating System that can manage multiple marketing platforms while leveraging AI and automation to simplify marketing operations.

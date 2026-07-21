@@ -2,8 +2,9 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { LoginDto } from '../dto/login.dto';
-import { RegisterDto } from '../dto/register.dto';
 import { RefreshDto } from '../dto/refresh.dto';
+import { RegisterDto } from '../dto/register.dto';
+import { SwitchOrganizationDto } from '../dto/switch-organization.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import type { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { AuthService } from '../services/auth.service';
@@ -37,5 +38,17 @@ export class AuthController {
   @Get('me')
   getCurrentUser(@CurrentUser() currentUser: JwtPayload) {
     return this.authService.getCurrentUser(currentUser.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('switch-organization')
+  switchOrganization(
+    @CurrentUser() currentUser: JwtPayload,
+    @Body() switchOrganizationDto: SwitchOrganizationDto,
+  ) {
+    return this.authService.switchOrganization(
+      currentUser.sub,
+      switchOrganizationDto,
+    );
   }
 }
