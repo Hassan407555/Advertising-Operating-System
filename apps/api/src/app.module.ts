@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { HealthModule } from './modules/health/health.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { PrismaModule } from './infrastructure/prisma/prisma.module';
+
 import { validateEnvironment } from './infrastructure/config/environment.validation';
 import { PlatformInfrastructureModule } from './infrastructure/platform-infrastructure.module';
+import { PrismaModule } from './infrastructure/prisma/prisma.module';
+
+import { AuthModule } from './modules/auth/auth.module';
+import { HealthModule } from './modules/health/health.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -19,6 +22,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
     HealthModule,
     AuthModule,
     OrganizationsModule,
+    UsersModule,
   ],
 })
 export class AppModule {}
