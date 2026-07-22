@@ -1,8 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
-  Get,
   Param,
   Post,
   UseGuards,
@@ -16,42 +14,35 @@ import { AcceptInvitationDto } from '../dto/accept-invitation.dto';
 import { CreateInvitationDto } from '../dto/create-invitation.dto';
 import { InvitationsService } from '../services/invitations.service';
 
-@Controller('invitations')
+@Controller()
 export class InvitationsController {
   constructor(
     private readonly invitationsService: InvitationsService,
   ) {}
 
   @UseGuards(JwtAuthGuard)
-  @Get()
-  async findAll(
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.invitationsService.findAll(user);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post()
-  async create(
-    @CurrentUser() user: JwtPayload,
+  @Post('organizations/:organizationId/invitations')
+  create(
+    @Param('organizationId') organizationId: string,
+    @CurrentUser() currentUser: JwtPayload,
     @Body() dto: CreateInvitationDto,
   ) {
-    return this.invitationsService.create(user, dto);
+    return this.invitationsService.create(
+      organizationId,
+      currentUser.sub,
+      dto,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
-  @Delete(':id')
-  async remove(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-  ) {
-    return this.invitationsService.remove(user, id);
-  }
-
-  @Post('accept')
-  async accept(
+  @Post('invitations/accept')
+  accept(
+    @CurrentUser() currentUser: JwtPayload,
     @Body() dto: AcceptInvitationDto,
   ) {
-    return this.invitationsService.accept(dto);
+    return this.invitationsService.accept(
+      currentUser,
+      dto,
+    );
   }
 }

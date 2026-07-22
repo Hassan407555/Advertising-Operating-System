@@ -41,7 +41,7 @@ type AuditLogParams = {
   action: AuditAction;
   entity: AuditEntity;
   entityId: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonValue;
 };
 
 type BuildAuthDataParams = {
@@ -116,6 +116,7 @@ export class AuthService {
 
         const tokens = await this.createTokens(
           userId,
+          this.normalizeEmail(registerDto.email),
           organization.id,
           MembershipRole.OWNER,
         );
@@ -203,9 +204,7 @@ export class AuthService {
       };
     } catch (error: unknown) {
       if (this.isUniqueConstraintError(error)) {
-        throw new BadRequestException(
-          this.getUniqueConstraintMessage(error),
-        );
+        throw new BadRequestException(this.getUniqueConstraintMessage(error));
       }
 
       throw error;
@@ -235,9 +234,7 @@ export class AuthService {
       !user ||
       !(await bcrypt.compare(loginDto.password, user.passwordHash))
     ) {
-      throw new UnauthorizedException(
-        'Invalid email or password.',
-      );
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     // TODO:
@@ -254,6 +251,7 @@ export class AuthService {
 
     const tokens = await this.issueTokens(
       user.id,
+      user.email,
       membership.organizationId,
       membership.role,
     );
@@ -298,9 +296,7 @@ export class AuthService {
       !user?.refreshTokenHash ||
       !(await bcrypt.compare(refreshToken, user.refreshTokenHash))
     ) {
-      throw new UnauthorizedException(
-        'Invalid refresh token.',
-      );
+      throw new UnauthorizedException('Invalid refresh token.');
     }
 
     const membership = await this.prisma.membership.findUnique({
@@ -316,13 +312,12 @@ export class AuthService {
     });
 
     if (!membership) {
-      throw new UnauthorizedException(
-        'Membership no longer exists.',
-      );
+      throw new UnauthorizedException('Membership no longer exists.');
     }
 
     const tokens = await this.issueTokens(
       payload.sub,
+      payload.email,
       payload.organizationId,
       membership.role,
     );
@@ -365,8 +360,22 @@ export class AuthService {
       );
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        email: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User no longer exists.');
+    }
+
     const tokens = await this.issueTokens(
       userId,
+      user.email,
       membership.organizationId,
       membership.role,
     );
@@ -468,9 +477,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException(
-        'User no longer exists.',
-      );
+      throw new UnauthorizedException('User no longer exists.');
     }
 
     const memberships = user.memberships.map((membership) => ({
@@ -508,26 +515,26 @@ export class AuthService {
 
   private async createTokens(
     userId: string,
+    email: string,
     organizationId: string,
     role: MembershipRole,
   ): Promise<AuthTokens> {
     const payload: JwtPayload = {
       sub: userId,
+      email,
       organizationId,
       role,
     };
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, {
-        secret:
-          this.configService.getOrThrow<string>(
-            'REFRESH_TOKEN_SECRET',
-          ),
-        expiresIn:
-          this.configService.getOrThrow<
-            JwtSignOptions['expiresIn']
-          >('REFRESH_TOKEN_EXPIRES_IN'),
+        secret: this.configService.getOrThrow('JWT_SECRET'),
+        expiresIn: this.configService.getOrThrow('JWT_EXPIRES_IN'),
+      }),
+
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.getOrThrow('REFRESH_TOKEN_SECRET'),
+        expiresIn: this.configService.getOrThrow('REFRESH_TOKEN_EXPIRES_IN'),
       }),
     ]);
 
@@ -539,40 +546,24 @@ export class AuthService {
 
   private async issueTokens(
     userId: string,
+    email: string,
     organizationId: string,
     role: MembershipRole,
   ): Promise<AuthTokens> {
-    const tokens = await this.createTokens(
-      userId,
-      organizationId,
-      role,
-    );
+    const tokens = await this.createTokens(userId, email, organizationId, role);
 
-    await this.saveRefreshTokenHash(
-      userId,
-      tokens.refreshToken,
-    );
+    await this.saveRefreshTokenHash(userId, tokens.refreshToken);
 
     return tokens;
   }
 
-  private async verifyRefreshToken(
-    refreshToken: string,
-  ): Promise<JwtPayload> {
+  private async verifyRefreshToken(refreshToken: string): Promise<JwtPayload> {
     try {
-      return await this.jwtService.verifyAsync<JwtPayload>(
-        refreshToken,
-        {
-          secret:
-            this.configService.getOrThrow<string>(
-              'REFRESH_TOKEN_SECRET',
-            ),
-        },
-      );
+      return await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
+        secret: this.configService.getOrThrow<string>('REFRESH_TOKEN_SECRET'),
+      });
     } catch {
-      throw new UnauthorizedException(
-        'Invalid refresh token.',
-      );
+      throw new UnauthorizedException('Invalid refresh token.');
     }
   }
 
@@ -585,19 +576,13 @@ export class AuthService {
         id: userId,
       },
       data: {
-        refreshTokenHash:
-          await this.hashRefreshToken(refreshToken),
+        refreshTokenHash: await this.hashRefreshToken(refreshToken),
       },
     });
   }
 
-  private hashRefreshToken(
-    refreshToken: string,
-  ): Promise<string> {
-    return bcrypt.hash(
-      refreshToken,
-      BCRYPT_SALT_ROUNDS,
-    );
+  private hashRefreshToken(refreshToken: string): Promise<string> {
+    return bcrypt.hash(refreshToken, BCRYPT_SALT_ROUNDS);
   }
 
   // =====================================
@@ -615,9 +600,7 @@ export class AuthService {
   // Auth Helpers
   // =====================================
 
-  private buildAuthData(
-    params: BuildAuthDataParams,
-  ): AuthDataResponse {
+  private buildAuthData(params: BuildAuthDataParams): AuthDataResponse {
     return {
       user: {
         id: params.user.id,

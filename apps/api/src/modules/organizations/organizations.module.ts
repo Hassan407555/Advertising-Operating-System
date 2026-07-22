@@ -8,10 +8,7 @@ import { OrganizationsController } from './controllers/organizations.controller'
 import { OrganizationsService } from './services/organizations.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    AuditLogsModule,
-  ],
+  imports: [PrismaModule, AuditLogsModule],
   controllers: [OrganizationsController],
   providers: [OrganizationsService],
   exports: [OrganizationsService],

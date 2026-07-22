@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  AuditAction,
-  AuditEntity,
-  AuditLog,
-  Prisma,
-} from '@prisma/client';
+import { AuditAction, AuditEntity, AuditLog, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 
@@ -19,7 +14,7 @@ interface LogAuditParams {
   entity: AuditEntity;
   entityId: string;
 
-  metadata?: Prisma.JsonValue;
+  metadata?: Prisma.InputJsonValue;
 
   ipAddress?: string;
   userAgent?: string;
@@ -27,9 +22,7 @@ interface LogAuditParams {
 
 @Injectable()
 export class AuditLogsService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async log(
     params: LogAuditParams,
@@ -55,13 +48,7 @@ export class AuditLogsService {
     organizationId: string,
     query: QueryAuditLogsDto,
   ): Promise<AuditLogsResponse> {
-    const {
-      action,
-      entity,
-      actorId,
-      page,
-      limit,
-    } = query;
+    const { action, entity, actorId, page, limit } = query;
 
     const where: Prisma.AuditLogWhereInput = {
       organizationId,

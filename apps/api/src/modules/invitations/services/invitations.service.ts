@@ -1,276 +1,371 @@
 import {
-  BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-
-import { MembershipRole } from '@prisma/client';
-import { randomBytes, createHash } from 'crypto';
+import {
+  AuditAction,
+  AuditEntity,
+  Invitation,
+  InvitationStatus,
+  MembershipRole,
+  Prisma,
+} from '@prisma/client';
+import { createHash, randomBytes } from 'crypto';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 
-import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 import { AcceptInvitationDto } from '../dto/accept-invitation.dto';
 import { CreateInvitationDto } from '../dto/create-invitation.dto';
-import { InvitationResponse } from '../interfaces/invitation-response.interface';
+import { InvitationResponseDto } from '../dto/invitation-response.dto';
+import { InvitationMapper } from '../mappers/invitation.mapper';
+
+export interface CreateInvitationResult {
+  invitation: InvitationResponseDto;
+  token: string;
+}
 
 @Injectable()
 export class InvitationsService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  private static readonly INVITATION_EXPIRY_DAYS = 7;
+  private static readonly TOKEN_BYTES = 32;
+
+  constructor(private readonly prisma: PrismaService) {}
 
   private generateToken(): string {
-    return randomBytes(32).toString('hex');
+    return randomBytes(InvitationsService.TOKEN_BYTES).toString('hex');
   }
 
   private hashToken(token: string): string {
-    return createHash('sha256')
-      .update(token)
-      .digest('hex');
+    return createHash('sha256').update(token).digest('hex');
   }
 
-  async findAll(
-    currentUser: JwtPayload,
-  ): Promise<InvitationResponse[]> {
-    return this.prisma.invitation.findMany({
+  private getExpirationDate(): Date {
+    return new Date(
+      Date.now() +
+        InvitationsService.INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+    );
+  }
+
+  private async validateOrganizationExists(
+    organizationId: string,
+  ): Promise<void> {
+    const organization = await this.prisma.organization.findUnique({
       where: {
-        organizationId: currentUser.organizationId,
+        id: organizationId,
       },
       select: {
         id: true,
-        email: true,
+      },
+    });
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found.');
+    }
+  }
+
+  private async validateUserIsAdminOrOwner(
+    organizationId: string,
+    userId: string,
+  ): Promise<void> {
+    const membership = await this.prisma.membership.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId,
+          userId,
+        },
+      },
+      select: {
         role: true,
-        expiresAt: true,
-        acceptedAt: true,
-        createdAt: true,
       },
-      orderBy: {
-        createdAt: 'desc',
+    });
+
+    if (!membership) {
+      throw new ForbiddenException(
+        'You are not a member of this organization.',
+      );
+    }
+
+    if (
+      membership.role !== MembershipRole.OWNER &&
+      membership.role !== MembershipRole.ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only organization owners and admins can send invitations.',
+      );
+    }
+  }
+
+  private async validateEmailNotMember(
+    organizationId: string,
+    email: string,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email,
       },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      return;
+    }
+
+    const membership = await this.prisma.membership.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId,
+          userId: user.id,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (membership) {
+      throw new ConflictException(
+        'This email is already associated with a member of this organization.',
+      );
+    }
+  }
+
+  private async validateNoPendingInvitation(
+    organizationId: string,
+    email: string,
+  ): Promise<void> {
+    const invitation = await this.prisma.invitation.findFirst({
+      where: {
+        organizationId,
+        email,
+        status: InvitationStatus.PENDING,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (invitation) {
+      throw new ConflictException(
+        'A pending invitation already exists for this email.',
+      );
+    }
+  }
+
+  private async findPendingInvitationByToken(
+    token: string,
+  ): Promise<Invitation> {
+    const tokenHash = this.hashToken(token);
+
+    const invitation = await this.prisma.invitation.findUnique({
+      where: {
+        tokenHash,
+      },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Invitation not found.');
+    }
+
+    if (invitation.status !== InvitationStatus.PENDING) {
+      throw new ConflictException('This invitation is no longer available.');
+    }
+
+    return invitation;
+  }
+
+  private validateInvitationNotExpired(invitation: Invitation): void {
+    if (invitation.expiresAt < new Date()) {
+      throw new ConflictException('This invitation has expired.');
+    }
+  }
+
+  private validateInvitationMatchesUser(
+    invitation: Invitation,
+    currentUser: JwtPayload,
+  ): void {
+    if (currentUser.email.toLowerCase() !== invitation.email.toLowerCase()) {
+      throw new ForbiddenException(
+        'This invitation does not belong to your account.',
+      );
+    }
+  }
+
+  private async validateUserNotAlreadyMember(
+    organizationId: string,
+    userId: string,
+  ): Promise<void> {
+    const membership = await this.prisma.membership.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId,
+          userId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (membership) {
+      throw new ConflictException(
+        'You are already a member of this organization.',
+      );
+    }
+  }
+
+  private async createInvitationWithAudit(
+    organizationId: string,
+    email: string,
+    role: MembershipRole,
+    createdByUserId: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<Invitation> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const invitation = await tx.invitation.create({
+          data: {
+            organizationId,
+            email,
+            role,
+            tokenHash,
+            expiresAt,
+            createdByUserId,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            organizationId,
+            actorId: createdByUserId,
+            action: AuditAction.INVITATION_CREATED,
+            entity: AuditEntity.INVITATION,
+            entityId: invitation.id,
+            metadata: {
+              email: invitation.email,
+              role: invitation.role,
+              expiresAt: invitation.expiresAt,
+            },
+          },
+        });
+
+        return invitation;
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Unable to create invitation due to a duplicate token. Please try again.',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  private async acceptInvitationWithAudit(
+    invitation: Invitation,
+    userId: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.membership.create({
+        data: {
+          organizationId: invitation.organizationId,
+          userId,
+          role: invitation.role,
+        },
+      });
+
+      await tx.invitation.update({
+        where: {
+          id: invitation.id,
+        },
+        data: {
+          status: InvitationStatus.ACCEPTED,
+          acceptedAt: new Date(),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          organizationId: invitation.organizationId,
+          actorId: userId,
+          action: AuditAction.INVITATION_ACCEPTED,
+          entity: AuditEntity.INVITATION,
+          entityId: invitation.id,
+          metadata: {
+            email: invitation.email,
+            role: invitation.role,
+          },
+        },
+      });
     });
   }
 
   async create(
-    currentUser: JwtPayload,
+    organizationId: string,
+    userId: string,
     dto: CreateInvitationDto,
-  ): Promise<{
-    invitation: InvitationResponse;
-    token: string;
-  }> {
-    const actorMembership =
-      await this.prisma.membership.findUnique({
-        where: {
-          organizationId_userId: {
-            organizationId: currentUser.organizationId,
-            userId: currentUser.sub,
-          },
-        },
-      });
+  ): Promise<CreateInvitationResult> {
+    const email = dto.email;
 
-    if (!actorMembership) {
-      throw new ForbiddenException();
-    }
+    await this.validateOrganizationExists(organizationId);
 
-    if (
-      actorMembership.role !== MembershipRole.OWNER &&
-      actorMembership.role !== MembershipRole.ADMIN
-    ) {
-      throw new ForbiddenException(
-        'You do not have permission to invite members.',
-      );
-    }
+    await this.validateUserIsAdminOrOwner(organizationId, userId);
 
-    const existingInvitation =
-      await this.prisma.invitation.findFirst({
-        where: {
-          organizationId: currentUser.organizationId,
-          email: dto.email,
-          acceptedAt: null,
-        },
-      });
+    await this.validateEmailNotMember(organizationId, email);
 
-    if (existingInvitation) {
-      throw new BadRequestException(
-        'A pending invitation already exists for this email.',
-      );
-    }
-
-    const existingMembership =
-      await this.prisma.membership.findFirst({
-        where: {
-          organizationId: currentUser.organizationId,
-          user: {
-            email: dto.email,
-          },
-        },
-      });
-
-    if (existingMembership) {
-      throw new BadRequestException(
-        'User is already a member of this organization.',
-      );
-    }
+    await this.validateNoPendingInvitation(organizationId, email);
 
     const token = this.generateToken();
+    const tokenHash = this.hashToken(token);
+    const expiresAt = this.getExpirationDate();
 
-    const invitation =
-      await this.prisma.invitation.create({
-        data: {
-          organizationId: currentUser.organizationId,
-          email: dto.email,
-          role: dto.role,
-          tokenHash: this.hashToken(token),
-          expiresAt: new Date(
-            Date.now() + 7 * 24 * 60 * 60 * 1000,
-          ),
-          createdBy: currentUser.sub,
-        },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          expiresAt: true,
-          acceptedAt: true,
-          createdAt: true,
-        },
-      });
+    const invitation = await this.createInvitationWithAudit(
+      organizationId,
+      email,
+      dto.role,
+      userId,
+      tokenHash,
+      expiresAt,
+    );
 
     return {
-      invitation,
+      invitation: InvitationMapper.toResponse(invitation),
       token,
     };
   }
-    async remove(
+
+  async accept(
     currentUser: JwtPayload,
-    invitationId: string,
-  ): Promise<{ message: string }> {
-    const actorMembership =
-      await this.prisma.membership.findUnique({
-        where: {
-          organizationId_userId: {
-            organizationId: currentUser.organizationId,
-            userId: currentUser.sub,
-          },
-        },
-      });
+    dto: AcceptInvitationDto,
+  ): Promise<InvitationResponseDto> {
+    const invitation = await this.findPendingInvitationByToken(dto.token);
 
-    if (!actorMembership) {
-      throw new ForbiddenException();
-    }
+    this.validateInvitationNotExpired(invitation);
+    this.validateInvitationMatchesUser(invitation, currentUser);
 
-    if (
-      actorMembership.role !== MembershipRole.OWNER &&
-      actorMembership.role !== MembershipRole.ADMIN
-    ) {
-      throw new ForbiddenException(
-        'You do not have permission to remove invitations.',
-      );
-    }
+    await this.validateUserNotAlreadyMember(
+      invitation.organizationId,
+      currentUser.sub,
+    );
 
-    const invitation =
-      await this.prisma.invitation.findFirst({
-        where: {
-          id: invitationId,
-          organizationId: currentUser.organizationId,
-        },
-      });
+    await this.acceptInvitationWithAudit(invitation, currentUser.sub);
 
-    if (!invitation) {
-      throw new NotFoundException(
-        'Invitation not found.',
-      );
-    }
-
-    await this.prisma.invitation.delete({
+    const acceptedInvitation = await this.prisma.invitation.findUniqueOrThrow({
       where: {
         id: invitation.id,
       },
     });
 
-    return {
-      message: 'Invitation deleted successfully.',
-    };
-  }
-
-  async accept(
-    dto: AcceptInvitationDto,
-  ): Promise<{ message: string }> {
-    const tokenHash = this.hashToken(dto.token);
-
-    const invitation =
-      await this.prisma.invitation.findFirst({
-        where: {
-          tokenHash,
-        },
-      });
-
-    if (!invitation) {
-      throw new BadRequestException(
-        'Invalid invitation token.',
-      );
-    }
-
-    if (invitation.acceptedAt) {
-      throw new BadRequestException(
-        'Invitation has already been accepted.',
-      );
-    }
-
-    if (invitation.expiresAt < new Date()) {
-      throw new BadRequestException(
-        'Invitation has expired.',
-      );
-    }
-
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: invitation.email,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException(
-        'No user exists with this invitation email.',
-      );
-    }
-
-    const existingMembership =
-      await this.prisma.membership.findFirst({
-        where: {
-          organizationId: invitation.organizationId,
-          userId: user.id,
-        },
-      });
-
-    if (existingMembership) {
-      throw new BadRequestException(
-        'User is already a member of this organization.',
-      );
-    }
-
-    await this.prisma.$transaction([
-      this.prisma.membership.create({
-        data: {
-          organizationId: invitation.organizationId,
-          userId: user.id,
-          role: invitation.role,
-        },
-      }),
-      this.prisma.invitation.update({
-        where: {
-          id: invitation.id,
-        },
-        data: {
-          acceptedAt: new Date(),
-        },
-      }),
-    ]);
-
-    return {
-      message: 'Invitation accepted successfully.',
-    };
+    return InvitationMapper.toResponse(acceptedInvitation);
   }
 }

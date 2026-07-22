@@ -21,22 +21,15 @@ import { MembershipsService } from '../services/memberships.service';
 @Controller('memberships')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MembershipsController {
-  constructor(
-    private readonly membershipsService: MembershipsService,
-  ) {}
+  constructor(private readonly membershipsService: MembershipsService) {}
 
   @Get()
-  async findAll(
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async findAll(@CurrentUser() user: JwtPayload) {
     return this.membershipsService.findAll(user);
   }
 
   @Get(':id')
-  async findOne(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-  ) {
+  async findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.membershipsService.findOne(user, id);
   }
 
@@ -47,22 +40,12 @@ export class MembershipsController {
     @Param('id') id: string,
     @Body() dto: UpdateMembershipRoleDto,
   ) {
-    return this.membershipsService.updateRole(
-      user,
-      id,
-      dto,
-    );
+    return this.membershipsService.updateRole(user, id, dto);
   }
 
   @Roles(MembershipRole.OWNER)
   @Delete(':id')
-  async remove(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-  ) {
-    return this.membershipsService.remove(
-      user,
-      id,
-    );
+  async remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.membershipsService.remove(user, id);
   }
 }

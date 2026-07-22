@@ -7,6 +7,120 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// EXISTING MODELS (with minimal additions)
+// ============================================
+
+model Organization {
+  id                 String              @id @default(cuid())
+  name               String
+  slug               String              @unique @db.VarChar(100)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  auditLogs          AuditLog[]          @relation("OrganizationAuditLogs")
+  invitations        Invitation[]
+  memberships        Membership[]
+  
+  // NEW RELATIONS
+  platformConnections PlatformConnection[]
+  adAccounts           AdAccount[]
+  campaigns            Campaign[]
+  adSets               AdSet[]
+  ads                  Ad[]
+  creatives            Creative[]
+  creativeAssets       CreativeAsset[]
+  apiKeys              ApiKey[]
+}
+
+model User {
+  id                     String       @id @default(cuid())
+  email                  String       @unique @db.VarChar(254)
+  passwordHash           String
+  firstName              String
+  lastName               String
+  status                 UserStatus   @default(ACTIVE)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  refreshTokenHash       String?
+  avatarUrl              String?
+  bio                    String?
+  emailVerifiedAt        DateTime?
+  jobTitle               String?
+  language               String?      @default("en") @db.VarChar(10)
+  lastLoginAt            DateTime?
+  passwordResetExpiresAt DateTime?
+  passwordResetTokenHash String?
+  phone                  String?
+  timezone               String?      @default("UTC") @db.VarChar(50)
+  auditLogs              AuditLog[]   @relation("UserAuditLogs")
+  createdInvitations     Invitation[] @relation("InvitationCreator")
+  memberships            Membership[]
+  
+  // NEW RELATIONS
+  createdPlatformConnections PlatformConnection[] @relation("PlatformConnectionCreator")
+  apiKeys                     ApiKey[]
+}
+
+model Membership {
+  id             String         @id @default(cuid())
+  organizationId String
+  userId         String
+  role           MembershipRole @default(MEMBER)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([organizationId, role])
+}
+
+model Invitation {
+  id              String           @id @default(cuid())
+  organizationId  String
+  email           String           @db.VarChar(254)
+  role            MembershipRole   @default(MEMBER)
+  status          InvitationStatus @default(PENDING)
+  tokenHash       String           @unique
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  createdByUserId String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdByUser   User             @relation("InvitationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([organizationId, email, status])
+  @@index([organizationId, expiresAt])
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  actorId        String
+  action         AuditAction
+  entity         AuditEntity
+  entityId       String?
+  metadata       Json?
+  ipAddress      String?      @db.VarChar(45)
+  userAgent      String?
+  createdAt      DateTime     @default(now())
+  actor          User         @relation("UserAuditLogs", fields: [actorId], references: [id], onDelete: Restrict)
+  organization   Organization @relation("OrganizationAuditLogs", fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([actorId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -20,39 +134,42 @@ enum MembershipRole {
   VIEWER
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  REVOKED
+  EXPIRED
+}
+
 enum AuditAction {
   USER_REGISTERED
   USER_LOGGED_IN
   USER_LOGGED_OUT
   TOKEN_REFRESHED
-
   ORGANIZATION_CREATED
   ORGANIZATION_UPDATED
   ORGANIZATION_SWITCHED
-
   MEMBERSHIP_CREATED
   MEMBERSHIP_ROLE_UPDATED
   MEMBERSHIP_REMOVED
-
   INVITATION_CREATED
   INVITATION_ACCEPTED
   INVITATION_REVOKED
-
+  INVITATION_DECLINED
+  INVITATION_RESENT
+  INVITATION_EXPIRED
   PLATFORM_CONNECTED
   PLATFORM_DISCONNECTED
-
   AD_ACCOUNT_CREATED
   AD_ACCOUNT_UPDATED
   AD_ACCOUNT_DELETED
-
   CAMPAIGN_CREATED
   CAMPAIGN_UPDATED
   CAMPAIGN_DELETED
-
   CREATIVE_CREATED
   CREATIVE_UPDATED
   CREATIVE_DELETED
-
   API_KEY_CREATED
   API_KEY_REVOKED
 }
@@ -69,107 +186,551 @@ enum AuditEntity {
   API_KEY
 }
 
-model Organization {
-  id          String       @id @default(cuid())
-  name        String
-  slug        String       @unique
+// ============================================
+// NEW ENUMS (Final, with duplicates removed)
+// ============================================
 
-  memberships Membership[]
-  invitations Invitation[]
-  auditLogs   AuditLog[]   @relation("OrganizationAuditLogs")
-
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+enum PlatformType {
+  META
+  GOOGLE
+  TIKTOK
+  LINKEDIN
+  SNAPCHAT
+  PINTEREST
+  MICROSOFT
+  TWITTER
+  REDDIT
+  AMAZON
 }
 
-model User {
-  id                     String         @id @default(cuid())
-  email                  String         @unique
-  passwordHash           String
-  refreshTokenHash       String?
-
-  emailVerifiedAt        DateTime?
-
-  passwordResetToken     String?
-  passwordResetExpiresAt DateTime?
-
-  firstName              String
-  lastName               String
-
-  status                 UserStatus     @default(ACTIVE)
-
-  memberships            Membership[]
-  createdInvitations     Invitation[]   @relation("InvitationCreator")
-  auditLogs              AuditLog[]     @relation("UserAuditLogs")
-
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+enum ConnectionStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  REVOKED
+  ERROR
+  PENDING
 }
 
-model Membership {
-  id              String            @id @default(cuid())
+enum Currency {
+  USD
+  EUR
+  GBP
+  AUD
+  CAD
+  JPY
+  CNY
+  INR
+  BRL
+  MXN
+  KRW
+  SGD
+  NZD
+  CHF
+  SEK
+  NOK
+  DKK
+  PLN
+  TRY
+  RUB
+  ZAR
+  HKD
+  TWD
+  THB
+  VND
+  IDR
+  MYR
+  PHP
+  AED
+  SAR
+  QAR
+  KWD
+  BHD
+  OMR
+  JOD
+  EGP
+  NGN
+  KES
+  GHS
+  // Add more as needed
+}
 
-  organizationId  String
-  userId          String
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+}
 
-  role            MembershipRole    @default(MEMBER)
+enum CampaignObjective {
+  AWARENESS
+  TRAFFIC
+  ENGAGEMENT
+  LEADS
+  SALES
+  APP_PROMOTION
+  VIDEO
+  LOCAL
+  CATALOG_SALES
+  STORE_VISITS
+  MESSAGES
+}
 
-  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum CampaignBuyingType {
+  AUCTION
+  RESERVED
+  FIXED
+  PROGRAMMATIC
+}
 
-  createdAt       DateTime          @default(now())
+enum AdSetStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+}
 
-  @@unique([organizationId, userId])
+enum AdStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+}
+
+enum CreativeType {
+  IMAGE
+  VIDEO
+  CAROUSEL
+  COLLECTION
+  SLIDESHOW
+  STORY
+  MESSAGE
+  INTERACTIVE
+  PLAYABLE
+  AUDIO
+  TEXT
+  HTML5
+}
+
+enum SyncStatus {
+  SYNCED
+  PENDING
+  SYNCING
+  FAILED
+  PARTIAL
+  OUT_OF_SYNC
+  DISABLED
+}
+
+enum AdAccountStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  DISABLED
+  ARCHIVED
+}
+
+enum ApiKeyRole {
+  READ
+  WRITE
+  ADMIN
+  ANALYTICS
+  WEBHOOK
+}
+
+enum BillingEvent {
+  IMPRESSIONS
+  CLICKS
+  CONVERSIONS
+  THRUPLAY
+  VIEWS
+  LANDINGS
+  INSTALLS
+}
+
+// Duplicates removed (SHOP_NOW, SIGN_UP only once)
+enum CallToAction {
+  LEARN_MORE
+  SHOP_NOW
+  DOWNLOAD
+  SIGN_UP
+  CONTACT_US
+  BOOK_NOW
+  GET_OFFER
+  GET_QUOTE
+  GET_STARTED
+  INSTALL_APP
+  LISTEN
+  ORDER_NOW
+  PLAY_GAME
+  REGISTER_NOW
+  RENT_NOW
+  SEE_MORE
+  SEND_EMAIL
+  SEND_MESSAGE
+  SEND_WHATSAPP
+  SUBSCRIBE
+  VISIT_SITE
+  WATCH_MORE
+  WATCH_NOW
+  YES
+}
+
+enum CreativeAssetType {
+  IMAGE
+  VIDEO
+  CAROUSEL_CARD
+  COLLECTION_ITEM
+  SLIDESHOW_FRAME
+  STORY_MEDIA
+  PLAYABLE
+  AUDIO
+  HTML
+  PDF
+}
+
+// ============================================
+// CORE BUSINESS MODELS (Final)
+// ============================================
+
+  id                String           @id @default(cuid())
+  organizationId    String
+  createdByUserId   String
+  platform          PlatformType
+  accountId         String           @db.VarChar(255)
+  accountName       String           @db.VarChar(255)
+  externalName      String?          @db.VarChar(255) // Renamed from platformName
+  status            ConnectionStatus @default(ACTIVE)
+  syncStatus        SyncStatus       @default(SYNCED)
+  lastSyncedAt      DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastFailedSyncAt  DateTime?
+  webhookSecret     String?
+  webhookUrl        String?
+  metadata          Json?
+  deletedAt         DateTime?
+  version           Int              @default(1)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy         User             @relation("PlatformConnectionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  
+  credentials       PlatformCredential[]
+  adAccounts        AdAccount[]
+
+  @@unique([organizationId, platform, accountId])
+  @@index([organizationId, deletedAt])
   @@index([organizationId])
-  @@index([organizationId, role])
+  @@index([platform])
+  @@index([status])
+model PlatformConnection {
+  @@index([syncStatus])
+  @@index([deletedAt])
 }
 
-model Invitation {
-  id             String         @id @default(cuid())
+model PlatformCredential {
+  id                String           @id @default(cuid())
+  platformConnectionId String
+  accessToken       String           @db.Text // Encrypted
+  refreshToken      String?          @db.Text // Encrypted
+  expiresAt         DateTime?
+  scopes            String[]         @db.VarChar(100)
+  isActive          Boolean          @default(true)
+  revokedAt         DateTime?
+  revokedReason     String?          @db.VarChar(255)
+  rotatedAt         DateTime?
+  version           Int              @default(1)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  organizationId String
-  email          String
+  platformConnection PlatformConnection @relation(fields: [platformConnectionId], references: [id], onDelete: Cascade)
 
-  role           MembershipRole @default(MEMBER)
-
-  tokenHash      String         @unique
-  expiresAt      DateTime
-  acceptedAt     DateTime?
-
-  createdBy      String
-
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdByUser  User           @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: Restrict)
-
-  createdAt      DateTime       @default(now())
-
-  @@index([organizationId, email])
-  @@index([organizationId, expiresAt])
+  @@index([platformConnectionId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@index([revokedAt])
 }
 
-model AuditLog {
-  id              String        @id @default(cuid())
+model AdAccount {
+  id                    String           @id @default(cuid())
+  organizationId        String
+  platformConnectionId  String
+  platform              PlatformType
+  externalId            String           @db.VarChar(255)
+  externalName          String?          @db.VarChar(255) // Renamed
+  externalStatus        String?          @db.VarChar(50)  // Renamed
+  accountName           String           @db.VarChar(255)
+  accountNumber         String?          @db.VarChar(100)
+  currency              Currency         @default(USD)
+  timezone              String           @db.VarChar(50)
+  status                AdAccountStatus  @default(ACTIVE)
+  isActive              Boolean          @default(true)
+  spend                 Decimal?         @db.Decimal(18, 2)
+  impressions           Int?
+  clicks                Int?
+  conversions           Decimal?         @db.Decimal(18, 2)
+  deletedAt             DateTime?
+  lastSyncedAt          DateTime?
+  lastSuccessfulSyncAt  DateTime?
+  lastFailedSyncAt      DateTime?
+  metadata              Json?
+  version               Int              @default(1)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
-  organizationId  String
-  actorId         String
+  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platformConnection    PlatformConnection @relation(fields: [platformConnectionId], references: [id], onDelete: Restrict)
+  campaigns             Campaign[]
 
-  action          AuditAction
-  entity          AuditEntity
-  entityId        String?
+  @@unique([organizationId, platformConnectionId, externalId])
+  @@unique([platformConnectionId, externalId])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId])
+  @@index([platformConnectionId])
+  @@index([platform])
+  @@index([status])
+  @@index([externalId])
+  @@index([deletedAt])
+  @@index([isActive])
+}
 
-  metadata        Json?
+model Campaign {
+  id                    String                @id @default(cuid())
+  organizationId        String                // RESTORED for fast tenant filtering
+  adAccountId           String
+  externalId            String                @db.VarChar(255)
+  externalName          String?               @db.VarChar(255) // Renamed
+  externalStatus        String?               @db.VarChar(50)  // Renamed
+  name                  String                @db.VarChar(255)
+  slug                  String?               @db.VarChar(100) // Optional for nice URLs
+  objective             CampaignObjective
+  status                CampaignStatus        @default(DRAFT)
+  buyingType            CampaignBuyingType    @default(AUCTION)
+  dailyBudget           Decimal?              @db.Decimal(18, 2)
+  lifetimeBudget        Decimal?              @db.Decimal(18, 2)
+  currency              Currency              @default(USD)
+  startDate             DateTime?
+  endDate               DateTime?
+  isActive              Boolean               @default(true)
+  spend                 Decimal?              @db.Decimal(18, 2)
+  impressions           Int?
+  clicks                Int?
+  conversions           Decimal?              @db.Decimal(18, 2)
+  deletedAt             DateTime?
+  archivedAt            DateTime?             // Separate from status
+  lastSyncedAt          DateTime?
+  lastSuccessfulSyncAt  DateTime?
+  lastFailedSyncAt      DateTime?
+  metadata              Json?
+  tags                  Json?                 // For flexible categorization
+  version               Int                   @default(1)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
-  ipAddress       String?
-  userAgent       String?
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  adAccount             AdAccount             @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  adSets                AdSet[]
 
-  organization    Organization  @relation("OrganizationAuditLogs", fields: [organizationId], references: [id], onDelete: Cascade)
-  actor           User          @relation("UserAuditLogs", fields: [actorId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, adAccountId, externalId])
+  @@unique([adAccountId, externalId])
+  @@unique([organizationId, slug]) // Optional if slugs are used
+  @@index([organizationId, deletedAt])
+  @@index([organizationId])
+  @@index([adAccountId])
+  @@index([status])
+  @@index([objective])
+  @@index([externalId])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([deletedAt])
+  @@index([isActive])
+  @@index([archivedAt])
+}
 
-  createdAt       DateTime      @default(now())
+model AdSet {
+  id                    String                 @id @default(cuid())
+  organizationId        String                 // RESTORED
+  campaignId            String
+  externalId            String                 @db.VarChar(255)
+  externalName          String?                @db.VarChar(255) // Renamed
+  externalStatus        String?                @db.VarChar(50)  // Renamed
+  name                  String                 @db.VarChar(255)
+  status                AdSetStatus            @default(DRAFT)
+  dailyBudget           Decimal?               @db.Decimal(18, 2)
+  lifetimeBudget        Decimal?               @db.Decimal(18, 2)
+  bidAmount             Decimal?               @db.Decimal(18, 2)
+  billingEvent          BillingEvent?
+  targeting             Json?                  // Platform-specific targeting (will be normalized later)
+  startDate             DateTime?
+  endDate               DateTime?
+  isActive              Boolean                @default(true)
+  spend                 Decimal?               @db.Decimal(18, 2)
+  impressions           Int?
+  clicks                Int?
+  conversions           Decimal?               @db.Decimal(18, 2)
+  deletedAt             DateTime?
+  archivedAt            DateTime?
+  lastSyncedAt          DateTime?
+  lastSuccessfulSyncAt  DateTime?
+  lastFailedSyncAt      DateTime?
+  metadata              Json?
+  tags                  Json?
+  version               Int                    @default(1)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign              Campaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  ads                   Ad[]
+
+  @@unique([organizationId, campaignId, externalId])
+  @@unique([campaignId, externalId])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([externalId])
+  @@index([deletedAt])
+  @@index([isActive])
+  @@index([archivedAt])
+}
+
+model Ad {
+  id                    String                 @id @default(cuid())
+  organizationId        String                 // RESTORED
+  adSetId               String
+  creativeId            String?
+  externalId            String                 @db.VarChar(255)
+  externalName          String?                @db.VarChar(255) // Renamed
+  externalStatus        String?                @db.VarChar(50)  // Renamed
+  name                  String                 @db.VarChar(255)
+  status                AdStatus               @default(DRAFT)
+  isActive              Boolean                @default(true)
+  spend                 Decimal?               @db.Decimal(18, 2)
+  impressions           Int?
+  clicks                Int?
+  conversions           Decimal?               @db.Decimal(18, 2)
+  deletedAt             DateTime?
+  archivedAt            DateTime?
+  lastSyncedAt          DateTime?
+  lastSuccessfulSyncAt  DateTime?
+  lastFailedSyncAt      DateTime?
+  metadata              Json?
+  tags                  Json?
+  version               Int                    @default(1)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  adSet                 AdSet                  @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+  creative              Creative?              @relation(fields: [creativeId], references: [id], onDelete: SetNull)
+  assets                CreativeAsset[]
+
+  @@unique([organizationId, adSetId, externalId])
+  @@unique([adSetId, externalId])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId])
+  @@index([adSetId])
+  @@index([status])
+  @@index([externalId])
+  @@index([deletedAt])
+  @@index([isActive])
+  @@index([archivedAt])
+}
+
+model Creative {
+  id                    String                 @id @default(cuid())
+  organizationId        String
+  externalId            String?                @db.VarChar(255)
+  externalName          String?                @db.VarChar(255) // Renamed
+  name                  String                 @db.VarChar(255)
+  type                  CreativeType
+  headline              String?                @db.VarChar(255)
+  primaryText           String?                @db.Text
+  description           String?                @db.Text
+  callToAction          CallToAction?
+  landingPageUrl        String?                @db.VarChar(2000)
+  deepLinkUrl           String?                @db.VarChar(2000)
+  isActive              Boolean                @default(true)
+  deletedAt             DateTime?
+  archivedAt            DateTime?
+  lastSyncedAt          DateTime?
+  lastSuccessfulSyncAt  DateTime?
+  lastFailedSyncAt      DateTime?
+  metadata              Json?
+  tags                  Json?
+  version               Int                    @default(1)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ads                   Ad[]
+  assets                CreativeAsset[]
+
+  @@index([organizationId, deletedAt])
+  @@index([organizationId])
+  @@index([type])
+  @@index([externalId])
+  @@index([deletedAt])
+  @@index([isActive])
+  @@index([archivedAt])
+}
+
+model CreativeAsset {
+  id                    String                 @id @default(cuid())
+  organizationId        String                 // RESTORED
+  creativeId            String?
+  adId                  String?
+  assetType             CreativeAssetType
+  url                   String                 @db.VarChar(2000)
+  thumbnailUrl          String?                @db.VarChar(2000)
+  order                 Int                    @default(0)
+  width                 Int?
+  height                Int?
+  fileSize              Int?                   // In bytes
+  duration              Int?                   // In seconds (for videos)
+  isPrimary             Boolean                @default(false)
+  metadata              Json?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creative              Creative?              @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  ad                    Ad?                    @relation(fields: [adId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
-  @@index([actorId])
-  @@index([action])
-  @@index([entity])
-  @@index([createdAt])
+  @@index([creativeId])
+  @@index([adId])
+  @@index([assetType])
+  @@index([isPrimary])
+}
+
+model ApiKey {
+  id                String              @id @default(cuid())
+  organizationId    String
+  userId            String
+  name              String              @db.VarChar(100)
+  keyHash           String              @unique
+  role              ApiKeyRole          @default(READ)
+  permissions       Json?               // Flexible permissions
+  lastUsedAt        DateTime?
+  expiresAt         DateTime?
+  isActive          Boolean             @default(true)
+  deletedAt         DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user              User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, deletedAt])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@unique([organizationId, name, deletedAt])
 }

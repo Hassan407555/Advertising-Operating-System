@@ -1,10 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Patch,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -16,22 +10,15 @@ import { UsersService } from '../services/users.service';
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
-  async getMe(
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async getMe(@CurrentUser() user: JwtPayload) {
     return this.usersService.getMe(user);
   }
 
   @Patch('me')
-  async updateMe(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: UpdateUserDto,
-  ) {
+  async updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateUserDto) {
     return this.usersService.updateMe(user, dto);
   }
 }

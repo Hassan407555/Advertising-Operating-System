@@ -1,11 +1,5 @@
 import { AuditAction, AuditEntity } from '@prisma/client';
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class QueryAuditLogsDto {

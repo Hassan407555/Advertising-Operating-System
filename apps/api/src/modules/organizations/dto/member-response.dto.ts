@@ -1,15 +1,18 @@
 import { MembershipRole, UserStatus } from '@prisma/client';
 
-export interface MembershipResponse {
-  id: string;
+export class MemberResponseDto {
+  membershipId: string;
+
   role: MembershipRole;
-  createdAt: Date;
+
+  joinedAt: Date;
 
   user: {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
+    avatarUrl: string | null;
     status: UserStatus;
   };
 }
