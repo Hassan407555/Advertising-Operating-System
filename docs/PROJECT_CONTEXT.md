@@ -35,20 +35,33 @@ Version 2 Scope
 ========================================
 
 Backend
+- NestJS
+- TypeScript
+- Prisma ORM
 
 Frontend
+- Next.js (Planned)
 
 Database
+- PostgreSQL
 
 Authentication
+- JWT
+- Refresh Tokens
 
 AI
+- OpenAI
+- AI Studio (Planned)
 
 Queues
+- BullMQ (Planned)
 
 Storage
+- S3 Compatible Storage (Planned)
 
 Infrastructure
+- Docker
+- Railway / AWS (Planned)
 
 ========================================
 4. PROJECT ARCHITECTURE
@@ -68,7 +81,27 @@ Dependency rules
 5. DATABASE ARCHITECTURE
 ========================================
 
-ER Diagram (text)
+ER Diagram (Text)
+
+Organization
+    │
+Membership
+    │
+User
+    │
+Platform Connection
+    │
+Platform Credential
+    │
+Ad Account
+    │
+Campaign
+    │
+Ad Set
+    │
+Ad
+    │
+Creative
 
 Model relationships
 
@@ -84,7 +117,7 @@ Optimistic locking
 6. MODULE STANDARDS
 ========================================
 
-Every module must contain
+Every module contains:
 
 dto/
 
@@ -104,9 +137,15 @@ Swagger
 
 Pagination
 
-Audit logging
+Audit Logging
 
-Organization isolation
+Organization Isolation
+
+Soft Delete
+
+Optimistic Locking
+
+Prisma Transactions
 
 ========================================
 7. AUTHENTICATION & AUTHORIZATION
@@ -118,7 +157,7 @@ Roles
 
 Permissions
 
-CurrentUser decorator
+CurrentUser Decorator
 
 Guards
 
@@ -138,31 +177,39 @@ Search
 
 Errors
 
+Organization isolation
+
+Optimistic locking
+
+Audit logging
+
 ========================================
 9. COMPLETED MODULES
 ========================================
 
-Auth
+✅ Auth
 
-Organizations
+✅ Organizations
 
-Users
+✅ Users
 
-Memberships
+✅ Memberships
 
-Invitations
+✅ Invitations
 
-Audit Logs
+✅ Audit Logs
 
-Platform Connections
+✅ Platform Connections
 
-Platform Credentials
+✅ Platform Credentials
 
-Ad Accounts
+✅ Ad Accounts
 
-Campaigns
+✅ Campaigns
 
-Creatives
+✅ Ad Sets
+
+✅ Creatives
 
 ========================================
 10. CURRENT PROJECT TREE
@@ -174,7 +221,23 @@ auth/
 
 organizations/
 
+users/
+
+memberships/
+
+invitations/
+
+audit-logs/
+
+platform-connections/
+
+platform-credentials/
+
+ad-accounts/
+
 campaigns/
+
+ad-sets/
 
 creatives/
 
@@ -192,6 +255,8 @@ Membership
 
 Invitation
 
+AuditLog
+
 PlatformConnection
 
 PlatformCredential
@@ -199,6 +264,8 @@ PlatformCredential
 AdAccount
 
 Campaign
+
+AdSet
 
 Creative
 
@@ -212,11 +279,36 @@ Campaigns
 
 GET
 
+GET :id
+
 POST
 
 PATCH
 
 DELETE
+
+Ad Sets
+
+GET
+
+GET :id
+
+POST
+
+PATCH
+
+DELETE
+
+Supported Query Parameters
+
+- page
+- limit
+- search
+- status
+- campaignId
+- isActive
+- sortBy
+- sortOrder
 
 Creatives
 
@@ -234,15 +326,29 @@ DELETE
 13. DEVELOPMENT WORKFLOW
 ========================================
 
-One file at a time
+1. Build one module at a time
 
-Compile
+2. One file at a time
 
-Test
+3. Compile after every file
 
-Continue
+4. Fix compilation errors immediately
 
-Never skip compilation
+5. Test every endpoint
+
+6. Verify database changes
+
+7. Verify audit logging
+
+8. Verify organization isolation
+
+9. Verify optimistic locking
+
+10. Continue to next module
+
+Never skip compilation.
+
+Never skip endpoint testing.
 
 ========================================
 14. ROADMAP
@@ -250,11 +356,47 @@ Never skip compilation
 
 Completed
 
+✅ Authentication
+
+✅ Organizations
+
+✅ Memberships
+
+✅ Invitations
+
+✅ Audit Logs
+
+✅ Platform Connections
+
+✅ Platform Credentials
+
+✅ Ad Accounts
+
+✅ Campaigns
+
+✅ Ad Sets
+
+✅ Creatives
+
 Current
+
+Ads Module
 
 Next
 
+Analytics
+
+Reporting
+
 Future
+
+AI Studio
+
+Automation
+
+Campaign Generator
+
+Chat Assistant
 
 ========================================
 15. AI ROADMAP
@@ -274,13 +416,53 @@ Optimization
 16. CHANGE HISTORY
 ========================================
 
-Latest module completed
+Latest Module Completed
 
-Important architecture changes
+Ad Sets
+
+Completed Features
+
+✅ CRUD
+
+✅ Pagination
+
+✅ Search
+
+✅ Filtering
+
+✅ Sorting
+
+✅ Soft Delete
+
+✅ Optimistic Locking
+
+✅ Organization Isolation
+
+✅ Audit Logging
+
+Database Changes
+
+Generated and applied Prisma migration:
+
+add_missing_audit_actions
+
+Resolved Issue
+
+PostgreSQL AuditAction enum was missing new values.
+
+Generated a new Prisma migration to synchronize the database with schema.prisma.
 
 New APIs
 
-Database changes
+GET    /api/ad-sets
+
+GET    /api/ad-sets/:id
+
+POST   /api/ad-sets
+
+PATCH  /api/ad-sets/:id
+
+DELETE /api/ad-sets/:id
 
 ========================================
 17. AI ASSISTANT INSTRUCTIONS
@@ -300,18 +482,22 @@ If you're helping with this project:
 
 6. Never skip compile step.
 
-7. Every endpoint requires
+7. Every endpoint requires:
 
 - Organization isolation
 - Audit logging
 - Swagger
-- DTO Validation
+- DTO validation
+- Soft delete
+- Optimistic locking
 
 8. Always follow Prisma best practices.
 
-9. Never generate pseudo code.
+9. Always use Prisma transactions for write operations.
 
-10. Production-ready code only.
+10. Never generate pseudo code.
+
+11. Production-ready code only.
 
 ========================================
 ARCHITECTURAL DECISIONS
@@ -339,7 +525,7 @@ Auditability.
 
 Decision #003
 
-Optimistic locking uses version field.
+Optimistic locking uses the version field.
 
 Reason:
 
@@ -372,3 +558,33 @@ Module
 Reason:
 
 Consistency.
+
+----------------------------------------
+
+Decision #005
+
+All write operations use Prisma Transactions.
+
+Reason:
+
+Atomicity and consistency.
+
+----------------------------------------
+
+Decision #006
+
+Every CRUD action writes an Audit Log.
+
+Reason:
+
+Enterprise-grade traceability.
+
+----------------------------------------
+
+Decision #007
+
+Every module is fully tested before starting the next module.
+
+Reason:
+
+Prevent technical debt and ensure production readiness.

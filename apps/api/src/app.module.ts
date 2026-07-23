@@ -14,6 +14,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 import { PlatformCredentialsModule } from './modules/platform-credentials/platform-credentials.module';
 import { AdAccountsModule } from './modules/ad-accounts/ad-accounts.module';
 import { CreativesModule } from './modules/creatives/creatives.module';
+import { AdSetsModule } from './modules/ad-sets/ad-sets.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CreativesModule } from './modules/creatives/creatives.module';
     CreativesModule,
     InvitationsModule,
     CampaignsModule,
+    AdSetsModule,
     AdAccountsModule,   // 👈 Add this
   ],
 })

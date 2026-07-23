@@ -143,38 +143,72 @@ enum InvitationStatus {
 }
 
 enum AuditAction {
+  // Authentication
   USER_REGISTERED
   USER_LOGGED_IN
   USER_LOGGED_OUT
   TOKEN_REFRESHED
+
+  // Organization
   ORGANIZATION_CREATED
   ORGANIZATION_UPDATED
   ORGANIZATION_SWITCHED
+
+  // Membership
   MEMBERSHIP_CREATED
   MEMBERSHIP_ROLE_UPDATED
   MEMBERSHIP_REMOVED
+
+  // Invitations
   INVITATION_CREATED
   INVITATION_ACCEPTED
   INVITATION_REVOKED
   INVITATION_DECLINED
   INVITATION_RESENT
   INVITATION_EXPIRED
+
+  // Platform
   PLATFORM_CONNECTED
   PLATFORM_DISCONNECTED
+
+  // Ad Accounts
   AD_ACCOUNT_CREATED
   AD_ACCOUNT_UPDATED
   AD_ACCOUNT_DELETED
+
+  // Campaigns
   CAMPAIGN_CREATED
   CAMPAIGN_UPDATED
   CAMPAIGN_DELETED
+  CAMPAIGN_ARCHIVED
+  CAMPAIGN_RESTORED
+
+  // Ad Sets
+  AD_SET_CREATED
+  AD_SET_UPDATED
+  AD_SET_DELETED
+  AD_SET_ARCHIVED
+  AD_SET_RESTORED
+
+  // Ads
+  AD_CREATED
+  AD_UPDATED
+  AD_DELETED
+  AD_ARCHIVED
+  AD_RESTORED
+
+  // Creatives
   CREATIVE_CREATED
   CREATIVE_UPDATED
   CREATIVE_DELETED
   CREATIVE_ARCHIVED
   CREATIVE_RESTORED
+
+  // API Keys
   API_KEY_CREATED
   API_KEY_REVOKED
 }
+
 
 enum AuditEntity {
   USER
@@ -184,6 +218,8 @@ enum AuditEntity {
   PLATFORM
   AD_ACCOUNT
   CAMPAIGN
+  AD_SET
+  AD
   CREATIVE
   API_KEY
 }
@@ -394,42 +430,39 @@ enum CreativeAssetType {
   PDF
 }
 
-// ============================================
-// CORE BUSINESS MODELS (Final)
-// ============================================
 
-  id                String           @id @default(cuid())
-  organizationId    String
-  createdByUserId   String
-  platform          PlatformType
-  accountId         String           @db.VarChar(255)
-  accountName       String           @db.VarChar(255)
-  externalName      String?          @db.VarChar(255) // Renamed from platformName
-  status            ConnectionStatus @default(ACTIVE)
-  syncStatus        SyncStatus       @default(SYNCED)
-  lastSyncedAt      DateTime?
+model PlatformConnection {
+  id                   String           @id @default(cuid())
+  organizationId       String
+  createdByUserId      String
+  platform             PlatformType
+  accountId            String           @db.VarChar(255)
+  accountName          String           @db.VarChar(255)
+  externalName         String?          @db.VarChar(255)
+  status               ConnectionStatus @default(ACTIVE)
+  syncStatus           SyncStatus       @default(SYNCED)
+  lastSyncedAt         DateTime?
   lastSuccessfulSyncAt DateTime?
-  lastFailedSyncAt  DateTime?
-  webhookSecret     String?
-  webhookUrl        String?
-  metadata          Json?
-  deletedAt         DateTime?
-  version           Int              @default(1)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  
-  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy         User             @relation("PlatformConnectionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  
-  credentials       PlatformCredential[]
-  adAccounts        AdAccount[]
+  lastFailedSyncAt     DateTime?
+  webhookSecret        String?
+  webhookUrl           String?
+  metadata             Json?
+  deletedAt            DateTime?
+  version              Int              @default(1)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User @relation("PlatformConnectionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  credentials PlatformCredential[]
+  adAccounts  AdAccount[]
 
   @@unique([organizationId, platform, accountId])
   @@index([organizationId, deletedAt])
   @@index([organizationId])
   @@index([platform])
   @@index([status])
-model PlatformConnection {
   @@index([syncStatus])
   @@index([deletedAt])
 }

@@ -1,5 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { AuditAction, AuditEntity, AuditLog, Prisma } from '@prisma/client';
+import { Injectable, Logger } from '@nestjs/common';
+import {
+  AuditAction,
+  AuditEntity,
+  AuditLog,
+  Prisma,
+} from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 
@@ -22,6 +28,8 @@ interface LogAuditParams {
 
 @Injectable()
 export class AuditLogsService {
+  private readonly logger = new Logger(AuditLogsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async log(
@@ -30,18 +38,45 @@ export class AuditLogsService {
   ): Promise<AuditLog> {
     const prisma = tx ?? this.prisma;
 
-    return prisma.auditLog.create({
-      data: {
-        organizationId: params.organizationId,
-        actorId: params.actorId,
-        action: params.action,
-        entity: params.entity,
-        entityId: params.entityId,
-        metadata: params.metadata,
-        ipAddress: params.ipAddress,
-        userAgent: params.userAgent,
-      },
-    });
+    try {
+      return await prisma.auditLog.create({
+        data: {
+          organizationId: params.organizationId,
+          actorId: params.actorId,
+          action: params.action,
+          entity: params.entity,
+          entityId: params.entityId,
+          metadata: params.metadata,
+          ipAddress: params.ipAddress,
+          userAgent: params.userAgent,
+        },
+      });
+    } catch (error) {
+      console.log('\n========================================');
+      console.log('AUDIT LOG CREATE FAILED');
+      console.log('========================================');
+
+      console.log('\nPARAMS:');
+      console.dir(params, { depth: null });
+
+      console.log('\nERROR OBJECT:');
+      console.dir(error, { depth: null });
+
+      if (error instanceof PrismaClientKnownRequestError) {
+        console.log('\nPRISMA ERROR');
+        console.log('Code:', error.code);
+        console.log('Meta:', error.meta);
+      }
+
+      if (error instanceof Error) {
+        console.log('\nSTACK TRACE');
+        console.log(error.stack);
+      }
+
+      this.logger.error('Audit log creation failed');
+
+      throw error;
+    }
   }
 
   async findAll(
@@ -52,7 +87,6 @@ export class AuditLogsService {
 
     const where: Prisma.AuditLogWhereInput = {
       organizationId,
-
       ...(action && { action }),
       ...(entity && { entity }),
       ...(actorId && { actorId }),
@@ -67,7 +101,6 @@ export class AuditLogsService {
         skip: (page - 1) * limit,
         take: limit,
       }),
-
       this.prisma.auditLog.count({
         where,
       }),
