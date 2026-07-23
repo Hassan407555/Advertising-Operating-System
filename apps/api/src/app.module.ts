@@ -11,6 +11,9 @@ import { MembershipsModule } from './modules/memberships/memberships.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { UsersModule } from './modules/users/users.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
+import { PlatformCredentialsModule } from './modules/platform-credentials/platform-credentials.module';
+import { AdAccountsModule } from './modules/ad-accounts/ad-accounts.module';
+import { CreativesModule } from './modules/creatives/creatives.module';
 
 @Module({
   imports: [
@@ -26,9 +29,12 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
     OrganizationsModule,
     UsersModule,
     PlatformConnectionsModule,
+    PlatformCredentialsModule,
     MembershipsModule,
+    CreativesModule,
     InvitationsModule,
-    CampaignsModule,   // 👈 Add this
+    CampaignsModule,
+    AdAccountsModule,   // 👈 Add this
   ],
 })
 export class AppModule {}
