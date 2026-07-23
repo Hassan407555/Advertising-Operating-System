@@ -15,6 +15,7 @@ import { PlatformCredentialsModule } from './modules/platform-credentials/platfo
 import { AdAccountsModule } from './modules/ad-accounts/ad-accounts.module';
 import { CreativesModule } from './modules/creatives/creatives.module';
 import { AdSetsModule } from './modules/ad-sets/ad-sets.module';
+import { AdsModule } from './modules/ads/ads.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AdSetsModule } from './modules/ad-sets/ad-sets.module';
     InvitationsModule,
     CampaignsModule,
     AdSetsModule,
+    AdsModule,
     AdAccountsModule,   // 👈 Add this
   ],
 })

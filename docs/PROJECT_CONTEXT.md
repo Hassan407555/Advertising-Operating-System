@@ -1,193 +1,370 @@
 # Advertising Operating System
 
-========================================
-1. PROJECT OVERVIEW
-========================================
+---
 
-Vision
+# 1. PROJECT OVERVIEW
 
-Mission
+## Vision
 
-Product Philosophy
+Build the world's most intelligent Advertising Operating System that unifies campaign creation, optimization, AI assistance, analytics, automation, and multi-platform advertising into one enterprise SaaS platform.
 
-Core Pillars
+## Mission
 
-Target Users
+Replace fragmented advertising workflows with a centralized, AI-powered platform capable of managing the complete advertising lifecycle.
 
-Competitive Advantage
+## Product Philosophy
 
-========================================
-2. BUSINESS GOALS
-========================================
+- Enterprise First
+- AI Native
+- Multi Tenant
+- Platform Agnostic
+- Automation Driven
+- Developer Friendly
+- Highly Scalable
 
-What problem are we solving?
+## Core Pillars
 
-Why users will use us instead of Ads Manager
+- Organization Management
+- Advertising Management
+- AI Optimization
+- Analytics
+- Automation
+- Collaboration
+- Auditability
 
-Long-term roadmap
+## Target Users
 
-Version 1 Scope
+- Marketing Agencies
+- Brands
+- Enterprises
+- Media Buyers
+- Freelancers
+- Advertising Teams
 
-Version 2 Scope
+## Competitive Advantage
 
-========================================
-3. TECH STACK
-========================================
+- AI-assisted campaign management
+- Multi-platform architecture
+- Enterprise-grade audit logging
+- Built-in automation
+- Organization isolation
+- Modern scalable backend
 
-Backend
+---
+
+# 2. BUSINESS GOALS
+
+## Problem We Solve
+
+Managing advertising across multiple platforms is fragmented, repetitive, and difficult to scale.
+
+Our platform centralizes:
+
+- Campaign Management
+- Creative Management
+- Analytics
+- Optimization
+- AI Recommendations
+- Automation
+
+## Why Users Choose Us
+
+- Unified dashboard
+- AI-powered optimization
+- Enterprise architecture
+- Complete audit history
+- Multi-platform integrations
+- Workflow automation
+
+## Long-Term Roadmap
+
+- AI Studio
+- Campaign Generator
+- AI Optimization
+- Automation Engine
+- Reporting
+- Budget Optimizer
+- Predictive Analytics
+
+## Version 1 Scope
+
+- Authentication
+- Organizations
+- Platform Connections
+- Ad Accounts
+- Campaigns
+- Ad Sets
+- Creatives
+- Ads
+
+## Version 2 Scope
+
+- Analytics
+- Reporting
+- Dashboards
+- Automation
+- AI Studio
+- Recommendations
+- Notifications
+
+---
+
+# 3. TECH STACK
+
+## Backend
+
 - NestJS
 - TypeScript
 - Prisma ORM
 
-Frontend
+## Frontend
+
 - Next.js (Planned)
 
-Database
+## Database
+
 - PostgreSQL
 
-Authentication
+## Authentication
+
 - JWT
 - Refresh Tokens
 
-AI
+## AI
+
 - OpenAI
 - AI Studio (Planned)
 
-Queues
+## Queues
+
 - BullMQ (Planned)
 
-Storage
+## Storage
+
 - S3 Compatible Storage (Planned)
 
-Infrastructure
+## Infrastructure
+
 - Docker
-- Railway / AWS (Planned)
+- Railway
+- AWS (Planned)
 
-========================================
-4. PROJECT ARCHITECTURE
-========================================
+---
 
-Complete folder tree
+# 4. PROJECT ARCHITECTURE
 
-Important folders
+## Folder Structure
 
-Module architecture
+```
+apps/
+└── api/
+    └── src/
+        ├── common/
+        ├── infrastructure/
+        └── modules/
+```
 
-Naming conventions
+## Module Structure
 
-Dependency rules
-
-========================================
-5. DATABASE ARCHITECTURE
-========================================
-
-ER Diagram (Text)
-
-Organization
-    │
-Membership
-    │
-User
-    │
-Platform Connection
-    │
-Platform Credential
-    │
-Ad Account
-    │
-Campaign
-    │
-Ad Set
-    │
-Ad
-    │
-Creative
-
-Model relationships
-
-Current Prisma models
-
-Upcoming models
-
-Soft delete strategy
-
-Optimistic locking
-
-========================================
-6. MODULE STANDARDS
-========================================
-
-Every module contains:
-
-dto/
+```
+module/
 
 constants/
 
+dto/
+
 mapper/
 
-service/
+service.ts
 
-controller/
+controller.ts
 
-module/
+module.ts
+```
 
-Validation
+## Naming Conventions
 
-Swagger
+- PascalCase Classes
+- camelCase variables
+- kebab-case filenames
+- Singular DTOs
+- Plural Modules
 
-Pagination
+## Dependency Rules
 
-Audit Logging
+Controller
 
-Organization Isolation
+↓
 
-Soft Delete
+Service
 
-Optimistic Locking
+↓
 
-Prisma Transactions
+Mapper
 
-========================================
-7. AUTHENTICATION & AUTHORIZATION
-========================================
+↓
 
-JWT Flow
+Prisma
 
-Roles
+Never bypass the Service layer.
 
-Permissions
+---
 
-CurrentUser Decorator
+# 5. DATABASE ARCHITECTURE
 
-Guards
+## Entity Relationship
 
-========================================
-8. API STANDARDS
-========================================
+```
+Organization
+      │
+Membership
+      │
+User
+      │
+Platform Connection
+      │
+Platform Credential
+      │
+Ad Account
+      │
+Campaign
+      │
+Ad Set
+      │
+Creative
+      │
+Ad
+```
 
-Response format
+## Current Prisma Models
 
-Pagination format
+- Organization
+- User
+- Membership
+- Invitation
+- AuditLog
+- PlatformConnection
+- PlatformCredential
+- AdAccount
+- Campaign
+- AdSet
+- Creative
+- Ad
 
-Sorting
+## Future Models
 
-Filtering
+- Analytics
+- Reports
+- Insights
+- AI Suggestions
+- Notifications
+- Automation Rules
 
-Search
+## Database Standards
 
-Errors
+- UUID/CUID IDs
+- Soft Delete
+- Version Field
+- CreatedAt
+- UpdatedAt
+- Multi-Tenant Design
 
-Organization isolation
+---
 
-Optimistic locking
+# 6. MODULE STANDARDS
 
-Audit logging
+Every module contains
 
-========================================
-9. COMPLETED MODULES
-========================================
+```
+constants/
 
-✅ Auth
+dto/
+
+mapper/
+
+service.ts
+
+controller.ts
+
+module.ts
+```
+
+Every module includes
+
+- DTO Validation
+- Pagination
+- Filtering
+- Sorting
+- Search
+- Organization Isolation
+- Soft Delete
+- Audit Logging
+- Optimistic Locking
+- Prisma Transactions
+- Enterprise Error Handling
+
+---
+
+# 7. AUTHENTICATION & AUTHORIZATION
+
+Implemented
+
+- JWT Authentication
+- Refresh Tokens
+- CurrentUser Decorator
+- JwtAuthGuard
+- Organization Isolation
+
+Authorization Strategy
+
+- Organization scoped access
+- Role based permissions (planned)
+
+---
+
+# 8. API STANDARDS
+
+## Response
+
+```
+success
+
+data
+
+meta
+```
+
+## Pagination
+
+- page
+- limit
+- total
+- totalPages
+- hasNextPage
+- hasPreviousPage
+
+## Query Standards
+
+- search
+- page
+- limit
+- status
+- sortBy
+- sortOrder
+
+## Enterprise Features
+
+- Organization Isolation
+- Soft Delete
+- Optimistic Locking
+- Audit Logging
+- Prisma Transactions
+
+---
+
+# 9. COMPLETED MODULES
+
+✅ Authentication
 
 ✅ Organizations
 
@@ -211,11 +388,14 @@ Audit logging
 
 ✅ Creatives
 
-========================================
-10. CURRENT PROJECT TREE
-========================================
+✅ Ads
 
-apps/api/src/modules/
+---
+
+# 10. CURRENT PROJECT TREE
+
+```
+modules/
 
 auth/
 
@@ -241,41 +421,31 @@ ad-sets/
 
 creatives/
 
-...
+ads/
+```
 
-========================================
-11. CURRENT PRISMA MODELS
-========================================
+---
 
-Organization
+# 11. CURRENT PRISMA MODELS
 
-User
+- Organization
+- User
+- Membership
+- Invitation
+- AuditLog
+- PlatformConnection
+- PlatformCredential
+- AdAccount
+- Campaign
+- AdSet
+- Creative
+- Ad
 
-Membership
+---
 
-Invitation
+# 12. CURRENT API ENDPOINTS
 
-AuditLog
-
-PlatformConnection
-
-PlatformCredential
-
-AdAccount
-
-Campaign
-
-AdSet
-
-Creative
-
-...
-
-========================================
-12. CURRENT API ENDPOINTS
-========================================
-
-Campaigns
+## Campaigns
 
 GET
 
@@ -287,7 +457,20 @@ PATCH
 
 DELETE
 
-Ad Sets
+Query
+
+- page
+- limit
+- search
+- status
+- adAccountId
+- isActive
+- sortBy
+- sortOrder
+
+---
+
+## Ad Sets
 
 GET
 
@@ -299,7 +482,7 @@ PATCH
 
 DELETE
 
-Supported Query Parameters
+Query
 
 - page
 - limit
@@ -310,9 +493,13 @@ Supported Query Parameters
 - sortBy
 - sortOrder
 
-Creatives
+---
+
+## Creatives
 
 GET
+
+GET :id
 
 POST
 
@@ -320,45 +507,81 @@ PATCH
 
 DELETE
 
-...
+---
 
-========================================
-13. DEVELOPMENT WORKFLOW
-========================================
+## Ads
 
-1. Build one module at a time
+GET
 
-2. One file at a time
+GET :id
 
-3. Compile after every file
+POST
 
-4. Fix compilation errors immediately
+PATCH
 
-5. Test every endpoint
+DELETE
 
-6. Verify database changes
+Query
 
-7. Verify audit logging
+- page
+- limit
+- search
+- status
+- adSetId
+- creativeId
+- isActive
+- sortBy
+- sortOrder
 
-8. Verify organization isolation
+---
 
-9. Verify optimistic locking
+# 13. DEVELOPMENT WORKFLOW
 
-10. Continue to next module
+1. Build one module at a time.
+
+2. Build one file at a time.
+
+3. Compile after every file.
+
+4. Fix compilation errors immediately.
+
+5. Register the module.
+
+6. Verify dependency injection.
+
+7. Test every endpoint in Postman.
+
+8. Test all query parameters.
+
+9. Test validation.
+
+10. Test optimistic locking.
+
+11. Test soft delete.
+
+12. Verify organization isolation.
+
+13. Verify audit logging.
+
+14. Commit after all tests pass.
+
+15. Move to the next module.
 
 Never skip compilation.
 
 Never skip endpoint testing.
 
-========================================
-14. ROADMAP
-========================================
+---
 
-Completed
+# 14. ROADMAP
+
+## Completed
 
 ✅ Authentication
 
 ✅ Organizations
+
+✅ Users
 
 ✅ Memberships
 
@@ -378,49 +601,48 @@ Completed
 
 ✅ Creatives
 
-Current
+✅ Ads
 
-Ads Module
+## Current
 
-Next
+Analytics Module
 
-Analytics
+## Next
 
-Reporting
+- Reporting
+- Dashboards
+- AI Studio
 
-Future
+## Future
 
-AI Studio
+- Automation Engine
+- Campaign Generator
+- Chat Assistant
+- AI Optimization
+- Predictive Analytics
 
-Automation
+---
 
-Campaign Generator
+# 15. AI ROADMAP
 
-Chat Assistant
+- Campaign Generator
+- AI Studio
+- Automation
+- AI Optimization
+- Chat Assistant
+- Recommendations
+- Budget Optimization
+- Predictive Analytics
 
-========================================
-15. AI ROADMAP
-========================================
+---
 
-Campaign Generator
+# 16. CHANGE HISTORY
 
-AI Studio
+## Latest Module Completed
 
-Automation
+Ads
 
-Chat Assistant
-
-Optimization
-
-========================================
-16. CHANGE HISTORY
-========================================
-
-Latest Module Completed
-
-Ad Sets
-
-Completed Features
+## Completed Features
 
 ✅ CRUD
 
@@ -440,103 +662,121 @@ Completed Features
 
 ✅ Audit Logging
 
-Database Changes
+✅ Prisma Transactions
 
-Generated and applied Prisma migration:
+✅ Ad Set Ownership Validation
 
-add_missing_audit_actions
+✅ Creative Ownership Validation
 
-Resolved Issue
+✅ Enterprise Error Handling
 
-PostgreSQL AuditAction enum was missing new values.
+## API Testing
 
-Generated a new Prisma migration to synchronize the database with schema.prisma.
+Successfully tested in Postman
 
-New APIs
+- ✅ Create
+- ✅ Get All
+- ✅ Get By Id
+- ✅ Update
+- ✅ Delete
+- ✅ Search
+- ✅ Filtering
+- ✅ Sorting
+- ✅ Soft Delete
+- ✅ Optimistic Locking
+- ✅ Validation
+- ✅ Organization Isolation
 
-GET    /api/ad-sets
+## New APIs
 
-GET    /api/ad-sets/:id
+GET    /api/ads
 
-POST   /api/ad-sets
+GET    /api/ads/:id
 
-PATCH  /api/ad-sets/:id
+POST   /api/ads
 
-DELETE /api/ad-sets/:id
+PATCH  /api/ads/:id
 
-========================================
-17. AI ASSISTANT INSTRUCTIONS
-========================================
+DELETE /api/ads/:id
 
-If you're helping with this project:
+---
 
-1. Never change existing architecture.
+# 17. AI ASSISTANT INSTRUCTIONS
 
-2. Follow Campaign module style.
+When contributing to this project:
 
-3. Follow Creatives module style.
+1. Never change the existing architecture.
 
-4. Enterprise code only.
+2. Follow Campaign module standards.
 
-5. One file at a time.
+3. Follow Ad Set module standards.
 
-6. Never skip compile step.
+4. Follow Creative module standards.
 
-7. Every endpoint requires:
+5. Follow Ads module standards.
 
-- Organization isolation
-- Audit logging
-- Swagger
-- DTO validation
-- Soft delete
-- Optimistic locking
+6. Enterprise-quality code only.
 
-8. Always follow Prisma best practices.
+7. Build one file at a time.
 
-9. Always use Prisma transactions for write operations.
+8. Never skip compilation.
 
-10. Never generate pseudo code.
+9. Every endpoint must include:
 
-11. Production-ready code only.
+- DTO Validation
+- Organization Isolation
+- Audit Logging
+- Soft Delete
+- Optimistic Locking
+- Prisma Transactions
 
-========================================
-ARCHITECTURAL DECISIONS
-========================================
+10. Test every endpoint before marking a module complete.
 
-Decision #001
+11. Never move to the next module until the current module passes all Postman tests.
+
+12. Never generate pseudo code.
+
+13. Always produce production-ready code.
+
+---
+
+# ARCHITECTURAL DECISIONS
+
+## Decision #001
 
 Organization isolation is enforced in every service.
 
-Reason:
+Reason
 
 Multi-tenant SaaS.
 
-----------------------------------------
+---
 
-Decision #002
+## Decision #002
 
 Soft delete is mandatory.
 
-Reason:
+Reason
 
-Auditability.
+Enterprise auditability.
 
-----------------------------------------
+---
 
-Decision #003
+## Decision #003
 
 Optimistic locking uses the version field.
 
-Reason:
+Reason
 
 Prevent concurrent updates.
 
-----------------------------------------
+---
 
-Decision #004
+## Decision #004
 
-Every module follows:
+Every module follows
 
+```
 DTO
 
 ↓
@@ -554,37 +794,38 @@ Controller
 ↓
 
 Module
+```
 
-Reason:
+Reason
 
-Consistency.
+Consistency and maintainability.
 
-----------------------------------------
+---
 
-Decision #005
+## Decision #005
 
 All write operations use Prisma Transactions.
 
-Reason:
+Reason
 
 Atomicity and consistency.
 
-----------------------------------------
+---
 
-Decision #006
+## Decision #006
 
 Every CRUD action writes an Audit Log.
 
-Reason:
+Reason
 
 Enterprise-grade traceability.
 
-----------------------------------------
+---
 
-Decision #007
+## Decision #007
 
-Every module is fully tested before starting the next module.
+Every module must be fully compiled and tested before development continues.
 
-Reason:
+Reason
 
-Prevent technical debt and ensure production readiness.
+Prevent technical debt and maintain production quality.
