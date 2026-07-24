@@ -26,8 +26,9 @@ Replace fragmented advertising workflows with a centralized, AI-powered platform
 
 - Organization Management
 - Advertising Management
-- AI Optimization
+- Creative Management
 - Analytics
+- AI Optimization
 - Automation
 - Collaboration
 - Auditability
@@ -46,8 +47,8 @@ Replace fragmented advertising workflows with a centralized, AI-powered platform
 - AI-assisted campaign management
 - Multi-platform architecture
 - Enterprise-grade audit logging
-- Built-in automation
 - Organization isolation
+- Workflow automation
 - Modern scalable backend
 
 ---
@@ -58,10 +59,11 @@ Replace fragmented advertising workflows with a centralized, AI-powered platform
 
 Managing advertising across multiple platforms is fragmented, repetitive, and difficult to scale.
 
-Our platform centralizes:
+Our platform centralizes
 
 - Campaign Management
 - Creative Management
+- Asset Management
 - Analytics
 - Optimization
 - AI Recommendations
@@ -95,6 +97,7 @@ Our platform centralizes:
 - Campaigns
 - Ad Sets
 - Creatives
+- Creative Assets
 - Ads
 
 ## Version 2 Scope
@@ -141,7 +144,7 @@ Our platform centralizes:
 
 ## Storage
 
-- S3 Compatible Storage (Planned)
+- S3 Compatible Storage
 
 ## Infrastructure
 
@@ -185,13 +188,14 @@ module.ts
 ## Naming Conventions
 
 - PascalCase Classes
-- camelCase variables
-- kebab-case filenames
+- camelCase Variables
+- kebab-case Filenames
 - Singular DTOs
 - Plural Modules
 
 ## Dependency Rules
 
+```
 Controller
 
 ↓
@@ -205,6 +209,7 @@ Mapper
 ↓
 
 Prisma
+```
 
 Never bypass the Service layer.
 
@@ -233,6 +238,8 @@ Ad Set
       │
 Creative
       │
+Creative Asset
+      │
 Ad
 ```
 
@@ -249,12 +256,14 @@ Ad
 - Campaign
 - AdSet
 - Creative
+- CreativeAsset
 - Ad
 
 ## Future Models
 
 - Analytics
 - Reports
+- Dashboards
 - Insights
 - AI Suggestions
 - Notifications
@@ -264,6 +273,7 @@ Ad
 
 - UUID/CUID IDs
 - Soft Delete
+- Archive Support
 - Version Field
 - CreatedAt
 - UpdatedAt
@@ -298,6 +308,8 @@ Every module includes
 - Search
 - Organization Isolation
 - Soft Delete
+- Archive (where applicable)
+- Restore (where applicable)
 - Audit Logging
 - Optimistic Locking
 - Prisma Transactions
@@ -317,8 +329,8 @@ Implemented
 
 Authorization Strategy
 
-- Organization scoped access
-- Role based permissions (planned)
+- Organization Scoped Access
+- Role Based Permissions
 
 ---
 
@@ -356,6 +368,7 @@ meta
 
 - Organization Isolation
 - Soft Delete
+- Archive
 - Optimistic Locking
 - Audit Logging
 - Prisma Transactions
@@ -387,6 +400,8 @@ meta
 ✅ Ad Sets
 
 ✅ Creatives
+
+✅ Creative Assets
 
 ✅ Ads
 
@@ -421,6 +436,8 @@ ad-sets/
 
 creatives/
 
+creative-assets/
+
 ads/
 ```
 
@@ -439,6 +456,7 @@ ads/
 - Campaign
 - AdSet
 - Creative
+- CreativeAsset
 - Ad
 
 ---
@@ -509,6 +527,40 @@ DELETE
 
 ---
 
+## Creative Assets
+
+GET
+
+GET :id
+
+POST
+
+PATCH
+
+PATCH :id/archive
+
+PATCH :id/restore
+
+PATCH :id/set-primary
+
+DELETE
+
+Query
+
+- page
+- limit
+- search
+- creativeId
+- adId
+- assetType
+- storageProvider
+- isPrimary
+- archived
+- sortBy
+- sortOrder
+
+---
+
 ## Ads
 
 GET
@@ -559,13 +611,15 @@ Query
 
 11. Test soft delete.
 
-12. Verify organization isolation.
+12. Test archive/restore.
 
-13. Verify audit logging.
+13. Verify organization isolation.
 
-14. Commit after all tests pass.
+14. Verify audit logging.
 
-15. Move to the next module.
+15. Commit after all tests pass.
+
+16. Move to the next module.
 
 Never skip compilation.
 
@@ -601,11 +655,13 @@ Never skip endpoint testing.
 
 ✅ Creatives
 
+✅ Creative Assets
+
 ✅ Ads
 
 ## Current
 
-Analytics Module
+🚧 Analytics Module
 
 ## Next
 
@@ -640,7 +696,7 @@ Analytics Module
 
 ## Latest Module Completed
 
-Ads
+Creative Assets
 
 ## Completed Features
 
@@ -656,6 +712,12 @@ Ads
 
 ✅ Soft Delete
 
+✅ Archive
+
+✅ Restore
+
+✅ Set Primary
+
 ✅ Optimistic Locking
 
 ✅ Organization Isolation
@@ -664,21 +726,28 @@ Ads
 
 ✅ Prisma Transactions
 
-✅ Ad Set Ownership Validation
-
 ✅ Creative Ownership Validation
+
+✅ Ad Ownership Validation
 
 ✅ Enterprise Error Handling
 
+✅ BigInt JSON Serialization
+
+✅ Prisma Decimal Serialization
+
 ## API Testing
 
-Successfully tested in Postman
+Successfully Tested
 
 - ✅ Create
 - ✅ Get All
 - ✅ Get By Id
 - ✅ Update
 - ✅ Delete
+- ✅ Archive
+- ✅ Restore
+- ✅ Set Primary
 - ✅ Search
 - ✅ Filtering
 - ✅ Sorting
@@ -686,24 +755,33 @@ Successfully tested in Postman
 - ✅ Optimistic Locking
 - ✅ Validation
 - ✅ Organization Isolation
+- ✅ Audit Logging
 
 ## New APIs
 
-GET    /api/ads
+```
+GET     /api/creative-assets
 
-GET    /api/ads/:id
+GET     /api/creative-assets/:id
 
-POST   /api/ads
+POST    /api/creative-assets
 
-PATCH  /api/ads/:id
+PATCH   /api/creative-assets/:id
 
-DELETE /api/ads/:id
+PATCH   /api/creative-assets/:id/archive
+
+PATCH   /api/creative-assets/:id/restore
+
+PATCH   /api/creative-assets/:id/set-primary
+
+DELETE  /api/creative-assets/:id
+```
 
 ---
 
 # 17. AI ASSISTANT INSTRUCTIONS
 
-When contributing to this project:
+When contributing to this project
 
 1. Never change the existing architecture.
 
@@ -713,15 +791,17 @@ When contributing to this project:
 
 4. Follow Creative module standards.
 
-5. Follow Ads module standards.
+5. Follow Creative Asset module standards.
 
-6. Enterprise-quality code only.
+6. Follow Ads module standards.
 
-7. Build one file at a time.
+7. Enterprise-quality code only.
 
-8. Never skip compilation.
+8. Build one file at a time.
 
-9. Every endpoint must include:
+9. Never skip compilation.
+
+10. Every endpoint must include
 
 - DTO Validation
 - Organization Isolation
@@ -730,13 +810,13 @@ When contributing to this project:
 - Optimistic Locking
 - Prisma Transactions
 
-10. Test every endpoint before marking a module complete.
+11. Test every endpoint before marking a module complete.
 
-11. Never move to the next module until the current module passes all Postman tests.
+12. Never move to the next module until the current module passes all Postman tests.
 
-12. Never generate pseudo code.
+13. Never generate pseudo code.
 
-13. Always produce production-ready code.
+14. Always produce production-ready code.
 
 ---
 
@@ -823,6 +903,26 @@ Enterprise-grade traceability.
 ---
 
 ## Decision #007
+
+Archive/Restore is implemented where business entities require lifecycle management.
+
+Reason
+
+Preserve historical data without deletion.
+
+---
+
+## Decision #008
+
+Creative Assets serialize BigInt and Prisma.Decimal values before API responses.
+
+Reason
+
+Ensure JSON compatibility and prevent runtime serialization errors.
+
+---
+
+## Decision #009
 
 Every module must be fully compiled and tested before development continues.
 

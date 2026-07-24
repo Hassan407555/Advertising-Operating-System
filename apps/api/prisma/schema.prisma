@@ -204,11 +204,26 @@ enum AuditAction {
   CREATIVE_ARCHIVED
   CREATIVE_RESTORED
 
+  // Creative Assets
+  CREATIVE_ASSET_CREATED
+  CREATIVE_ASSET_UPDATED
+  CREATIVE_ASSET_DELETED
+  CREATIVE_ASSET_ARCHIVED
+  CREATIVE_ASSET_RESTORED
+  CREATIVE_ASSET_PRIMARY_SET
+  CREATIVE_ASSET_REORDERED
+
   // API Keys
   API_KEY_CREATED
   API_KEY_REVOKED
 }
 
+enum StorageProvider {
+  LOCAL
+  S3
+  R2
+  MINIO
+}
 
 enum AuditEntity {
   USER
@@ -221,9 +236,9 @@ enum AuditEntity {
   AD_SET
   AD
   CREATIVE
+  CREATIVE_ASSET
   API_KEY
 }
-
 // ============================================
 // NEW ENUMS (Final, with duplicates removed)
 // ============================================
@@ -716,32 +731,65 @@ model Creative {
 }
 
 model CreativeAsset {
-  id                    String                 @id @default(cuid())
-  organizationId        String                 // RESTORED
-  creativeId            String?
-  adId                  String?
-  assetType             CreativeAssetType
-  url                   String                 @db.VarChar(2000)
-  thumbnailUrl          String?                @db.VarChar(2000)
-  order                 Int                    @default(0)
-  width                 Int?
-  height                Int?
-  fileSize              Int?                   // In bytes
-  duration              Int?                   // In seconds (for videos)
-  isPrimary             Boolean                @default(false)
-  metadata              Json?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id               String              @id @default(cuid())
 
-  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  creative              Creative?              @relation(fields: [creativeId], references: [id], onDelete: Cascade)
-  ad                    Ad?                    @relation(fields: [adId], references: [id], onDelete: Cascade)
+  organizationId   String
+  creativeId       String?
+  adId             String?
 
-  @@index([organizationId])
-  @@index([creativeId])
-  @@index([adId])
-  @@index([assetType])
-  @@index([isPrimary])
+  assetType        CreativeAssetType
+
+  storageProvider  StorageProvider     @default(LOCAL)
+
+  fileName         String              @db.VarChar(255)
+  originalFileName String              @db.VarChar(255)
+
+  storageKey       String              @db.VarChar(1000)
+
+  url              String              @db.VarChar(2000)
+  thumbnailUrl     String?             @db.VarChar(2000)
+
+  mimeType         String              @db.VarChar(255)
+  extension        String              @db.VarChar(20)
+
+  checksum         String?             @db.VarChar(128)
+
+  width            Int?
+  height           Int?
+
+  fileSize         BigInt? @default(0)
+
+  duration         Decimal? @db.Decimal(10, 3)
+
+  displayOrder     Int                 @default(0)
+
+  isPrimary        Boolean             @default(false)
+
+  metadata         Json?
+
+  deletedAt        DateTime?
+  archivedAt       DateTime?
+
+  version          Int                 @default(1)
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+creative     Creative?    @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+ad           Ad?          @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+@@index([organizationId])
+@@index([organizationId, deletedAt])
+@@index([organizationId, creativeId])
+@@index([creativeId])
+@@index([adId])
+@@index([assetType])
+@@index([storageProvider])
+@@index([isPrimary])
+@@index([displayOrder])
+@@index([deletedAt])
+@@index([archivedAt])
 }
 
 model ApiKey {

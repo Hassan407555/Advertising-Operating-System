@@ -32,7 +32,7 @@ export const CREATIVE_INCLUDE =
         isPrimary: true,
       },
       orderBy: {
-        order: 'asc',
+        displayOrder: 'asc',
       },
     },
   });
