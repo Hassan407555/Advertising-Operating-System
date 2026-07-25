@@ -5,10 +5,14 @@ import { AdResponseDto } from '../dto/ad-response.dto';
 
 @Injectable()
 export class AdMapper {
-  toResponse(ad: AdWithRelations): AdResponseDto {
+  toResponse(
+    ad: AdWithRelations,
+  ): AdResponseDto {
     return {
       id: ad.id,
+
       organizationId: ad.organizationId,
+
       adSetId: ad.adSetId,
 
       creativeId: ad.creativeId,
@@ -26,6 +30,7 @@ export class AdMapper {
       version: ad.version,
 
       createdAt: ad.createdAt,
+
       updatedAt: ad.updatedAt,
 
       organization: ad.organization
@@ -46,6 +51,8 @@ export class AdMapper {
         ? {
             id: ad.creative.id,
             name: ad.creative.name,
+            type: ad.creative.type,
+            isActive: ad.creative.isActive,
           }
         : undefined,
     };

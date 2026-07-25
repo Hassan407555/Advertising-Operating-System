@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 
+import {
+  CAMPAIGN_INCLUDE,
+  CampaignWithRelations,
+} from '../constants/campaign.constants';
 import { CampaignResponseDto } from '../dto/campaign-response.dto';
-import { CAMPAIGN_INCLUDE } from '../constants/campaign.constants';
-
-type CampaignWithRelations = Prisma.CampaignGetPayload<{
-  include: typeof CAMPAIGN_INCLUDE;
-}>;
 
 @Injectable()
 export class CampaignMapper {
@@ -16,6 +14,10 @@ export class CampaignMapper {
       organizationId: campaign.organizationId,
       adAccountId: campaign.adAccountId,
 
+      externalId: campaign.externalId,
+      externalName: campaign.externalName,
+      externalStatus: campaign.externalStatus,
+
       name: campaign.name,
       slug: campaign.slug,
 
@@ -24,21 +26,18 @@ export class CampaignMapper {
       status: campaign.status,
 
       isActive: campaign.isActive,
-
       currency: campaign.currency,
 
-      dailyBudget: campaign.dailyBudget
-        ? campaign.dailyBudget.toString()
-        : null,
-
-      lifetimeBudget: campaign.lifetimeBudget
-        ? campaign.lifetimeBudget.toString()
-        : null,
+      dailyBudget: campaign.dailyBudget?.toString() ?? null,
+      lifetimeBudget: campaign.lifetimeBudget?.toString() ?? null,
 
       startDate: campaign.startDate,
       endDate: campaign.endDate,
 
       version: campaign.version,
+
+      archivedAt: campaign.archivedAt,
+      deletedAt: campaign.deletedAt,
 
       createdAt: campaign.createdAt,
       updatedAt: campaign.updatedAt,

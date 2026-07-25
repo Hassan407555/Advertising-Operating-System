@@ -26,22 +26,32 @@ import { AdSetResponseDto } from '../dto/ad-set-response.dto';
 @Controller('ad-sets')
 @UseGuards(JwtAuthGuard)
 export class AdSetsController {
-  constructor(private readonly adSetsService: AdSetsService) {}
+  constructor(
+    private readonly adSetsService: AdSetsService,
+  ) {}
 
   @Post()
   async create(
     @Body() createAdSetDto: CreateAdSetDto,
     @CurrentUser() currentUser: JwtPayload,
   ): Promise<AdSetResponseDto> {
-    return this.adSetsService.create(createAdSetDto, currentUser);
+    return this.adSetsService.create(
+      createAdSetDto,
+      currentUser,
+    );
   }
 
   @Get()
   async findAll(
     @Query() query: FindAllAdSetsDto,
     @CurrentUser() currentUser: JwtPayload,
-  ): Promise<PaginatedResponseDto<AdSetResponseDto>> {
-    return this.adSetsService.findAll(query, currentUser);
+  ): Promise<
+    PaginatedResponseDto<AdSetResponseDto>
+  > {
+    return this.adSetsService.findAll(
+      query,
+      currentUser,
+    );
   }
 
   @Get(':id')
@@ -49,7 +59,10 @@ export class AdSetsController {
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayload,
   ): Promise<AdSetResponseDto> {
-    return this.adSetsService.findOne(id, currentUser);
+    return this.adSetsService.findOne(
+      id,
+      currentUser,
+    );
   }
 
   @Patch(':id')
@@ -58,7 +71,11 @@ export class AdSetsController {
     @Body() updateAdSetDto: UpdateAdSetDto,
     @CurrentUser() currentUser: JwtPayload,
   ): Promise<AdSetResponseDto> {
-    return this.adSetsService.update(id, updateAdSetDto, currentUser);
+    return this.adSetsService.update(
+      id,
+      updateAdSetDto,
+      currentUser,
+    );
   }
 
   @Delete(':id')
@@ -66,6 +83,9 @@ export class AdSetsController {
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayload,
   ): Promise<void> {
-    return this.adSetsService.remove(id, currentUser);
+    return this.adSetsService.remove(
+      id,
+      currentUser,
+    );
   }
 }

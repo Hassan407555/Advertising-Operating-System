@@ -12,11 +12,16 @@ import { AdMapper } from './mapper/ad.mapper';
     PrismaModule,
     AuditLogsModule,
   ],
-  controllers: [AdsController],
+  controllers: [
+    AdsController,
+  ],
   providers: [
     AdsService,
     AdMapper,
   ],
-  exports: [AdsService],
+  exports: [
+    AdsService,
+    AdMapper,
+  ],
 })
 export class AdsModule {}

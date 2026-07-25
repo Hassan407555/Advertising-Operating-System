@@ -6,37 +6,30 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  Campaign,
-  CampaignStatus,
-  CampaignObjective,
-  PlatformType,
-  Prisma,
   AuditAction,
   AuditEntity,
+  CampaignObjective,
+  CampaignStatus,
+  PlatformType,
+  Prisma,
 } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
+import { PaginatedResponseDto } from '../../../common/dto/pagination.dto';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
-import { AuditLogsService } from '../../audit-logs/services/audit-logs.service';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
-import { CreateCampaignDto } from '../dto/create-campaign.dto';
-import { UpdateCampaignDto } from '../dto/update-campaign.dto';
+import { AuditLogsService } from '../../audit-logs/services/audit-logs.service';
+import {
+  CAMPAIGN_INCLUDE,
+  CAMPAIGN_SORT_FIELDS,
+  DEFAULT_SORT_BY,
+  type CampaignSortField,
+} from '../constants/campaign.constants';
 import { CampaignQueryDto } from '../dto/campaign-query.dto';
 import { CampaignResponseDto } from '../dto/campaign-response.dto';
-import { PaginatedResponseDto } from '../../../common/dto/pagination.dto';
+import { CreateCampaignDto } from '../dto/create-campaign.dto';
+import { UpdateCampaignDto } from '../dto/update-campaign.dto';
 import { CampaignMapper } from '../mappers/campaign.mapper';
-import { CAMPAIGN_INCLUDE } from '../constants/campaign.constants';
-
-// Whitelist of allowed sort fields – prevents injection and ensures index usage
-const ALLOWED_SORT_FIELDS = [
-  'name',
-  'createdAt',
-  'updatedAt',
-  'startDate',
-  'endDate',
-  'status',
-] as const;
-type SortField = typeof ALLOWED_SORT_FIELDS[number];
 
 @Injectable()
 export class CampaignsService {
@@ -47,82 +40,80 @@ export class CampaignsService {
     private readonly auditLogsService: AuditLogsService,
     private readonly campaignMapper: CampaignMapper,
   ) {}
-
   async create(
-    createCampaignDto: CreateCampaignDto,
-    currentUser: JwtPayload,
-  ): Promise<CampaignResponseDto> {
-    const { adAccountId, startDate, endDate } = createCampaignDto;
-
-    // DTO validation already covers date/budget rules; we trust it.
-
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Verify ad account belongs to the organization
-        await this.verifyAdAccountOwnership(adAccountId, currentUser.organizationId, tx);
-
-        const campaign = await tx.campaign.create({
-          data: {
-  organizationId: currentUser.organizationId,
-  adAccountId,
-
-  externalId: createCampaignDto.slug ?? crypto.randomUUID(),
-
-  name: createCampaignDto.name,
-            slug: createCampaignDto.slug,
-            objective: createCampaignDto.objective,
-            buyingType: createCampaignDto.buyingType,
-            currency: createCampaignDto.currency,
-            dailyBudget: createCampaignDto.dailyBudget,
-            lifetimeBudget: createCampaignDto.lifetimeBudget,
-            startDate: startDate ? new Date(startDate) : undefined,
-            endDate: endDate ? new Date(endDate) : undefined,
-            isActive: createCampaignDto.isActive ?? true,
-            status: CampaignStatus.DRAFT,
-            version: 1,
-          },
-          include: CAMPAIGN_INCLUDE,
-        });
-
-        await this.auditLogsService.log(
-          {
-            organizationId: currentUser.organizationId,
-            actorId: currentUser.sub,
-            action: AuditAction.CAMPAIGN_CREATED,
-            entity: AuditEntity.CAMPAIGN,
-            entityId: campaign.id,
-            metadata: {
-              name: campaign.name,
-              objective: campaign.objective,
-              adAccountId: campaign.adAccountId,
-            },
-          },
-          tx,
-        );
-
-        this.logger.log(
-          {
-            msg: 'Campaign created',
-            campaignId: campaign.id,
-            name: campaign.name,
-            organizationId: currentUser.organizationId,
-            userId: currentUser.sub,
-          },
-          'CampaignsService.create',
-        );
-
-        return this.campaignMapper.toResponse(campaign);
-      });
-    } catch (error) {
-      this.handlePrismaError(error, {
-        slug: createCampaignDto.slug,
-        adAccountId,
-      });
-      throw error;
-    }
+  dto: CreateCampaignDto,
+  currentUser: JwtPayload,
+): Promise<CampaignResponseDto> {
+  if (
+    dto.startDate &&
+    dto.endDate &&
+    new Date(dto.startDate) > new Date(dto.endDate)
+  ) {
+    throw new BadRequestException(
+      'Start date must be before end date.',
+    );
   }
 
-  async findAll(
+  try {
+    return await this.prisma.$transaction(async (tx) => {
+      await this.verifyAdAccountOwnership(
+        dto.adAccountId,
+        currentUser.organizationId,
+        tx,
+      );
+
+      const campaign = await tx.campaign.create({
+        data: {
+          organizationId: currentUser.organizationId,
+          adAccountId: dto.adAccountId,
+
+          externalId: `local_${crypto.randomUUID()}`,
+
+          name: dto.name,
+          slug: dto.slug,
+          objective: dto.objective,
+          buyingType: dto.buyingType,
+          currency: dto.currency,
+
+          dailyBudget: dto.dailyBudget,
+          lifetimeBudget: dto.lifetimeBudget,
+
+          startDate: dto.startDate
+            ? new Date(dto.startDate)
+            : undefined,
+
+          endDate: dto.endDate
+            ? new Date(dto.endDate)
+            : undefined,
+
+          status: CampaignStatus.DRAFT,
+          isActive: dto.isActive ?? true,
+          version: 1,
+        },
+        include: CAMPAIGN_INCLUDE,
+      });
+
+      await this.auditLogsService.log(
+        {
+          organizationId: currentUser.organizationId,
+          actorId: currentUser.sub,
+          action: AuditAction.CAMPAIGN_CREATED,
+          entity: AuditEntity.CAMPAIGN,
+          entityId: campaign.id,
+          metadata: {
+            campaignName: campaign.name,
+          },
+        },
+        tx,
+      );
+
+      return this.campaignMapper.toResponse(campaign);
+    });
+  } catch (error) {
+    this.handlePrismaError(error);
+  }
+}
+    async findAll(
     query: CampaignQueryDto,
     currentUser: JwtPayload,
   ): Promise<PaginatedResponseDto<CampaignResponseDto>> {
@@ -139,8 +130,6 @@ export class CampaignsService {
       sortOrder,
     } = query;
 
-    const safeSortBy = this.ensureValidSortField(sortBy);
-
     const where = this.buildWhereClause({
       organizationId: currentUser.organizationId,
       search,
@@ -151,223 +140,60 @@ export class CampaignsService {
       isActive,
     });
 
+    const safeSortBy = this.ensureValidSortField(sortBy);
+
     const skip = (page - 1) * limit;
 
-    // Use a single transaction to avoid race conditions between count and findMany
     const [campaigns, total] = await this.prisma.$transaction([
       this.prisma.campaign.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { [safeSortBy]: sortOrder },
+        orderBy: {
+          [safeSortBy]: sortOrder,
+        },
         include: CAMPAIGN_INCLUDE,
       }),
-      this.prisma.campaign.count({ where }),
+
+      this.prisma.campaign.count({
+        where,
+      }),
     ]);
 
-    const data = campaigns.map((campaign) => this.campaignMapper.toResponse(campaign));
+    this.logger.debug({
+      message: 'Campaigns retrieved.',
+      organizationId: currentUser.organizationId,
+      page,
+      limit,
+      total,
+    });
 
-    this.logger.debug(
-      {
-        msg: 'Fetched campaigns',
+    return {
+      data: campaigns.map((campaign) =>
+        this.campaignMapper.toResponse(campaign),
+      ),
+
+      meta: {
         page,
         limit,
         total,
-        organizationId: currentUser.organizationId,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPreviousPage: page > 1,
       },
-      'CampaignsService.findAll',
-    );
-
-  return {
-  data,
-  meta: {
-    page,
-    limit,
-    total,
-    totalPages: Math.ceil(total / limit),
-    hasNextPage: page * limit < total,
-    hasPreviousPage: page > 1,
-  },
-};
+    };
   }
 
-  async findOne(id: string, currentUser: JwtPayload): Promise<CampaignResponseDto> {
-    return this.getCampaignOrThrow(id, currentUser.organizationId);
-  }
-
-  async update(
+  async findOne(
     id: string,
-    updateCampaignDto: UpdateCampaignDto,
     currentUser: JwtPayload,
   ): Promise<CampaignResponseDto> {
-    const { version, adAccountId, startDate, endDate, slug } = updateCampaignDto;
-
-    if (version === undefined) {
-      throw new BadRequestException('Version is required for optimistic locking.');
-    }
-
-    // DTO validation already covers date/budget rules; we trust it.
-
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        // If adAccountId is being changed, verify new account belongs to org
-        if (adAccountId) {
-          await this.verifyAdAccountOwnership(adAccountId, currentUser.organizationId, tx);
-        }
-
-        // Attempt update with optimistic locking
-        const result = await tx.campaign.updateMany({
-          where: {
-            id,
-            organizationId: currentUser.organizationId,
-            deletedAt: null,
-            version,
-          },
-          data: {
-            ...updateCampaignDto,
-            startDate: startDate ? new Date(startDate) : undefined,
-            endDate: endDate ? new Date(endDate) : undefined,
-            version: { increment: 1 },
-          },
-        });
-
-        if (result.count === 0) {
-          // Determine if the campaign exists (with any version)
-          const exists = await tx.campaign.findFirst({
-            where: { id, organizationId: currentUser.organizationId, deletedAt: null },
-            select: { id: true },
-          });
-          if (!exists) {
-            throw new NotFoundException('Campaign not found.');
-          }
-          throw new ConflictException(
-            'Campaign was modified by another user. Please refresh and try again.',
-          );
-        }
-
-        // Fetch the updated campaign with relations
-        const updatedCampaign = await tx.campaign.findFirst({
-          where: { id, organizationId: currentUser.organizationId, deletedAt: null },
-          include: CAMPAIGN_INCLUDE,
-        });
-
-        if (!updatedCampaign) {
-          throw new NotFoundException('Campaign not found after update.');
-        }
-
-        await this.auditLogsService.log(
-          {
-            organizationId: currentUser.organizationId,
-            actorId: currentUser.sub,
-            action: AuditAction.CAMPAIGN_UPDATED,
-            entity: AuditEntity.CAMPAIGN,
-            entityId: updatedCampaign.id,
-metadata: {
-  changes: JSON.parse(JSON.stringify(updateCampaignDto)),
-},
-          },
-          tx,
-        );
-
-        this.logger.log(
-          {
-            msg: 'Campaign updated',
-            campaignId: id,
-            oldVersion: version,
-            newVersion: updatedCampaign.version,
-            organizationId: currentUser.organizationId,
-            userId: currentUser.sub,
-          },
-          'CampaignsService.update',
-        );
-
-        return this.campaignMapper.toResponse(updatedCampaign);
-      });
-    } catch (error) {
-      this.handlePrismaError(error, { id, slug, adAccountId });
-      throw error;
-    }
-  }
-
-  async remove(id: string, currentUser: JwtPayload): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      // Fetch campaign to ensure it exists and get name for audit
-      const campaign = await tx.campaign.findFirst({
-        where: { id, organizationId: currentUser.organizationId, deletedAt: null },
-        select: { id: true, name: true },
-      });
-
-      if (!campaign) {
-        throw new NotFoundException('Campaign not found.');
-      }
-
-      // Check for existing ad sets
-      const activeAdSets = await tx.adSet.count({
-        where: { campaignId: campaign.id, deletedAt: null },
-      });
-
-      if (activeAdSets > 0) {
-        throw new BadRequestException('Cannot delete a campaign that contains ad sets.');
-      }
-
-      // Soft delete
-      await tx.campaign.update({
-        where: { id: campaign.id },
-        data: {
-          deletedAt: new Date(),
-          isActive: false,
-          version: { increment: 1 },
-        },
-      });
-
-      await this.auditLogsService.log(
-        {
-          organizationId: currentUser.organizationId,
-          actorId: currentUser.sub,
-          action: AuditAction.CAMPAIGN_DELETED,
-          entity: AuditEntity.CAMPAIGN,
-          entityId: campaign.id,
-          metadata: { campaignName: campaign.name },
-        },
-        tx,
-      );
-
-      this.logger.log(
-        {
-          msg: 'Campaign deleted',
-          campaignId: id,
-          name: campaign.name,
-          organizationId: currentUser.organizationId,
-          userId: currentUser.sub,
-        },
-        'CampaignsService.remove',
-      );
-    });
-  }
-
-  // ---------- Private Helpers ----------
-
-  private async verifyAdAccountOwnership(
-    adAccountId: string,
-    organizationId: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
-    const adAccount = await tx.adAccount.findFirst({
-      where: { id: adAccountId, organizationId, deletedAt: null, isActive: true },
-      select: { id: true },
-    });
-
-    if (!adAccount) {
-      throw new NotFoundException('Ad account not found.');
-    }
-  }
-
-  private async getCampaignOrThrow(
-    id: string,
-    organizationId: string,
-  ): Promise<CampaignResponseDto> {
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id, organizationId, deletedAt: null },
+      where: {
+        id,
+        organizationId: currentUser.organizationId,
+        deletedAt: null,
+      },
       include: CAMPAIGN_INCLUDE,
     });
 
@@ -377,90 +203,353 @@ metadata: {
 
     return this.campaignMapper.toResponse(campaign);
   }
+    async update(
+    id: string,
+    dto: UpdateCampaignDto,
+    currentUser: JwtPayload,
+  ): Promise<CampaignResponseDto> {
+    const {
+      version,
+      adAccountId,
+      startDate,
+      endDate,
+    } = dto;
 
-  private ensureValidSortField(sortBy?: string): SortField {
-    if (sortBy && ALLOWED_SORT_FIELDS.includes(sortBy as SortField)) {
-      return sortBy as SortField;
+    if (version === undefined) {
+      throw new BadRequestException(
+        'Version is required for optimistic locking.',
+      );
     }
-    return 'createdAt';
+
+    if (
+      startDate &&
+      endDate &&
+      new Date(startDate) > new Date(endDate)
+    ) {
+      throw new BadRequestException(
+        'Start date must be before end date.',
+      );
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await this.getCampaignOrThrow(
+          id,
+          currentUser.organizationId,
+          tx,
+        );
+
+        if (adAccountId) {
+          await this.verifyAdAccountOwnership(
+            adAccountId,
+            currentUser.organizationId,
+            tx,
+          );
+        }
+
+        const result = await tx.campaign.updateMany({
+          where: {
+            id,
+            organizationId: currentUser.organizationId,
+            deletedAt: null,
+            version,
+          },
+          data: {
+            ...(adAccountId && { adAccountId }),
+
+            ...(dto.name !== undefined && {
+              name: dto.name,
+            }),
+
+            ...(dto.slug !== undefined && {
+              slug: dto.slug,
+            }),
+
+            ...(dto.objective !== undefined && {
+              objective: dto.objective,
+            }),
+
+            ...(dto.buyingType !== undefined && {
+              buyingType: dto.buyingType,
+            }),
+
+            ...(dto.currency !== undefined && {
+              currency: dto.currency,
+            }),
+
+            ...(dto.dailyBudget !== undefined && {
+              dailyBudget: dto.dailyBudget,
+            }),
+
+            ...(dto.lifetimeBudget !== undefined && {
+              lifetimeBudget: dto.lifetimeBudget,
+            }),
+
+            ...(dto.isActive !== undefined && {
+              isActive: dto.isActive,
+            }),
+
+            ...(startDate !== undefined && {
+              startDate: startDate
+                ? new Date(startDate)
+                : null,
+            }),
+
+            ...(endDate !== undefined && {
+              endDate: endDate
+                ? new Date(endDate)
+                : null,
+            }),
+
+            version: {
+              increment: 1,
+            },
+          },
+        });
+
+        if (result.count === 0) {
+          throw new ConflictException(
+            'Campaign has been modified by another user. Please refresh and try again.',
+          );
+        }
+
+        const campaign = await tx.campaign.findUnique({
+          where: {
+            id,
+          },
+          include: CAMPAIGN_INCLUDE,
+        });
+
+        if (!campaign) {
+          throw new NotFoundException(
+            'Campaign not found.',
+          );
+        }
+
+        await this.auditLogsService.log(
+          {
+            organizationId: currentUser.organizationId,
+            actorId: currentUser.sub,
+            action: AuditAction.CAMPAIGN_UPDATED,
+            entity: AuditEntity.CAMPAIGN,
+            entityId: campaign.id,
+            metadata: {
+              campaignName: campaign.name,
+              version: campaign.version,
+            },
+          },
+          tx,
+        );
+
+        this.logger.log({
+          message: 'Campaign updated.',
+          campaignId: campaign.id,
+          organizationId: currentUser.organizationId,
+          userId: currentUser.sub,
+          version: campaign.version,
+        });
+
+        return this.campaignMapper.toResponse(
+          campaign,
+        );
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+
+      throw error;
+    }
+  }
+  private buildWhereClause(filters: {
+  organizationId: string;
+  search?: string;
+  status?: CampaignStatus;
+  objective?: CampaignObjective;
+  adAccountId?: string;
+  platform?: PlatformType;
+  isActive?: boolean;
+}): Prisma.CampaignWhereInput {
+  const where: Prisma.CampaignWhereInput = {
+    organizationId: filters.organizationId,
+    deletedAt: null,
+  };
+
+  if (filters.search) {
+    where.OR = [
+      {
+        name: {
+          contains: filters.search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        slug: {
+          contains: filters.search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        externalId: {
+          contains: filters.search,
+          mode: 'insensitive',
+        },
+      },
+    ];
   }
 
-  private buildWhereClause(params: {
-    organizationId: string;
-    search?: string;
-    status?: CampaignStatus;
-    objective?: CampaignObjective;
-    adAccountId?: string;
-platform?: PlatformType;
-    isActive?: boolean;
-  }): Prisma.CampaignWhereInput {
-    const { organizationId, search, status, objective, adAccountId, platform, isActive } = params;
+  if (filters.status) {
+    where.status = filters.status;
+  }
 
-    const where: Prisma.CampaignWhereInput = {
+  if (filters.objective) {
+    where.objective = filters.objective;
+  }
+
+  if (filters.adAccountId) {
+    where.adAccountId = filters.adAccountId;
+  }
+
+  if (filters.isActive !== undefined) {
+    where.isActive = filters.isActive;
+  }
+
+  if (filters.platform) {
+    where.adAccount = {
+      platform: filters.platform,
+    };
+  }
+
+  return where;
+}
+private ensureValidSortField(
+  sortBy?: string,
+): CampaignSortField {
+  if (
+    sortBy &&
+    CAMPAIGN_SORT_FIELDS.includes(
+      sortBy as CampaignSortField,
+    )
+  ) {
+    return sortBy as CampaignSortField;
+  }
+
+  return DEFAULT_SORT_BY;
+}
+    async remove(
+    id: string,
+    currentUser: JwtPayload,
+  ): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const campaign = await this.getCampaignOrThrow(
+          id,
+          currentUser.organizationId,
+          tx,
+        );
+
+        if (campaign.deletedAt) {
+          throw new NotFoundException(
+            'Campaign not found.',
+          );
+        }
+
+        await tx.campaign.update({
+          where: {
+            id: campaign.id,
+          },
+          data: {
+            deletedAt: new Date(),
+            isActive: false,
+            version: {
+              increment: 1,
+            },
+          },
+        });
+
+        await this.auditLogsService.log(
+          {
+            organizationId: currentUser.organizationId,
+            actorId: currentUser.sub,
+            action: AuditAction.CAMPAIGN_DELETED,
+            entity: AuditEntity.CAMPAIGN,
+            entityId: campaign.id,
+            metadata: {
+              campaignName: campaign.name,
+            },
+          },
+          tx,
+        );
+
+        this.logger.log({
+          message: 'Campaign deleted.',
+          campaignId: campaign.id,
+          organizationId: currentUser.organizationId,
+          userId: currentUser.sub,
+        });
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+
+      throw error;
+    }
+  }
+  private async getCampaignOrThrow(
+  campaignId: string,
+  organizationId: string,
+  tx: Prisma.TransactionClient,
+) {
+  const campaign = await tx.campaign.findFirst({
+    where: {
+      id: campaignId,
       organizationId,
       deletedAt: null,
-      ...(status && { status }),
-      ...(objective && { objective }),
-      ...(adAccountId && { adAccountId }),
-      ...(isActive !== undefined && { isActive }),
-      ...(platform && {
-        adAccount: { platform },
-      }),
-    };
+    },
+    include: CAMPAIGN_INCLUDE,
+  });
 
-    // Enhanced search: search across name and slug.
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    return where;
+  if (!campaign) {
+    throw new NotFoundException('Campaign not found.');
   }
 
-  /**
-   * Maps Prisma known request errors to appropriate NestJS HTTP exceptions.
-   * Rethrows if the error is not recognized.
-   */
-  private handlePrismaError(error: unknown, context: Record<string, unknown>): void {
-    if (!(error instanceof PrismaClientKnownRequestError)) {
-      return;
-    }
+  return campaign;
+}
+private async verifyAdAccountOwnership(
+  adAccountId: string,
+  organizationId: string,
+  tx: Prisma.TransactionClient,
+): Promise<void> {
+  const adAccount = await tx.adAccount.findFirst({
+    where: {
+      id: adAccountId,
+      organizationId,
+      deletedAt: null,
+      isActive: true,
+    },
+    select: {
+      id: true,
+    },
+  });
 
+  if (!adAccount) {
+    throw new BadRequestException(
+      'Ad account not found or inactive.',
+    );
+  }
+}
+private handlePrismaError(error: unknown): never {
+  if (error instanceof PrismaClientKnownRequestError) {
     switch (error.code) {
-      case 'P2002': {
-        const target = (error.meta?.target as string[]) || [];
-        if (target.includes('slug')) {
-          throw new ConflictException('Campaign slug already exists.');
-        }
-        throw new ConflictException('A unique constraint was violated.');
-      }
-      case 'P2003': {
-        const field = (error.meta?.field_name as string) || '';
-        if (field.includes('adAccountId')) {
-          throw new NotFoundException('Ad account not found.');
-        }
-        throw new BadRequestException('Invalid reference provided.');
-      }
-      case 'P2025': {
-        throw new NotFoundException('Record not found.');
-      }
-      default: {
-        // Log unexpected Prisma errors and rethrow
-        this.logger.error(
-          {
-            msg: 'Unhandled Prisma error',
-            code: error.code,
-            message: error.message,
-            context,
-          },
-          error.stack,
-          'CampaignsService.handlePrismaError',
+      case 'P2002':
+        throw new ConflictException(
+          'A campaign with the same unique value already exists.',
         );
-        // Rethrow the original error to preserve the stack and type
-        throw error;
-      }
+
+      case 'P2025':
+        throw new NotFoundException(
+          'Campaign not found.',
+        );
     }
   }
+
+  throw error;
+}
 }

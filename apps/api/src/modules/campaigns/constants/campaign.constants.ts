@@ -20,19 +20,22 @@ export const CAMPAIGN_INCLUDE = Prisma.validator<Prisma.CampaignInclude>()({
   },
 });
 
-export type CampaignWithRelations = Prisma.CampaignGetPayload<{
-  include: typeof CAMPAIGN_INCLUDE;
-}>;
+export type CampaignWithRelations =
+  Prisma.CampaignGetPayload<{
+    include: typeof CAMPAIGN_INCLUDE;
+  }>;
 
-export const CAMPAIGN_DEFAULT_SORT = {
-  createdAt: 'desc',
-} as const;
+export const DEFAULT_PAGE = 1;
 
-export const CAMPAIGN_MAX_PAGE_SIZE = 100;
+export const DEFAULT_LIMIT = 20;
 
-export const CAMPAIGN_DEFAULT_PAGE_SIZE = 20;
+export const MAX_LIMIT = 100;
 
-export const CAMPAIGN_ALLOWED_SORT_FIELDS = [
+export const DEFAULT_SORT_BY = 'createdAt';
+
+export const DEFAULT_SORT_ORDER = 'desc';
+
+export const CAMPAIGN_SORT_FIELDS = [
   'name',
   'status',
   'objective',
@@ -43,4 +46,4 @@ export const CAMPAIGN_ALLOWED_SORT_FIELDS = [
 ] as const;
 
 export type CampaignSortField =
-  (typeof CAMPAIGN_ALLOWED_SORT_FIELDS)[number];
+  (typeof CAMPAIGN_SORT_FIELDS)[number];

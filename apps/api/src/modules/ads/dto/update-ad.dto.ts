@@ -1,14 +1,16 @@
+import { Type } from 'class-transformer';
+import { AdStatus } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
-  IsNumber,
+  IsInt,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { AdStatus } from '@prisma/client';
 
 export class UpdateAdDto {
   @IsOptional()
@@ -25,6 +27,7 @@ export class UpdateAdDto {
   status?: AdStatus;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
 
@@ -36,8 +39,9 @@ export class UpdateAdDto {
   @IsObject()
   tags?: Record<string, any>;
 
-  @IsOptional()
+  @IsNotEmpty()
   @Type(() => Number)
-  @IsNumber()
-  version?: number;
+  @IsInt()
+  @Min(1)
+  version: number;
 }

@@ -38,6 +38,16 @@ class CreativeSummaryDto {
     example: 'Summer Video Creative',
   })
   name: string;
+
+  @ApiProperty({
+    example: 'VIDEO',
+  })
+  type: string;
+
+  @ApiProperty({
+    example: true,
+  })
+  isActive: boolean;
 }
 
 export class AdResponseDto {

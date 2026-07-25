@@ -1,26 +1,32 @@
-import {
-  IsBoolean,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
 import { Type } from 'class-transformer';
 import {
   AdSetStatus,
   BillingEvent,
 } from '@prisma/client';
+import {
+  IsBoolean,
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class FindAllAdSetsDto {
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
-  page?: number = 1;
+  @IsInt()
+  @Min(1)
+  page = 1;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
-  limit?: number = 20;
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit = 20;
 
   @IsOptional()
   @IsString()
@@ -45,9 +51,9 @@ export class FindAllAdSetsDto {
 
   @IsOptional()
   @IsString()
-  sortBy?: string = 'createdAt';
+  sortBy = 'createdAt';
 
   @IsOptional()
-  @IsString()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  @IsIn(['asc', 'desc'])
+  sortOrder: 'asc' | 'desc' = 'desc';
 }

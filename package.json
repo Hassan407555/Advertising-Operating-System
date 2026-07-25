@@ -11,6 +11,12 @@
     "format": "turbo run format"
   },
   "devDependencies": {
+    "@types/multer": "^2.2.0",
     "turbo": "^2.5.4"
+  },
+  "dependencies": {
+    "blurhash": "^2.0.5",
+    "multer": "^2.2.0",
+    "sharp": "^0.35.3"
   }
 }

@@ -223,6 +223,8 @@ enum StorageProvider {
   S3
   R2
   MINIO
+  GCS
+  Azure
 }
 
 enum AuditEntity {

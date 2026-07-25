@@ -1,20 +1,36 @@
 import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 import { CreateCampaignDto } from './create-campaign.dto';
 
-export class UpdateCampaignDto extends PartialType(CreateCampaignDto) {
-  @ApiPropertyOptional()
+export class UpdateCampaignDto extends PartialType(
+  CreateCampaignDto,
+) {
+  @ApiPropertyOptional({
+    description: 'Optimistic locking version.',
+    minimum: 1,
+  })
   @IsOptional()
   @IsInt()
+  @Min(1)
   version?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description: 'Ad Account ID.',
+  })
   @IsOptional()
-  @IsUUID()
+  @IsString()
   adAccountId?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    maxLength: 100,
+  })
   @IsOptional()
   @IsString()
   slug?: string;

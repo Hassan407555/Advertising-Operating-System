@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
+
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 
 import { CampaignsController } from './controllers/campaigns.controller';
@@ -12,11 +13,16 @@ import { CampaignsService } from './services/campaigns.service';
     PrismaModule,
     AuditLogsModule,
   ],
-  controllers: [CampaignsController],
+  controllers: [
+    CampaignsController,
+  ],
   providers: [
     CampaignsService,
     CampaignMapper,
   ],
-  exports: [CampaignsService],
+  exports: [
+    CampaignsService,
+    CampaignMapper,
+  ],
 })
 export class CampaignsModule {}

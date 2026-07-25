@@ -76,8 +76,8 @@ export class AdSetResponseDto {
 
   @ApiProperty({
     enum: BillingEvent,
-    required: false,
     nullable: true,
+    required: false,
   })
   billingEvent: BillingEvent | null;
 
@@ -89,7 +89,19 @@ export class AdSetResponseDto {
     },
     nullable: true,
   })
-    targeting: Prisma.JsonValue | null;
+  targeting: Prisma.JsonValue | null;
+
+  @ApiProperty({
+    example: {},
+    nullable: true,
+  })
+  metadata: Prisma.JsonValue | null;
+
+  @ApiProperty({
+    example: {},
+    nullable: true,
+  })
+  tags: Prisma.JsonValue | null;
 
   @ApiProperty({
     example: true,

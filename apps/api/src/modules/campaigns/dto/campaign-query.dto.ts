@@ -19,9 +19,11 @@ import {
 } from '@prisma/client';
 
 import {
-  CAMPAIGN_ALLOWED_SORT_FIELDS,
-  CAMPAIGN_DEFAULT_PAGE_SIZE,
-  CAMPAIGN_MAX_PAGE_SIZE,
+  CAMPAIGN_SORT_FIELDS,
+  DEFAULT_LIMIT,
+  DEFAULT_SORT_BY,
+  DEFAULT_SORT_ORDER,
+  MAX_LIMIT,
 } from '../constants/campaign.constants';
 
 import type { CampaignSortField } from '../constants/campaign.constants';
@@ -40,16 +42,16 @@ export class CampaignQueryDto {
 
   @ApiPropertyOptional({
     description: 'Number of records per page',
-    example: CAMPAIGN_DEFAULT_PAGE_SIZE,
-    default: CAMPAIGN_DEFAULT_PAGE_SIZE,
-    maximum: CAMPAIGN_MAX_PAGE_SIZE,
+    example: DEFAULT_LIMIT,
+    default: DEFAULT_LIMIT,
+    maximum: MAX_LIMIT,
   })
   @Transform(({ value }) => Number(value))
   @IsOptional()
   @IsInt()
   @IsPositive()
-  @Max(CAMPAIGN_MAX_PAGE_SIZE)
-  limit = CAMPAIGN_DEFAULT_PAGE_SIZE;
+  @Max(MAX_LIMIT)
+  limit = DEFAULT_LIMIT;
 
   @ApiPropertyOptional({
     description: 'Search by campaign name or slug',
@@ -72,20 +74,21 @@ export class CampaignQueryDto {
   @IsOptional()
   @IsEnum(CampaignObjective)
   objective?: CampaignObjective;
-  @ApiPropertyOptional({
-  description: 'Filter by Ad Account',
-})
-@IsOptional()
-@IsString()
-adAccountId?: string;
 
-@ApiPropertyOptional({
-  description: 'Filter by platform',
-  example: 'META',
-})
-@IsOptional()
-@IsString()
-platform?: PlatformType;
+  @ApiPropertyOptional({
+    description: 'Filter by Ad Account ID',
+  })
+  @IsOptional()
+  @IsString()
+  adAccountId?: string;
+
+  @ApiPropertyOptional({
+    enum: PlatformType,
+    description: 'Filter by advertising platform',
+  })
+  @IsOptional()
+  @IsEnum(PlatformType)
+  platform?: PlatformType;
 
   @ApiPropertyOptional({
     description: 'Filter active/inactive campaigns',
@@ -101,18 +104,18 @@ platform?: PlatformType;
   isActive?: boolean;
 
   @ApiPropertyOptional({
-    enum: CAMPAIGN_ALLOWED_SORT_FIELDS,
-    default: 'createdAt',
+    enum: CAMPAIGN_SORT_FIELDS,
+    default: DEFAULT_SORT_BY,
   })
   @IsOptional()
-  @IsIn(CAMPAIGN_ALLOWED_SORT_FIELDS)
-  sortBy: CampaignSortField = 'createdAt';
+  @IsIn(CAMPAIGN_SORT_FIELDS)
+  sortBy: CampaignSortField = DEFAULT_SORT_BY;
 
   @ApiPropertyOptional({
     enum: ['asc', 'desc'],
-    default: 'desc',
+    default: DEFAULT_SORT_ORDER,
   })
   @IsOptional()
   @IsIn(['asc', 'desc'])
-  sortOrder: 'asc' | 'desc' = 'desc';
+  sortOrder: 'asc' | 'desc' = DEFAULT_SORT_ORDER;
 }

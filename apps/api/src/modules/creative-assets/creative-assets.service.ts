@@ -531,6 +531,12 @@ await tx.creativeAsset.updateMany({
 
   return this.mapper.toResponse(updated);
 }
+async createFromUpload(
+  dto: CreateCreativeAssetDto,
+  currentUser: JwtPayload,
+): Promise<CreativeAssetResponseDto> {
+  return this.create(dto, currentUser);
+}
 private handlePrismaError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
@@ -552,5 +558,25 @@ private handlePrismaError(error: unknown): never {
   }
 
   throw error;
+}
+async findByChecksum(
+  checksum: string,
+  organizationId: string,
+): Promise<CreativeAssetResponseDto | null> {
+  const asset =
+    await this.prisma.creativeAsset.findFirst({
+      where: {
+        organizationId,
+        checksum,
+        deletedAt: null,
+      },
+      include: CREATIVE_ASSET_INCLUDE,
+    });
+
+  if (!asset) {
+    return null;
+  }
+
+  return this.mapper.toResponse(asset);
 }
 }

@@ -1,5 +1,12 @@
-import { PartialType, ApiProperty } from '@nestjs/swagger';
-import { IsInt } from 'class-validator';
+import {
+  ApiProperty,
+  PartialType,
+} from '@nestjs/swagger';
+import {
+  IsInt,
+  IsNotEmpty,
+  Min,
+} from 'class-validator';
 
 import { CreateCreativeAssetDto } from './create-creative-asset.dto';
 
@@ -8,8 +15,12 @@ export class UpdateCreativeAssetDto extends PartialType(
 ) {
   @ApiProperty({
     example: 1,
-    description: 'Version used for optimistic locking',
+    minimum: 1,
+    description:
+      'Current entity version used for optimistic locking.',
   })
   @IsInt()
-  version: number;
+  @Min(1)
+  @IsNotEmpty()
+  version!: number;
 }

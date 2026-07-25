@@ -1,3 +1,5 @@
+import { Type } from 'class-transformer';
+import { AdStatus } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
@@ -7,8 +9,6 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-
-import { AdStatus } from '@prisma/client';
 
 export class CreateAdDto {
   @IsString()
@@ -29,6 +29,7 @@ export class CreateAdDto {
   status?: AdStatus = AdStatus.DRAFT;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean = true;
 

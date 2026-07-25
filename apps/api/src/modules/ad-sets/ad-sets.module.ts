@@ -12,11 +12,16 @@ import { AdSetsService } from './services/ad-sets.service';
     PrismaModule,
     AuditLogsModule,
   ],
-  controllers: [AdSetsController],
+  controllers: [
+    AdSetsController,
+  ],
   providers: [
     AdSetsService,
     AdSetMapper,
   ],
-  exports: [AdSetsService],
+  exports: [
+    AdSetsService,
+    AdSetMapper,
+  ],
 })
 export class AdSetsModule {}

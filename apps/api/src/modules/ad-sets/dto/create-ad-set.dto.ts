@@ -1,3 +1,8 @@
+import { Type } from 'class-transformer';
+import {
+  AdSetStatus,
+  BillingEvent,
+} from '@prisma/client';
 import {
   IsBoolean,
   IsDateString,
@@ -10,11 +15,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import {
-  AdSetStatus,
-  BillingEvent,
-} from '@prisma/client';
 
 export class CreateAdSetDto {
   @IsString()
@@ -32,19 +32,25 @@ export class CreateAdSetDto {
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber({
+    maxDecimalPlaces: 2,
+  })
   @Min(0)
   dailyBudget?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber({
+    maxDecimalPlaces: 2,
+  })
   @Min(0)
   lifetimeBudget?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber({
+    maxDecimalPlaces: 2,
+  })
   @Min(0)
   bidAmount?: number;
 
@@ -65,6 +71,7 @@ export class CreateAdSetDto {
   endDate?: string;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean = true;
 

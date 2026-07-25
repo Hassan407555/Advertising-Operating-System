@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import {
+  CampaignBuyingType,
   CampaignObjective,
   CampaignStatus,
-  CampaignBuyingType,
-  PlatformType,
   Currency,
+  PlatformType,
 } from '@prisma/client';
 
 class OrganizationSummaryDto {
@@ -76,6 +76,23 @@ export class CampaignResponseDto {
   adAccountId: string;
 
   @ApiProperty({
+    example: '120987654321',
+  })
+  externalId: string;
+
+  @ApiProperty({
+    nullable: true,
+    example: 'Summer Sale Campaign (Meta)',
+  })
+  externalName: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    example: 'ACTIVE',
+  })
+  externalStatus: string | null;
+
+  @ApiProperty({
     example: 'Summer Sale Campaign',
   })
   name: string;
@@ -143,6 +160,18 @@ export class CampaignResponseDto {
     example: 1,
   })
   version: number;
+
+  @ApiProperty({
+    nullable: true,
+    example: '2026-08-01T00:00:00.000Z',
+  })
+  archivedAt: Date | null;
+
+  @ApiProperty({
+    nullable: true,
+    example: null,
+  })
+  deletedAt: Date | null;
 
   @ApiProperty({
     example: '2026-07-20T12:00:00.000Z',

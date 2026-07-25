@@ -1,10 +1,16 @@
-import { AdSetWithRelations } from '../constants/ad-set.constants';
 import { Injectable } from '@nestjs/common';
+
+import {
+  AdSetWithRelations,
+} from '../constants/ad-set.constants';
+
 import { AdSetResponseDto } from '../dto/ad-set-response.dto';
 
 @Injectable()
 export class AdSetMapper {
-  toResponse(adSet: AdSetWithRelations): AdSetResponseDto {
+  toResponse(
+    adSet: AdSetWithRelations,
+  ): AdSetResponseDto {
     return {
       id: adSet.id,
       organizationId: adSet.organizationId,
@@ -14,45 +20,43 @@ export class AdSetMapper {
 
       status: adSet.status,
 
-      dailyBudget: adSet.dailyBudget
-        ? adSet.dailyBudget.toString()
-        : null,
+      dailyBudget: adSet.dailyBudget?.toString() ?? null,
 
-      lifetimeBudget: adSet.lifetimeBudget
-        ? adSet.lifetimeBudget.toString()
-        : null,
+      lifetimeBudget:
+        adSet.lifetimeBudget?.toString() ?? null,
 
-      bidAmount: adSet.bidAmount
-        ? adSet.bidAmount.toString()
-        : null,
+      bidAmount:
+        adSet.bidAmount?.toString() ?? null,
 
       billingEvent: adSet.billingEvent,
 
       targeting: adSet.targeting,
 
+      metadata: adSet.metadata,
+
+      tags: adSet.tags,
+
       isActive: adSet.isActive,
 
       startDate: adSet.startDate,
+
       endDate: adSet.endDate,
 
       version: adSet.version,
 
       createdAt: adSet.createdAt,
+
       updatedAt: adSet.updatedAt,
 
-      organization: adSet.organization
-        ? {
-            id: adSet.organization.id,
-            name: adSet.organization.name,
-          }
-        : undefined,
+      organization: {
+        id: adSet.organization.id,
+        name: adSet.organization.name,
+      },
 
-      campaign: adSet.campaign
-        ? {
-            id: adSet.campaign.id,
-            name: adSet.campaign.name,
-          }
-        : undefined,
+      campaign: {
+        id: adSet.campaign.id,
+        name: adSet.campaign.name,
+      },
     };
   }
 }
