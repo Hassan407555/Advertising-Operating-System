@@ -17,6 +17,8 @@ import { CreativesModule } from './modules/creatives/creatives.module';
 import { AdSetsModule } from './modules/ad-sets/ad-sets.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { CreativeAssetsModule } from './modules/creative-assets/creative-assets.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+
 
 @Module({
   imports: [
@@ -39,6 +41,7 @@ import { CreativeAssetsModule } from './modules/creative-assets/creative-assets.
     CampaignsModule,
     AdSetsModule,
     AdsModule,
+    AnalyticsModule,
     CreativeAssetsModule,
     AdAccountsModule,   // 👈 Add this
   ],

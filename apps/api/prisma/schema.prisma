@@ -12,24 +12,25 @@ datasource db {
 // ============================================
 
 model Organization {
-  id                 String              @id @default(cuid())
-  name               String
-  slug               String              @unique @db.VarChar(100)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  auditLogs          AuditLog[]          @relation("OrganizationAuditLogs")
-  invitations        Invitation[]
-  memberships        Membership[]
-  
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique @db.VarChar(100)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  auditLogs   AuditLog[]   @relation("OrganizationAuditLogs")
+  invitations Invitation[]
+  memberships Membership[]
+
   // NEW RELATIONS
   platformConnections PlatformConnection[]
-  adAccounts           AdAccount[]
-  campaigns            Campaign[]
-  adSets               AdSet[]
-  ads                  Ad[]
-  creatives            Creative[]
-  creativeAssets       CreativeAsset[]
-  apiKeys              ApiKey[]
+  analyticsSnapshots  AnalyticsSnapshot[]
+  adAccounts          AdAccount[]
+  campaigns           Campaign[]
+  adSets              AdSet[]
+  ads                 Ad[]
+  creatives           Creative[]
+  creativeAssets      CreativeAsset[]
+  apiKeys             ApiKey[]
 }
 
 model User {
@@ -55,10 +56,10 @@ model User {
   auditLogs              AuditLog[]   @relation("UserAuditLogs")
   createdInvitations     Invitation[] @relation("InvitationCreator")
   memberships            Membership[]
-  
+
   // NEW RELATIONS
   createdPlatformConnections PlatformConnection[] @relation("PlatformConnectionCreator")
-  apiKeys                     ApiKey[]
+  apiKeys                    ApiKey[]
 }
 
 model Membership {
@@ -241,6 +242,7 @@ enum AuditEntity {
   CREATIVE_ASSET
   API_KEY
 }
+
 // ============================================
 // NEW ENUMS (Final, with duplicates removed)
 // ============================================
@@ -447,6 +449,12 @@ enum CreativeAssetType {
   PDF
 }
 
+enum AnalyticsLevel {
+  CAMPAIGN
+  AD_SET
+  AD
+  CREATIVE
+}
 
 model PlatformConnection {
   id                   String           @id @default(cuid())
@@ -470,7 +478,7 @@ model PlatformConnection {
   updatedAt            DateTime         @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy    User @relation("PlatformConnectionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation("PlatformConnectionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
 
   credentials PlatformCredential[]
   adAccounts  AdAccount[]
@@ -485,19 +493,19 @@ model PlatformConnection {
 }
 
 model PlatformCredential {
-  id                String           @id @default(cuid())
+  id                   String    @id @default(cuid())
   platformConnectionId String
-  accessToken       String           @db.Text // Encrypted
-  refreshToken      String?          @db.Text // Encrypted
-  expiresAt         DateTime?
-  scopes            String[]         @db.VarChar(100)
-  isActive          Boolean          @default(true)
-  revokedAt         DateTime?
-  revokedReason     String?          @db.VarChar(255)
-  rotatedAt         DateTime?
-  version           Int              @default(1)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  accessToken          String    @db.Text // Encrypted
+  refreshToken         String?   @db.Text // Encrypted
+  expiresAt            DateTime?
+  scopes               String[]  @db.VarChar(100)
+  isActive             Boolean   @default(true)
+  revokedAt            DateTime?
+  revokedReason        String?   @db.VarChar(255)
+  rotatedAt            DateTime?
+  version              Int       @default(1)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   platformConnection PlatformConnection @relation(fields: [platformConnectionId], references: [id], onDelete: Cascade)
 
@@ -508,35 +516,35 @@ model PlatformCredential {
 }
 
 model AdAccount {
-  id                    String           @id @default(cuid())
-  organizationId        String
-  platformConnectionId  String
-  platform              PlatformType
-  externalId            String           @db.VarChar(255)
-  externalName          String?          @db.VarChar(255) // Renamed
-  externalStatus        String?          @db.VarChar(50)  // Renamed
-  accountName           String           @db.VarChar(255)
-  accountNumber         String?          @db.VarChar(100)
-  currency              Currency         @default(USD)
-  timezone              String           @db.VarChar(50)
-  status                AdAccountStatus  @default(ACTIVE)
-  isActive              Boolean          @default(true)
-  spend                 Decimal?         @db.Decimal(18, 2)
-  impressions           Int?
-  clicks                Int?
-  conversions           Decimal?         @db.Decimal(18, 2)
-  deletedAt             DateTime?
-  lastSyncedAt          DateTime?
-  lastSuccessfulSyncAt  DateTime?
-  lastFailedSyncAt      DateTime?
-  metadata              Json?
-  version               Int              @default(1)
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  id                   String          @id @default(cuid())
+  organizationId       String
+  platformConnectionId String
+  platform             PlatformType
+  externalId           String          @db.VarChar(255)
+  externalName         String?         @db.VarChar(255) // Renamed
+  externalStatus       String?         @db.VarChar(50) // Renamed
+  accountName          String          @db.VarChar(255)
+  accountNumber        String?         @db.VarChar(100)
+  currency             Currency        @default(USD)
+  timezone             String          @db.VarChar(50)
+  status               AdAccountStatus @default(ACTIVE)
+  isActive             Boolean         @default(true)
+  spend                Decimal?        @db.Decimal(18, 2)
+  impressions          Int?
+  clicks               Int?
+  conversions          Decimal?        @db.Decimal(18, 2)
+  deletedAt            DateTime?
+  lastSyncedAt         DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastFailedSyncAt     DateTime?
+  metadata             Json?
+  version              Int             @default(1)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
-  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  platformConnection    PlatformConnection @relation(fields: [platformConnectionId], references: [id], onDelete: Restrict)
-  campaigns             Campaign[]
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platformConnection PlatformConnection @relation(fields: [platformConnectionId], references: [id], onDelete: Restrict)
+  campaigns          Campaign[]
 
   @@unique([organizationId, platformConnectionId, externalId])
   @@unique([platformConnectionId, externalId])
@@ -551,41 +559,42 @@ model AdAccount {
 }
 
 model Campaign {
-  id                    String                @id @default(cuid())
-  organizationId        String                // RESTORED for fast tenant filtering
-  adAccountId           String
-  externalId            String                @db.VarChar(255)
-  externalName          String?               @db.VarChar(255) // Renamed
-  externalStatus        String?               @db.VarChar(50)  // Renamed
-  name                  String                @db.VarChar(255)
-  slug                  String?               @db.VarChar(100) // Optional for nice URLs
-  objective             CampaignObjective
-  status                CampaignStatus        @default(DRAFT)
-  buyingType            CampaignBuyingType    @default(AUCTION)
-  dailyBudget           Decimal?              @db.Decimal(18, 2)
-  lifetimeBudget        Decimal?              @db.Decimal(18, 2)
-  currency              Currency              @default(USD)
-  startDate             DateTime?
-  endDate               DateTime?
-  isActive              Boolean               @default(true)
-  spend                 Decimal?              @db.Decimal(18, 2)
-  impressions           Int?
-  clicks                Int?
-  conversions           Decimal?              @db.Decimal(18, 2)
-  deletedAt             DateTime?
-  archivedAt            DateTime?             // Separate from status
-  lastSyncedAt          DateTime?
-  lastSuccessfulSyncAt  DateTime?
-  lastFailedSyncAt      DateTime?
-  metadata              Json?
-  tags                  Json?                 // For flexible categorization
-  version               Int                   @default(1)
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id                   String             @id @default(cuid())
+  organizationId       String // RESTORED for fast tenant filtering
+  adAccountId          String
+  externalId           String             @db.VarChar(255)
+  externalName         String?            @db.VarChar(255) // Renamed
+  externalStatus       String?            @db.VarChar(50) // Renamed
+  name                 String             @db.VarChar(255)
+  slug                 String?            @db.VarChar(100) // Optional for nice URLs
+  objective            CampaignObjective
+  status               CampaignStatus     @default(DRAFT)
+  buyingType           CampaignBuyingType @default(AUCTION)
+  dailyBudget          Decimal?           @db.Decimal(18, 2)
+  lifetimeBudget       Decimal?           @db.Decimal(18, 2)
+  currency             Currency           @default(USD)
+  startDate            DateTime?
+  endDate              DateTime?
+  isActive             Boolean            @default(true)
+  spend                Decimal?           @db.Decimal(18, 2)
+  impressions          Int?
+  clicks               Int?
+  conversions          Decimal?           @db.Decimal(18, 2)
+  deletedAt            DateTime?
+  archivedAt           DateTime? // Separate from status
+  lastSyncedAt         DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastFailedSyncAt     DateTime?
+  metadata             Json?
+  tags                 Json? // For flexible categorization
+  version              Int                @default(1)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
-  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  adAccount             AdAccount             @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
-  adSets                AdSet[]
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  adAccount          AdAccount           @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  adSets             AdSet[]
+  analyticsSnapshots AnalyticsSnapshot[]
 
   @@unique([organizationId, adAccountId, externalId])
   @@unique([adAccountId, externalId])
@@ -604,40 +613,41 @@ model Campaign {
 }
 
 model AdSet {
-  id                    String                 @id @default(cuid())
-  organizationId        String                 // RESTORED
-  campaignId            String
-  externalId            String                 @db.VarChar(255)
-  externalName          String?                @db.VarChar(255) // Renamed
-  externalStatus        String?                @db.VarChar(50)  // Renamed
-  name                  String                 @db.VarChar(255)
-  status                AdSetStatus            @default(DRAFT)
-  dailyBudget           Decimal?               @db.Decimal(18, 2)
-  lifetimeBudget        Decimal?               @db.Decimal(18, 2)
-  bidAmount             Decimal?               @db.Decimal(18, 2)
-  billingEvent          BillingEvent?
-  targeting             Json?                  // Platform-specific targeting (will be normalized later)
-  startDate             DateTime?
-  endDate               DateTime?
-  isActive              Boolean                @default(true)
-  spend                 Decimal?               @db.Decimal(18, 2)
-  impressions           Int?
-  clicks                Int?
-  conversions           Decimal?               @db.Decimal(18, 2)
-  deletedAt             DateTime?
-  archivedAt            DateTime?
-  lastSyncedAt          DateTime?
-  lastSuccessfulSyncAt  DateTime?
-  lastFailedSyncAt      DateTime?
-  metadata              Json?
-  tags                  Json?
-  version               Int                    @default(1)
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id                   String        @id @default(cuid())
+  organizationId       String // RESTORED
+  campaignId           String
+  externalId           String        @db.VarChar(255)
+  externalName         String?       @db.VarChar(255) // Renamed
+  externalStatus       String?       @db.VarChar(50) // Renamed
+  name                 String        @db.VarChar(255)
+  status               AdSetStatus   @default(DRAFT)
+  dailyBudget          Decimal?      @db.Decimal(18, 2)
+  lifetimeBudget       Decimal?      @db.Decimal(18, 2)
+  bidAmount            Decimal?      @db.Decimal(18, 2)
+  billingEvent         BillingEvent?
+  targeting            Json? // Platform-specific targeting (will be normalized later)
+  startDate            DateTime?
+  endDate              DateTime?
+  isActive             Boolean       @default(true)
+  spend                Decimal?      @db.Decimal(18, 2)
+  impressions          Int?
+  clicks               Int?
+  conversions          Decimal?      @db.Decimal(18, 2)
+  deletedAt            DateTime?
+  archivedAt           DateTime?
+  lastSyncedAt         DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastFailedSyncAt     DateTime?
+  metadata             Json?
+  tags                 Json?
+  version              Int           @default(1)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
-  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  campaign              Campaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  ads                   Ad[]
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign           Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  ads                Ad[]
+  analyticsSnapshots AnalyticsSnapshot[]
 
   @@unique([organizationId, campaignId, externalId])
   @@unique([campaignId, externalId])
@@ -652,35 +662,36 @@ model AdSet {
 }
 
 model Ad {
-  id                    String                 @id @default(cuid())
-  organizationId        String                 // RESTORED
-  adSetId               String
-  creativeId            String?
-  externalId            String                 @db.VarChar(255)
-  externalName          String?                @db.VarChar(255) // Renamed
-  externalStatus        String?                @db.VarChar(50)  // Renamed
-  name                  String                 @db.VarChar(255)
-  status                AdStatus               @default(DRAFT)
-  isActive              Boolean                @default(true)
-  spend                 Decimal?               @db.Decimal(18, 2)
-  impressions           Int?
-  clicks                Int?
-  conversions           Decimal?               @db.Decimal(18, 2)
-  deletedAt             DateTime?
-  archivedAt            DateTime?
-  lastSyncedAt          DateTime?
-  lastSuccessfulSyncAt  DateTime?
-  lastFailedSyncAt      DateTime?
-  metadata              Json?
-  tags                  Json?
-  version               Int                    @default(1)
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id                   String    @id @default(cuid())
+  organizationId       String // RESTORED
+  adSetId              String
+  creativeId           String?
+  externalId           String    @db.VarChar(255)
+  externalName         String?   @db.VarChar(255) // Renamed
+  externalStatus       String?   @db.VarChar(50) // Renamed
+  name                 String    @db.VarChar(255)
+  status               AdStatus  @default(DRAFT)
+  isActive             Boolean   @default(true)
+  spend                Decimal?  @db.Decimal(18, 2)
+  impressions          Int?
+  clicks               Int?
+  conversions          Decimal?  @db.Decimal(18, 2)
+  deletedAt            DateTime?
+  archivedAt           DateTime?
+  lastSyncedAt         DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastFailedSyncAt     DateTime?
+  metadata             Json?
+  tags                 Json?
+  version              Int       @default(1)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  adSet                 AdSet                  @relation(fields: [adSetId], references: [id], onDelete: Cascade)
-  creative              Creative?              @relation(fields: [creativeId], references: [id], onDelete: SetNull)
-  assets                CreativeAsset[]
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  adSet              AdSet               @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+  creative           Creative?           @relation(fields: [creativeId], references: [id], onDelete: SetNull)
+  assets             CreativeAsset[]
+  analyticsSnapshots AnalyticsSnapshot[]
 
   @@unique([organizationId, adSetId, externalId])
   @@unique([adSetId, externalId])
@@ -695,33 +706,34 @@ model Ad {
 }
 
 model Creative {
-  id                    String                 @id @default(cuid())
-  organizationId        String
-  externalId            String?                @db.VarChar(255)
-  externalName          String?                @db.VarChar(255) // Renamed
-  name                  String                 @db.VarChar(255)
-  type                  CreativeType
-  headline              String?                @db.VarChar(255)
-  primaryText           String?                @db.Text
-  description           String?                @db.Text
-  callToAction          CallToAction?
-  landingPageUrl        String?                @db.VarChar(2000)
-  deepLinkUrl           String?                @db.VarChar(2000)
-  isActive              Boolean                @default(true)
-  deletedAt             DateTime?
-  archivedAt            DateTime?
-  lastSyncedAt          DateTime?
-  lastSuccessfulSyncAt  DateTime?
-  lastFailedSyncAt      DateTime?
-  metadata              Json?
-  tags                  Json?
-  version               Int                    @default(1)
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id                   String        @id @default(cuid())
+  organizationId       String
+  externalId           String?       @db.VarChar(255)
+  externalName         String?       @db.VarChar(255) // Renamed
+  name                 String        @db.VarChar(255)
+  type                 CreativeType
+  headline             String?       @db.VarChar(255)
+  primaryText          String?       @db.Text
+  description          String?       @db.Text
+  callToAction         CallToAction?
+  landingPageUrl       String?       @db.VarChar(2000)
+  deepLinkUrl          String?       @db.VarChar(2000)
+  isActive             Boolean       @default(true)
+  deletedAt            DateTime?
+  archivedAt           DateTime?
+  lastSyncedAt         DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastFailedSyncAt     DateTime?
+  metadata             Json?
+  tags                 Json?
+  version              Int           @default(1)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
-  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  ads                   Ad[]
-  assets                CreativeAsset[]
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ads                Ad[]
+  assets             CreativeAsset[]
+  analyticsSnapshots AnalyticsSnapshot[]
 
   @@index([organizationId, deletedAt])
   @@index([organizationId])
@@ -733,89 +745,168 @@ model Creative {
 }
 
 model CreativeAsset {
-  id               String              @id @default(cuid())
+  id String @id @default(cuid())
 
-  organizationId   String
-  creativeId       String?
-  adId             String?
+  organizationId String
+  creativeId     String?
+  adId           String?
 
-  assetType        CreativeAssetType
+  assetType CreativeAssetType
 
-  storageProvider  StorageProvider     @default(LOCAL)
+  storageProvider StorageProvider @default(LOCAL)
 
-  fileName         String              @db.VarChar(255)
-  originalFileName String              @db.VarChar(255)
+  fileName         String @db.VarChar(255)
+  originalFileName String @db.VarChar(255)
 
-  storageKey       String              @db.VarChar(1000)
+  storageKey String @db.VarChar(1000)
 
-  url              String              @db.VarChar(2000)
-  thumbnailUrl     String?             @db.VarChar(2000)
+  url          String  @db.VarChar(2000)
+  thumbnailUrl String? @db.VarChar(2000)
 
-  mimeType         String              @db.VarChar(255)
-  extension        String              @db.VarChar(20)
+  mimeType  String @db.VarChar(255)
+  extension String @db.VarChar(20)
 
-  checksum         String?             @db.VarChar(128)
+  checksum String? @db.VarChar(128)
 
-  width            Int?
-  height           Int?
+  width  Int?
+  height Int?
 
-  fileSize         BigInt? @default(0)
+  fileSize BigInt? @default(0)
 
-  duration         Decimal? @db.Decimal(10, 3)
+  duration Decimal? @db.Decimal(10, 3)
 
-  displayOrder     Int                 @default(0)
+  displayOrder Int @default(0)
 
-  isPrimary        Boolean             @default(false)
+  isPrimary Boolean @default(false)
 
-  metadata         Json?
+  metadata Json?
 
-  deletedAt        DateTime?
-  archivedAt       DateTime?
+  deletedAt  DateTime?
+  archivedAt DateTime?
 
-  version          Int                 @default(1)
+  version Int @default(1)
 
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-creative     Creative?    @relation(fields: [creativeId], references: [id], onDelete: Cascade)
-ad           Ad?          @relation(fields: [adId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creative     Creative?    @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  ad           Ad?          @relation(fields: [adId], references: [id], onDelete: Cascade)
 
-@@index([organizationId])
-@@index([organizationId, deletedAt])
-@@index([organizationId, creativeId])
-@@index([creativeId])
-@@index([adId])
-@@index([assetType])
-@@index([storageProvider])
-@@index([isPrimary])
-@@index([displayOrder])
-@@index([deletedAt])
-@@index([archivedAt])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, creativeId])
+  @@index([creativeId])
+  @@index([adId])
+  @@index([assetType])
+  @@index([storageProvider])
+  @@index([isPrimary])
+  @@index([displayOrder])
+  @@index([deletedAt])
+  @@index([archivedAt])
+}
+
+model AnalyticsSnapshot {
+  id String @id @default(cuid())
+
+  // Tenant
+  organizationId String
+
+  // Platform
+  platform PlatformType
+
+  // Snapshot Type
+  level AnalyticsLevel
+
+  // Relations
+  campaignId String?
+  adSetId    String?
+  adId       String?
+  creativeId String?
+
+  // Date
+  snapshotDate DateTime @db.Date
+
+  // Currency
+  currency Currency @default(USD)
+
+  // Delivery
+  impressions Int @default(0)
+  reach       Int @default(0)
+  clicks      Int @default(0)
+  linkClicks  Int @default(0)
+
+  // Cost
+  spend Decimal  @default(0) @db.Decimal(18, 2)
+  cpc   Decimal? @db.Decimal(18, 4)
+  cpm   Decimal? @db.Decimal(18, 4)
+  ctr   Decimal? @db.Decimal(8, 4)
+
+  // Conversion
+  conversions     Decimal? @db.Decimal(18, 4)
+  conversionValue Decimal? @db.Decimal(18, 2)
+
+  // Revenue
+  revenue Decimal? @db.Decimal(18, 2)
+  roas    Decimal? @db.Decimal(18, 4)
+
+  // Video
+  videoViews Int @default(0)
+
+  // Flexible platform metrics
+  platformMetrics Json?
+
+  lastSyncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  adSet AdSet? @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+
+  ad Ad? @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  creative Creative? @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+
+  // @@unique([organizationId, platform, level, campaignId, adSetId, adId, creativeId, snapshotDate])
+
+  @@index([organizationId])
+  @@index([snapshotDate])
+  @@index([platform])
+  @@index([level])
+  @@index([campaignId])
+  @@index([adSetId])
+  @@index([adId])
+  @@index([creativeId])
+  @@index([organizationId, snapshotDate])
+  @@index([organizationId, platform, snapshotDate])
 }
 
 model ApiKey {
-  id                String              @id @default(cuid())
-  organizationId    String
-  userId            String
-  name              String              @db.VarChar(100)
-  keyHash           String              @unique
-  role              ApiKeyRole          @default(READ)
-  permissions       Json?               // Flexible permissions
-  lastUsedAt        DateTime?
-  expiresAt         DateTime?
-  isActive          Boolean             @default(true)
-  deletedAt         DateTime?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  id             String     @id @default(cuid())
+  organizationId String
+  userId         String
+  name           String     @db.VarChar(100)
+  keyHash        String     @unique
+  role           ApiKeyRole @default(READ)
+  permissions    Json? // Flexible permissions
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  isActive       Boolean    @default(true)
+  deletedAt      DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user              User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
 
+  @@unique([organizationId, name, deletedAt])
   @@index([organizationId, deletedAt])
   @@index([organizationId])
   @@index([userId])
   @@index([isActive])
   @@index([deletedAt])
-  @@unique([organizationId, name, deletedAt])
 }
