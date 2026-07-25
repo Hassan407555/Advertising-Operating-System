@@ -1,4 +1,8 @@
+
+
 # Advertising Operating System
+
+## Project Roadmap (Portfolio Edition)
 
 ---
 
@@ -6,926 +10,359 @@
 
 ## Vision
 
-Build the world's most intelligent Advertising Operating System that unifies campaign creation, optimization, AI assistance, analytics, automation, and multi-platform advertising into one enterprise SaaS platform.
+Build a modern Advertising Operating System that demonstrates enterprise-grade backend engineering by automating the entire advertising workflow—from product synchronization to AI-powered campaign creation, media processing, publishing, and analytics.
+
+---
 
 ## Mission
 
-Replace fragmented advertising workflows with a centralized, AI-powered platform capable of managing the complete advertising lifecycle.
+Create a single platform where marketers can:
+
+* Connect their Shopify store
+* Sync products automatically
+* Generate complete advertising campaigns
+* Optimize media assets
+* Publish campaigns to advertising platforms
+* Monitor performance through analytics and dashboards
+
+The goal is **not** to replicate Meta Ads Manager or enterprise marketing suites. Instead, the goal is to build a polished, end-to-end portfolio project that showcases strong software architecture, integrations, automation, background processing, and AI capabilities.
+
+---
 
 ## Product Philosophy
 
-- Enterprise First
-- AI Native
-- Multi Tenant
-- Platform Agnostic
-- Automation Driven
-- Developer Friendly
-- Highly Scalable
-
-## Core Pillars
-
-- Organization Management
-- Advertising Management
-- Creative Management
-- Analytics
-- AI Optimization
-- Automation
-- Collaboration
-- Auditability
-
-## Target Users
-
-- Marketing Agencies
-- Brands
-- Enterprises
-- Media Buyers
-- Freelancers
-- Advertising Teams
-
-## Competitive Advantage
-
-- AI-assisted campaign management
-- Multi-platform architecture
-- Enterprise-grade audit logging
-- Organization isolation
-- Workflow automation
-- Modern scalable backend
+* Backend First
+* API First
+* Automation Driven
+* AI Assisted
+* Modular Architecture
+* Multi-Tenant
+* Production-Ready Code
+* Clean & Maintainable Design
 
 ---
 
-# 2. BUSINESS GOALS
+# 2. PROJECT GOALS
 
-## Problem We Solve
+The project should demonstrate the ability to build:
 
-Managing advertising across multiple platforms is fragmented, repetitive, and difficult to scale.
-
-Our platform centralizes
-
-- Campaign Management
-- Creative Management
-- Asset Management
-- Analytics
-- Optimization
-- AI Recommendations
-- Automation
-
-## Why Users Choose Us
-
-- Unified dashboard
-- AI-powered optimization
-- Enterprise architecture
-- Complete audit history
-- Multi-platform integrations
-- Workflow automation
-
-## Long-Term Roadmap
-
-- AI Studio
-- Campaign Generator
-- AI Optimization
-- Automation Engine
-- Reporting
-- Budget Optimizer
-- Predictive Analytics
-
-## Version 1 Scope
-
-- Authentication
-- Organizations
-- Platform Connections
-- Ad Accounts
-- Campaigns
-- Ad Sets
-- Creatives
-- Creative Assets
-- Ads
-
-## Version 2 Scope
-
-- Analytics
-- Reporting
-- Dashboards
-- Automation
-- AI Studio
-- Recommendations
-- Notifications
+* Enterprise backend architecture
+* Third-party integrations
+* OAuth authentication
+* Background jobs
+* Media processing pipelines
+* AI integrations
+* Workflow automation
+* REST APIs
+* Multi-tenant systems
+* Scalable module architecture
 
 ---
 
-# 3. TECH STACK
+# 3. FINAL USER FLOW
 
-## Backend
-
-- NestJS
-- TypeScript
-- Prisma ORM
-
-## Frontend
-
-- Next.js (Planned)
-
-## Database
-
-- PostgreSQL
-
-## Authentication
-
-- JWT
-- Refresh Tokens
-
-## AI
-
-- OpenAI
-- AI Studio (Planned)
-
-## Queues
-
-- BullMQ (Planned)
-
-## Storage
-
-- S3 Compatible Storage
-
-## Infrastructure
-
-- Docker
-- Railway
-- AWS (Planned)
+```text
+Connect Shopify
+        ↓
+Sync Products
+        ↓
+Select Product
+        ↓
+Choose Countries
+        ↓
+Choose Platforms
+        ↓
+Launch Campaign
+        ↓
+AI generates copy
+        ↓
+Media optimized
+        ↓
+Campaign created
+        ↓
+Published to Meta & TikTok
+        ↓
+Analytics collected
+        ↓
+Reports generated
+        ↓
+Dashboard updated
+```
 
 ---
 
-# 4. PROJECT ARCHITECTURE
+# 4. DEVELOPMENT ROADMAP
 
-## Folder Structure
+## Phase 1 — Finish Current Backend
 
-```
-apps/
-└── api/
-    └── src/
-        ├── common/
-        ├── infrastructure/
-        └── modules/
-```
+### Module 1 — Analytics
 
-## Module Structure
+Build:
 
-```
-module/
-
-constants/
-
-dto/
-
-mapper/
-
-service.ts
-
-controller.ts
-
-module.ts
-```
-
-## Naming Conventions
-
-- PascalCase Classes
-- camelCase Variables
-- kebab-case Filenames
-- Singular DTOs
-- Plural Modules
-
-## Dependency Rules
-
-```
-Controller
-
-↓
-
-Service
-
-↓
-
-Mapper
-
-↓
-
-Prisma
-```
-
-Never bypass the Service layer.
+* Analytics Snapshots
+* KPI APIs
+* Dashboard Metrics
+* Time Series
+* Campaign Breakdown
+* Ad Set Breakdown
+* Ad Breakdown
+* Creative Breakdown
+* Filtering
+* Aggregations
 
 ---
 
-# 5. DATABASE ARCHITECTURE
+### Module 2 — Reporting
 
-## Entity Relationship
+Build:
 
-```
-Organization
-      │
-Membership
-      │
-User
-      │
-Platform Connection
-      │
-Platform Credential
-      │
-Ad Account
-      │
-Campaign
-      │
-Ad Set
-      │
-Creative
-      │
-Creative Asset
-      │
-Ad
-```
-
-## Current Prisma Models
-
-- Organization
-- User
-- Membership
-- Invitation
-- AuditLog
-- PlatformConnection
-- PlatformCredential
-- AdAccount
-- Campaign
-- AdSet
-- Creative
-- CreativeAsset
-- Ad
-
-## Future Models
-
-- Analytics
-- Reports
-- Dashboards
-- Insights
-- AI Suggestions
-- Notifications
-- Automation Rules
-
-## Database Standards
-
-- UUID/CUID IDs
-- Soft Delete
-- Archive Support
-- Version Field
-- CreatedAt
-- UpdatedAt
-- Multi-Tenant Design
+* Report APIs
+* Saved Reports
+* Scheduled Reports
+* CSV Export
+* Excel Export
+* PDF Export
 
 ---
 
-# 6. MODULE STANDARDS
+### Module 3 — Dashboards
 
-Every module contains
+Build:
 
-```
-constants/
-
-dto/
-
-mapper/
-
-service.ts
-
-controller.ts
-
-module.ts
-```
-
-Every module includes
-
-- DTO Validation
-- Pagination
-- Filtering
-- Sorting
-- Search
-- Organization Isolation
-- Soft Delete
-- Archive (where applicable)
-- Restore (where applicable)
-- Audit Logging
-- Optimistic Locking
-- Prisma Transactions
-- Enterprise Error Handling
+* Executive Dashboard
+* Campaign Dashboard
+* KPI Cards
+* Charts
+* Performance Widgets
+* Summary APIs
 
 ---
 
-# 7. AUTHENTICATION & AUTHORIZATION
+# Phase 2 — Shopify Integration
 
-Implemented
+Purpose
 
-- JWT Authentication
-- Refresh Tokens
-- CurrentUser Decorator
-- JwtAuthGuard
-- Organization Isolation
+Connect Shopify and import products for campaign generation.
 
-Authorization Strategy
+Build:
 
-- Organization Scoped Access
-- Role Based Permissions
+* Shopify OAuth
+* Store Connection
+* Product Sync
+* Product Image Sync
+* Manual Sync Endpoint
+* Optional Product Webhook
 
----
+Do NOT build:
 
-# 8. API STANDARDS
-
-## Response
-
-```
-success
-
-data
-
-meta
-```
-
-## Pagination
-
-- page
-- limit
-- total
-- totalPages
-- hasNextPage
-- hasPreviousPage
-
-## Query Standards
-
-- search
-- page
-- limit
-- status
-- sortBy
-- sortOrder
-
-## Enterprise Features
-
-- Organization Isolation
-- Soft Delete
-- Archive
-- Optimistic Locking
-- Audit Logging
-- Prisma Transactions
+* Orders
+* Customers
+* Inventory
+* Fulfillment
+* Discounts
 
 ---
 
-# 9. COMPLETED MODULES
+# Phase 3 — Automation Engine
 
+Instead of building a full workflow builder, create a lightweight automation engine.
+
+## Supported Triggers
+
+* New Product
+* Manual Launch
+* Scheduled Launch
+
+## Supported Actions
+
+* Generate Campaign
+* Generate AI Copy
+* Process Media
+* Publish Campaign
+* Send Notification
+
+---
+
+# Phase 4 — Campaign Generator
+
+Input
+
+* Shopify Product
+* Target Countries
+* Advertising Platforms
+
+Output
+
+Automatically generate:
+
+* Campaign
+* Ad Set
+* Ads
+
+using the existing modules already built.
+
+---
+
+# Phase 5 — Media Processing
+
+Implement only the features needed for campaign publishing.
+
+Image Processing
+
+* Resize
+* Compression
+* WebP Conversion
+
+Video Processing
+
+* Thumbnail Generation
+* FFmpeg Conversion
+
+Metadata
+
+* Width
+* Height
+* Duration
+* File Size
+* MIME Type
+
+---
+
+# Phase 6 — Publisher
+
+Support only two publishing targets.
+
+Platforms
+
+* Meta
+* TikTok
+
+Responsibilities
+
+* Prepare payloads
+* Validate assets
+* Publish campaigns
+* Track publishing status
+* Handle publishing errors
+
+Design the publisher using adapters so more platforms can be added later.
+
+---
+
+# Phase 7 — AI
+
+Keep AI focused on content generation.
+
+Features
+
+* Generate Ad Copy
+* Generate Headlines
+* Generate CTAs
+* Translate Copy
+
+Do NOT build:
+
+* AI Agents
+* Autonomous Optimization
+* AI Studio
+* AI Chat Assistant
+
+---
+
+# 5. WHAT WE ARE NOT BUILDING
+
+To keep the project focused, we will intentionally exclude:
+
+* Drag-and-drop workflow builder
+* Complex automation designer
+* Enterprise AI agents
+* Budget optimizer
+* Predictive analytics
+* Recommendation engine
+* Multi-region deployment
+* Billing system
+* Subscription management
+* 20+ advertising platforms
+* Enterprise DevOps infrastructure
+
+---
+
+# 6. DEVELOPMENT PRINCIPLES
+
+Every module must:
+
+* Follow the existing project architecture.
+* Be built one module at a time.
+* Be built one file at a time.
+* Compile after every file.
+* Fix compilation errors immediately.
+* Include DTO validation.
+* Enforce organization isolation.
+* Include proper error handling.
+* Use Prisma transactions where appropriate.
+* Be tested before moving to the next module.
+
+---
+
+# 7. EXECUTION ORDER (LOCKED)
+
+```text
 ✅ Authentication
-
 ✅ Organizations
-
 ✅ Users
-
 ✅ Memberships
-
 ✅ Invitations
-
 ✅ Audit Logs
-
 ✅ Platform Connections
-
 ✅ Platform Credentials
-
 ✅ Ad Accounts
-
 ✅ Campaigns
-
 ✅ Ad Sets
-
 ✅ Creatives
-
 ✅ Creative Assets
-
 ✅ Ads
 
----
+🚧 Analytics
 
-# 10. CURRENT PROJECT TREE
+⬜ Reporting
 
-```
-modules/
+⬜ Dashboards
 
-auth/
+⬜ Shopify Integration
 
-organizations/
+⬜ Automation Engine
 
-users/
+⬜ Campaign Generator
 
-memberships/
+⬜ Media Processing
 
-invitations/
+⬜ Publisher (Meta)
 
-audit-logs/
+⬜ Publisher (TikTok)
 
-platform-connections/
+⬜ AI Copy Generation
 
-platform-credentials/
-
-ad-accounts/
-
-campaigns/
-
-ad-sets/
-
-creatives/
-
-creative-assets/
-
-ads/
+⬜ AI Translation
 ```
 
 ---
 
-# 11. CURRENT PRISMA MODELS
+# 8. PROJECT COMPLETION CRITERIA
 
-- Organization
-- User
-- Membership
-- Invitation
-- AuditLog
-- PlatformConnection
-- PlatformCredential
-- AdAccount
-- Campaign
-- AdSet
-- Creative
-- CreativeAsset
-- Ad
+The project is considered complete when a user can:
 
----
-
-# 12. CURRENT API ENDPOINTS
-
-## Campaigns
-
-GET
-
-GET :id
-
-POST
-
-PATCH
-
-DELETE
-
-Query
-
-- page
-- limit
-- search
-- status
-- adAccountId
-- isActive
-- sortBy
-- sortOrder
+1. Connect a Shopify store.
+2. Synchronize products.
+3. Select a product for promotion.
+4. Choose target countries.
+5. Choose Meta and/or TikTok.
+6. Launch a campaign.
+7. Have AI generate localized ad copy.
+8. Automatically optimize media assets.
+9. Automatically create Campaigns, Ad Sets, and Ads.
+10. Publish to Meta and TikTok.
+11. View campaign performance through Analytics.
+12. Export Reports.
+13. Monitor everything through Dashboards.
 
 ---
-
-## Ad Sets
-
-GET
-
-GET :id
-
-POST
-
-PATCH
-
-DELETE
-
-Query
-
-- page
-- limit
-- search
-- status
-- campaignId
-- isActive
-- sortBy
-- sortOrder
-
----
-
-## Creatives
-
-GET
-
-GET :id
-
-POST
-
-PATCH
-
-DELETE
-
----
-
-## Creative Assets
-
-GET
-
-GET :id
-
-POST
-
-PATCH
-
-PATCH :id/archive
-
-PATCH :id/restore
-
-PATCH :id/set-primary
-
-DELETE
-
-Query
-
-- page
-- limit
-- search
-- creativeId
-- adId
-- assetType
-- storageProvider
-- isPrimary
-- archived
-- sortBy
-- sortOrder
-
----
-
-## Ads
-
-GET
-
-GET :id
-
-POST
-
-PATCH
-
-DELETE
-
-Query
-
-- page
-- limit
-- search
-- status
-- adSetId
-- creativeId
-- isActive
-- sortBy
-- sortOrder
-
----
-
-# 13. DEVELOPMENT WORKFLOW
-
-1. Build one module at a time.
-
-2. Build one file at a time.
-
-3. Compile after every file.
-
-4. Fix compilation errors immediately.
-
-5. Register the module.
-
-6. Verify dependency injection.
-
-7. Test every endpoint in Postman.
-
-8. Test all query parameters.
-
-9. Test validation.
-
-10. Test optimistic locking.
-
-11. Test soft delete.
-
-12. Test archive/restore.
-
-13. Verify organization isolation.
-
-14. Verify audit logging.
-
-15. Commit after all tests pass.
-
-16. Move to the next module.
-
-Never skip compilation.
-
-Never skip endpoint testing.
-
----
-
-# 14. ROADMAP
-
-## Completed
-
-✅ Authentication
-
-✅ Organizations
-
-✅ Users
-
-✅ Memberships
-
-✅ Invitations
-
-✅ Audit Logs
-
-✅ Platform Connections
-
-✅ Platform Credentials
-
-✅ Ad Accounts
-
-✅ Campaigns
-
-✅ Ad Sets
-
-✅ Creatives
-
-✅ Creative Assets
-
-✅ Ads
-
-## Current
-
-🚧 Analytics Module
-
-## Next
-
-- Reporting
-- Dashboards
-- AI Studio
-
-## Future
-
-- Automation Engine
-- Campaign Generator
-- Chat Assistant
-- AI Optimization
-- Predictive Analytics
-
----
-
-# 15. AI ROADMAP
-
-- Campaign Generator
-- AI Studio
-- Automation
-- AI Optimization
-- Chat Assistant
-- Recommendations
-- Budget Optimization
-- Predictive Analytics
-
----
-
-# 16. CHANGE HISTORY
-
-## Latest Module Completed
-
-Creative Assets
-
-## Completed Features
-
-✅ CRUD
-
-✅ Pagination
-
-✅ Search
-
-✅ Filtering
-
-✅ Sorting
-
-✅ Soft Delete
-
-✅ Archive
-
-✅ Restore
-
-✅ Set Primary
-
-✅ Optimistic Locking
-
-✅ Organization Isolation
-
-✅ Audit Logging
-
-✅ Prisma Transactions
-
-✅ Creative Ownership Validation
-
-✅ Ad Ownership Validation
-
-✅ Enterprise Error Handling
-
-✅ BigInt JSON Serialization
-
-✅ Prisma Decimal Serialization
-
-## API Testing
-
-Successfully Tested
-
-- ✅ Create
-- ✅ Get All
-- ✅ Get By Id
-- ✅ Update
-- ✅ Delete
-- ✅ Archive
-- ✅ Restore
-- ✅ Set Primary
-- ✅ Search
-- ✅ Filtering
-- ✅ Sorting
-- ✅ Soft Delete
-- ✅ Optimistic Locking
-- ✅ Validation
-- ✅ Organization Isolation
-- ✅ Audit Logging
-
-## New APIs
-
-```
-GET     /api/creative-assets
-
-GET     /api/creative-assets/:id
-
-POST    /api/creative-assets
-
-PATCH   /api/creative-assets/:id
-
-PATCH   /api/creative-assets/:id/archive
-
-PATCH   /api/creative-assets/:id/restore
-
-PATCH   /api/creative-assets/:id/set-primary
-
-DELETE  /api/creative-assets/:id
-```
-
----
-
-# 17. AI ASSISTANT INSTRUCTIONS
-
-When contributing to this project
-
-1. Never change the existing architecture.
-
-2. Follow Campaign module standards.
-
-3. Follow Ad Set module standards.
-
-4. Follow Creative module standards.
-
-5. Follow Creative Asset module standards.
-
-6. Follow Ads module standards.
-
-7. Enterprise-quality code only.
-
-8. Build one file at a time.
-
-9. Never skip compilation.
-
-10. Every endpoint must include
-
-- DTO Validation
-- Organization Isolation
-- Audit Logging
-- Soft Delete
-- Optimistic Locking
-- Prisma Transactions
-
-11. Test every endpoint before marking a module complete.
-
-12. Never move to the next module until the current module passes all Postman tests.
-
-13. Never generate pseudo code.
-
-14. Always produce production-ready code.
-
----
-
-# ARCHITECTURAL DECISIONS
-
-## Decision #001
-
-Organization isolation is enforced in every service.
-
-Reason
-
-Multi-tenant SaaS.
-
----
-
-## Decision #002
-
-Soft delete is mandatory.
-
-Reason
-
-Enterprise auditability.
-
----
-
-## Decision #003
-
-Optimistic locking uses the version field.
-
-Reason
-
-Prevent concurrent updates.
-
----
-
-## Decision #004
-
-Every module follows
-
-```
-DTO
-
-↓
-
-Mapper
-
-↓
-
-Service
-
-↓
-
-Controller
-
-↓
-
-Module
-```
-
-Reason
-
-Consistency and maintainability.
-
----
-
-## Decision #005
-
-All write operations use Prisma Transactions.
-
-Reason
-
-Atomicity and consistency.
-
----
-
-## Decision #006
-
-Every CRUD action writes an Audit Log.
-
-Reason
-
-Enterprise-grade traceability.
-
----
-
-## Decision #007
-
-Archive/Restore is implemented where business entities require lifecycle management.
-
-Reason
-
-Preserve historical data without deletion.
-
----
-
-## Decision #008
-
-Creative Assets serialize BigInt and Prisma.Decimal values before API responses.
-
-Reason
-
-Ensure JSON compatibility and prevent runtime serialization errors.
-
----
-
-## Decision #009
-
-Every module must be fully compiled and tested before development continues.
-
-Reason
-
-Prevent technical debt and maintain production quality.

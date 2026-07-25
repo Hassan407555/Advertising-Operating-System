@@ -31,6 +31,8 @@ model Organization {
   creatives           Creative[]
   creativeAssets      CreativeAsset[]
   apiKeys             ApiKey[]
+  reports             Report[]
+  reportSchedules     ReportSchedule[]
 }
 
 model User {
@@ -60,6 +62,7 @@ model User {
   // NEW RELATIONS
   createdPlatformConnections PlatformConnection[] @relation("PlatformConnectionCreator")
   apiKeys                    ApiKey[]
+  createdReports             Report[]             @relation("ReportCreator")
 }
 
 model Membership {
@@ -184,6 +187,12 @@ enum AuditAction {
   CAMPAIGN_ARCHIVED
   CAMPAIGN_RESTORED
 
+  REPORT_CREATED
+  REPORT_UPDATED
+  REPORT_DELETED
+  REPORT_EXPORTED
+  REPORT_SCHEDULED
+
   // Ad Sets
   AD_SET_CREATED
   AD_SET_UPDATED
@@ -236,6 +245,7 @@ enum AuditEntity {
   PLATFORM
   AD_ACCOUNT
   CAMPAIGN
+  REPORT
   AD_SET
   AD
   CREATIVE
@@ -454,6 +464,26 @@ enum AnalyticsLevel {
   AD_SET
   AD
   CREATIVE
+}
+
+enum ReportLevel {
+  ACCOUNT
+  CAMPAIGN
+  AD_SET
+  AD
+  CREATIVE
+}
+
+enum ReportFormat {
+  CSV
+  XLSX
+  PDF
+}
+
+enum ReportFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 model PlatformConnection {
@@ -909,4 +939,70 @@ model ApiKey {
   @@index([userId])
   @@index([isActive])
   @@index([deletedAt])
+}
+
+model Report {
+  id String @id @default(cuid())
+
+  organizationId  String
+  createdByUserId String
+
+  name        String  @db.VarChar(255)
+  description String? @db.VarChar(500)
+
+  level ReportLevel
+
+  platform PlatformType?
+
+  format ReportFormat @default(CSV)
+
+  filters Json?
+  columns Json?
+
+  isDefault Boolean @default(false)
+
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdBy User @relation("ReportCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  schedules ReportSchedule[]
+
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@index([createdByUserId])
+}
+
+model ReportSchedule {
+  id String @id @default(cuid())
+
+  organizationId String
+  reportId       String
+
+  frequency ReportFrequency
+
+  timezone String @default("UTC") @db.VarChar(50)
+
+  recipients Json?
+
+  isEnabled Boolean @default(true)
+
+  lastRunAt DateTime?
+  nextRunAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([reportId])
+  @@index([isEnabled])
+  @@index([nextRunAt])
 }

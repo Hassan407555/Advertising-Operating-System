@@ -8,12 +8,27 @@ import { StorageService } from './services/storage.service';
 import { StorageProviderFactory } from './factories/storage-provider.factory';
 
 import { LocalStorageProvider } from './providers/local/local-storage.provider';
+import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+
+import { StorageController } from './controllers/storage.controller';
+
+import { StorageAssetsService } from './services/storage-assets.service';
+
+import { StorageMapper } from './mappers/storage.mapper';
 
 @Global()
 @Module({
   imports: [
     ConfigModule,
+    PrismaModule,
+    AuditLogsModule,
   ],
+
+  controllers: [
+    StorageController,
+  ],
+
   providers: [
     LocalStorageProvider,
 
@@ -34,10 +49,14 @@ import { LocalStorageProvider } from './providers/local/local-storage.provider';
     },
 
     StorageService,
+    StorageAssetsService,
+    StorageMapper,
   ],
+
   exports: [
     StorageService,
     STORAGE_PROVIDER_TOKEN,
   ],
 })
+
 export class StorageModule {}

@@ -18,7 +18,8 @@ import { AdSetsModule } from './modules/ad-sets/ad-sets.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { CreativeAssetsModule } from './modules/creative-assets/creative-assets.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
-
+import { StorageModule } from './modules/storage/storage.module';
+import { ReportingModule } from './modules/reporting/reporting.module';
 
 @Module({
   imports: [
@@ -43,6 +44,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     AdsModule,
     AnalyticsModule,
     CreativeAssetsModule,
+    StorageModule,
+    ReportingModule,
     AdAccountsModule,   // 👈 Add this
   ],
 })
