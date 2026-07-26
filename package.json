@@ -12,11 +12,16 @@
   },
   "devDependencies": {
     "@types/multer": "^2.2.0",
+    "@types/pdfkit": "^0.17.6",
     "turbo": "^2.5.4"
   },
   "dependencies": {
+    "@fast-csv/format": "^5.0.7",
     "blurhash": "^2.0.5",
+    "exceljs": "^4.4.0",
+    "fast-csv": "^5.0.7",
     "multer": "^2.2.0",
+    "pdfkit": "^0.19.1",
     "sharp": "^0.35.3"
   }
 }
