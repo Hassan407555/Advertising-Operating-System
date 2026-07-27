@@ -34,6 +34,12 @@ model Organization {
   reports             Report[]
   reportSchedules     ReportSchedule[]
   shopifyProducts     ShopifyProduct[]
+<<<<<<< HEAD
+=======
+  automationPipelines AutomationPipeline[]
+  automationRuns      AutomationRun[]
+  automationSteps     AutomationStep[]
+>>>>>>> 248c59e (Complete Campaign Generator and Automation implementation)
 }
 
 model User {
@@ -227,6 +233,14 @@ enum AuditAction {
   // API Keys
   API_KEY_CREATED
   API_KEY_REVOKED
+
+  // Automation
+  AUTOMATION_PIPELINE_CREATED
+  AUTOMATION_PIPELINE_UPDATED
+  AUTOMATION_PIPELINE_DELETED
+  AUTOMATION_RUN_STARTED
+  AUTOMATION_RUN_COMPLETED
+  AUTOMATION_RUN_FAILED
 }
 
 enum StorageProvider {
@@ -252,6 +266,7 @@ enum AuditEntity {
   CREATIVE
   CREATIVE_ASSET
   API_KEY
+  AUTOMATION
 }
 
 // ============================================
@@ -1016,6 +1031,121 @@ model ReportSchedule {
   @@index([nextRunAt])
 }
 
+<<<<<<< HEAD
+=======
+// ============================================
+// AUTOMATION ENGINE
+// ============================================
+
+enum AutomationTriggerType {
+  NEW_PRODUCT
+  MANUAL_LAUNCH
+  SCHEDULED_LAUNCH
+}
+
+enum AutomationActionType {
+  GENERATE_CAMPAIGN
+  GENERATE_AI_COPY
+  PROCESS_MEDIA
+  PUBLISH_CAMPAIGN
+  SEND_NOTIFICATION
+}
+
+enum AutomationRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AutomationStepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model AutomationPipeline {
+  id              String                @id @default(cuid())
+  organizationId  String
+  createdByUserId String
+  name            String                @db.VarChar(255)
+  description     String?               @db.VarChar(500)
+  triggerType     AutomationTriggerType
+  triggerConfig   Json?
+  actions         Json
+  isEnabled       Boolean               @default(true)
+  deletedAt       DateTime?
+  version         Int                   @default(1)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  runs         AutomationRun[]
+
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@index([triggerType])
+  @@index([isEnabled])
+  @@index([deletedAt])
+}
+
+model AutomationRun {
+  id                 String                @id @default(cuid())
+  organizationId     String
+  pipelineId         String
+  triggerType        AutomationTriggerType
+  status             AutomationRunStatus   @default(PENDING)
+  triggeredByUserId  String?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  errorMessage       String?               @db.VarChar(1000)
+  metadata           Json?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pipeline     AutomationPipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  steps        AutomationStep[]
+
+  @@index([organizationId])
+  @@index([pipelineId])
+  @@index([status])
+  @@index([triggerType])
+  @@index([createdAt])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, pipelineId])
+  @@index([organizationId, status])
+}
+
+model AutomationStep {
+  id             String               @id @default(cuid())
+  organizationId String
+  runId          String
+  actionType     AutomationActionType
+  stepOrder      Int
+  status         AutomationStepStatus @default(PENDING)
+  input          Json?
+  output         Json?
+  errorMessage   String?              @db.VarChar(1000)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  run          AutomationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, stepOrder])
+  @@index([organizationId])
+  @@index([runId])
+  @@index([status])
+  @@index([actionType])
+}
+
+>>>>>>> 248c59e (Complete Campaign Generator and Automation implementation)
 model ShopifyProduct {
   id String @id @default(cuid())
 

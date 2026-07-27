@@ -8,6 +8,7 @@ import { ShopifyController } from './controllers/shopify.controller';
 import { ShopifyService } from './services/shopify.service';
 import { ShopifyApiService } from './services/shopify-api.service';
 import { ShopifyProductsService } from './services/shopify-products.service';
+import { ShopifyMapper } from './mappers/shopify.mapper';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ShopifyProductsService } from './services/shopify-products.service';
     ShopifyService,
     ShopifyApiService,
     ShopifyProductsService,
+    ShopifyMapper,
   ],
 
   exports: [

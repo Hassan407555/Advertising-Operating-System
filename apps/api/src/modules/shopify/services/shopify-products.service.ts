@@ -20,6 +20,7 @@ import { EncryptionService } from '../../../infrastructure/encryption/encryption
 import { AuditLogsService } from '../../audit-logs/services/audit-logs.service';
 
 import { ShopifyApiService } from './shopify-api.service';
+import { ShopifyMapper } from '../mappers/shopify.mapper';
 
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
@@ -31,6 +32,8 @@ import type {
   ShopifySyncResult,
 } from '../interfaces/shopify-sync-result.interface';
 
+import { ShopifyProductResponseDto } from '../dto/shopify-product-response.dto';
+
 @Injectable()
 export class ShopifyProductsService {
   constructor(
@@ -38,7 +41,35 @@ export class ShopifyProductsService {
     private readonly encryptionService: EncryptionService,
     private readonly auditLogsService: AuditLogsService,
     private readonly shopifyApi: ShopifyApiService,
+    private readonly shopifyMapper: ShopifyMapper,
   ) {}
+
+  async findOne(
+    id: string,
+    currentUser: JwtPayload,
+  ): Promise<ShopifyProductResponseDto> {
+    const product = await this.prisma.shopifyProduct.findFirst({
+      where: {
+        id,
+        organizationId: currentUser.organizationId,
+        deletedAt: null,
+      },
+      include: {
+        variants: true,
+        images: {
+          orderBy: {
+            displayOrder: 'asc',
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Shopify product not found.');
+    }
+
+    return this.shopifyMapper.toProductResponse(product);
+  }
 
   async syncProducts(
     currentUser: JwtPayload,

@@ -1,0 +1,7 @@
+export enum MarketingGoal {
+  AWARENESS = 'AWARENESS',
+  TRAFFIC = 'TRAFFIC',
+  SALES = 'SALES',
+  ENGAGEMENT = 'ENGAGEMENT',
+  LEADS = 'LEADS',
+}

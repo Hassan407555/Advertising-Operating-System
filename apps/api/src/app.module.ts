@@ -20,8 +20,15 @@ import { CreativeAssetsModule } from './modules/creative-assets/creative-assets.
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { ReportingModule } from './modules/reporting/reporting.module';
+<<<<<<< HEAD
 import { EncryptionModule } from './infrastructure/encryption/encryption.module';
 import { ShopifyModule } from './modules/shopify/shopify.module';
+=======
+import { AutomationModule } from './modules/automation/automation.module';
+import { EncryptionModule } from './infrastructure/encryption/encryption.module';
+import { ShopifyModule } from './modules/shopify/shopify.module';
+import { CampaignGeneratorModule } from './modules/campaign-generator/campaign-generator.module';
+>>>>>>> 248c59e (Complete Campaign Generator and Automation implementation)
 
 
 @Module({
@@ -49,8 +56,15 @@ import { ShopifyModule } from './modules/shopify/shopify.module';
     CreativeAssetsModule,
     StorageModule,
     ReportingModule,
+<<<<<<< HEAD
     EncryptionModule,
     ShopifyModule,
+=======
+    AutomationModule,
+    EncryptionModule,
+    ShopifyModule,
+    CampaignGeneratorModule,
+>>>>>>> 248c59e (Complete Campaign Generator and Automation implementation)
     AdAccountsModule,   // 👈 Add this
   ],
 })
