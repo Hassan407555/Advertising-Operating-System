@@ -43,7 +43,18 @@ query GetProducts($first: Int!, $after: String) {
               price
               compareAtPrice
               inventoryQuantity
-              weight
+
+              inventoryItem {
+                id
+
+                measurement {
+                  weight {
+                    value
+                    unit
+                  }
+                }
+              }
+
               selectedOptions {
                 name
                 value

@@ -20,6 +20,8 @@ import { CreativeAssetsModule } from './modules/creative-assets/creative-assets.
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { ReportingModule } from './modules/reporting/reporting.module';
+import { EncryptionModule } from './infrastructure/encryption/encryption.module';
+import { ShopifyModule } from './modules/shopify/shopify.module';
 
 
 @Module({
@@ -47,6 +49,8 @@ import { ReportingModule } from './modules/reporting/reporting.module';
     CreativeAssetsModule,
     StorageModule,
     ReportingModule,
+    EncryptionModule,
+    ShopifyModule,
     AdAccountsModule,   // 👈 Add this
   ],
 })

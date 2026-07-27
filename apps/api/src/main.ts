@@ -9,6 +9,8 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  console.log('CLIENT_ID =', process.env.SHOPIFY_CLIENT_ID);
+  console.log('REDIRECT_URI =', process.env.SHOPIFY_REDIRECT_URI);
   const configService = app.get(ConfigService);
 
   app.enableShutdownHooks();
