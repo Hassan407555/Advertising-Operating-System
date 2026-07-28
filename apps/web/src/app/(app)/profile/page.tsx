@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { SettingsPageContent } from "@/features/settings/components/settings-page";
 
 export default function ProfilePage() {
-  return (
-    <PlaceholderPage
-      title="Profile Route Scaffold"
-      description="Profile feature implementation is deferred."
-    />
-  );
+  return <SettingsPageContent />;
 }

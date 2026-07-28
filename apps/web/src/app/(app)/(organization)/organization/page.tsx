@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { OrganizationPageContent } from "@/features/organizations/components/organization-page";
 
 export default function OrganizationPage() {
-  return (
-    <PlaceholderPage
-      title="Organization Route Scaffold"
-      description="Organization feature implementation is deferred."
-    />
-  );
+  return <OrganizationPageContent />;
 }

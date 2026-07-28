@@ -65,8 +65,9 @@ export function useDeleteCampaignMutation() {
 
   return useMutation({
     mutationFn: (id: string) => deleteCampaign(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGNS });
+      queryClient.removeQueries({ queryKey: [...QUERY_KEYS.CAMPAIGN_DETAILS, id] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.DASHBOARD });
     },
   });

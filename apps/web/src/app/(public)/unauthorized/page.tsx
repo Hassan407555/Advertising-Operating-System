@@ -1,14 +1,25 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
+import { syncAccessCookieFromStorage } from "@/lib/auth/token-storage";
+import { getSafeRedirectPath } from "@/lib/navigation/safe-redirect";
 
 export default function UnauthorizedPage() {
+  const router = useRouter();
   const params = useSearchParams();
-  const redirectTo = params.get("redirectTo");
-  const loginHref = redirectTo ? `${ROUTES.LOGIN}?redirectTo=${encodeURIComponent(redirectTo)}` : ROUTES.LOGIN;
+  const redirectTo = getSafeRedirectPath(params.get("redirectTo"), ROUTES.DASHBOARD);
+  const loginHref = `${ROUTES.LOGIN}?redirectTo=${encodeURIComponent(redirectTo)}`;
+
+  useEffect(() => {
+    if (!syncAccessCookieFromStorage()) {
+      return;
+    }
+    router.replace(redirectTo);
+  }, [redirectTo, router]);
 
   return (
     <Card>

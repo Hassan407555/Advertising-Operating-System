@@ -5,11 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   Bot,
   ChartLine,
-  Cable,
-  FolderKanban,
-  LayoutDashboard,
   Megaphone,
-  RefreshCw,
+  LayoutDashboard,
   Settings,
   Sparkles,
   Store,
@@ -17,26 +14,36 @@ import {
   UsersRound,
   Waypoints,
   Workflow,
+  RefreshCw,
+  ListChecks,
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { usePermission } from "@/hooks/use-permission";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/providers/session-provider";
+import type { PermissionAction } from "@/types/permissions";
 
-const navItems = [
-  { href: ROUTES.DASHBOARD, label: "Dashboard", icon: LayoutDashboard, action: "view" as const },
-  { href: ROUTES.CAMPAIGNS, label: "Campaigns", icon: Megaphone, action: "view" as const },
-  { href: ROUTES.CAMPAIGN_GENERATOR, label: "Campaign Generator", icon: Sparkles, action: "view" as const },
-  { href: ROUTES.AI_COPY, label: "AI Copy", icon: Bot, action: "view" as const },
-  { href: ROUTES.PUBLISHER, label: "Publisher", icon: Waypoints, action: "view" as const },
-  { href: ROUTES.SYNCHRONIZATION, label: "Synchronization", icon: RefreshCw, action: "view" as const },
-  { href: ROUTES.AUTOMATION_PIPELINES, label: "Automation", icon: Workflow, action: "view" as const },
-  { href: ROUTES.ANALYTICS, label: "Analytics", icon: ChartLine, action: "view" as const },
-  { href: ROUTES.STORAGE, label: "Storage", icon: FolderKanban, action: "view" as const },
-  { href: ROUTES.SHOPIFY, label: "Shopify", icon: Store, action: "view" as const },
-  { href: ROUTES.PLATFORM_CONNECTIONS, label: "Platform Connections", icon: Cable, action: "view" as const },
-  { href: ROUTES.ORGANIZATION, label: "Organization", icon: Users, action: "manage" as const },
-  { href: ROUTES.MEMBERS, label: "Members", icon: UsersRound, action: "manage" as const },
-  { href: ROUTES.SETTINGS, label: "Settings", icon: Settings, action: "view" as const },
+const navItems: Array<{
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  action: PermissionAction;
+  /** Backend allows VIEWER on org read surfaces even when general `view` excludes VIEWER. */
+  allowViewer?: boolean;
+}> = [
+  { href: ROUTES.DASHBOARD, label: "Dashboard", icon: LayoutDashboard, action: "view" },
+  { href: ROUTES.CAMPAIGNS, label: "Campaigns", icon: Megaphone, action: "view" },
+  { href: ROUTES.CAMPAIGN_GENERATOR, label: "Campaign Generator", icon: Sparkles, action: "view" },
+  { href: ROUTES.AI_COPY, label: "AI Copy", icon: Bot, action: "view" },
+  { href: ROUTES.PUBLISHER, label: "Publisher", icon: Waypoints, action: "view" },
+  { href: ROUTES.SYNCHRONIZATION, label: "Synchronization", icon: RefreshCw, action: "view" },
+  { href: ROUTES.AUTOMATION_WORKFLOWS, label: "Automation", icon: Workflow, action: "view" },
+  { href: ROUTES.AUTOMATION_RUNS, label: "Automation Runs", icon: ListChecks, action: "view" },
+  { href: ROUTES.ANALYTICS, label: "Analytics", icon: ChartLine, action: "view" },
+  { href: ROUTES.SHOPIFY, label: "Shopify", icon: Store, action: "view" },
+  { href: ROUTES.ORGANIZATION, label: "Organization", icon: Users, action: "view", allowViewer: true },
+  { href: ROUTES.MEMBERS, label: "Members", icon: UsersRound, action: "view", allowViewer: true },
+  { href: ROUTES.SETTINGS, label: "Settings", icon: Settings, action: "view" },
 ];
 
 interface SidebarNavProps {
@@ -47,9 +54,10 @@ interface SidebarNavProps {
 export function SidebarNav({ open, onClose }: SidebarNavProps) {
   const pathname = usePathname();
   const canView = usePermission("view");
-  const canManage = usePermission("manage");
+  const { membership } = useSession();
+  const isViewer = membership?.role === "VIEWER";
 
-  if (!canView) {
+  if (!canView && !isViewer) {
     return null;
   }
 
@@ -64,7 +72,12 @@ export function SidebarNav({ open, onClose }: SidebarNavProps) {
       <div className="mb-4 text-sm font-semibold text-muted-foreground">Advertising OS</div>
       <nav className="space-y-1">
         {navItems
-          .filter((item) => (item.action === "manage" ? canManage : canView))
+          .filter((item) => {
+            if (item.allowViewer && isViewer) {
+              return true;
+            }
+            return item.action === "view" ? canView : false;
+          })
           .map((item) => (
             <Link
               key={item.href}
@@ -75,7 +88,7 @@ export function SidebarNav({ open, onClose }: SidebarNavProps) {
                 pathname.startsWith(item.href) && "bg-muted text-foreground",
               )}
             >
-              <item.icon className="size-4" />
+              <item.icon className="size-4" aria-hidden />
               <span>{item.label}</span>
             </Link>
           ))}

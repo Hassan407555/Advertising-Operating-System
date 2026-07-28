@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPublisherAdAccounts, getPublisherCampaignOptions } from "@/features/publisher/api/publisher-options.api";
 import { getPublisherPlatforms, publishCampaign, validatePublish } from "@/features/publisher/api/publisher.api";
 import { QUERY_KEYS } from "@/constants/query-keys";
@@ -33,7 +33,16 @@ export function useValidatePublishMutation() {
 }
 
 export function usePublishCampaignMutation() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: publishCampaign,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGNS }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGN_DETAILS }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.DASHBOARD }),
+      ]);
+    },
   });
 }

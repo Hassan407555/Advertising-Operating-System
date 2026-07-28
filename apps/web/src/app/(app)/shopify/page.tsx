@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { ShopifyProductsSyncPageContent } from "@/features/shopify/products/components/shopify-products-sync-page";
 
 export default function ShopifyPage() {
-  return (
-    <PlaceholderPage
-      title="Shopify"
-      description="Shopify module implementation is intentionally deferred to a later phase."
-    />
-  );
+  return <ShopifyProductsSyncPageContent />;
 }

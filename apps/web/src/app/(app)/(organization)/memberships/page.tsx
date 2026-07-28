@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { MembershipsPageContent } from "@/features/organizations/components/memberships-page";
 
 export default function MembershipsPage() {
-  return (
-    <PlaceholderPage
-      title="Memberships Route Scaffold"
-      description="Memberships feature implementation is deferred."
-    />
-  );
+  return <MembershipsPageContent />;
 }

@@ -43,7 +43,7 @@ export function AutomationRunsPageContent() {
             className="h-9 min-w-[220px] rounded-md border border-border bg-transparent px-3 text-sm"
             value={status}
             onChange={(event) => {
-              setStatus(event.target.value);
+              setStatus((event.target.value || "") as AutomationRunStatus | "");
               setPage(1);
             }}
           >

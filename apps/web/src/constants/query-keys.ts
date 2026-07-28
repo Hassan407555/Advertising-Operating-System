@@ -7,5 +7,8 @@ export const QUERY_KEYS = {
   PUBLISHER: ["publisher"] as const,
   SYNCHRONIZATION: ["synchronization"] as const,
   AUTOMATION_RUNS: ["automation", "runs"] as const,
+  SHOPIFY: ["shopify"] as const,
+  ORGANIZATIONS: ["organizations"] as const,
+  SETTINGS: ["settings"] as const,
   ANALYTICS: ["analytics"] as const,
 } as const;

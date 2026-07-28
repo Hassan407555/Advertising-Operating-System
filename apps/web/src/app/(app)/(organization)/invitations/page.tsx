@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { InvitationsPageContent } from "@/features/organizations/components/invitations-page";
 
 export default function InvitationsPage() {
-  return (
-    <PlaceholderPage
-      title="Invitations Route Scaffold"
-      description="Invitations feature implementation is deferred."
-    />
-  );
+  return <InvitationsPageContent />;
 }

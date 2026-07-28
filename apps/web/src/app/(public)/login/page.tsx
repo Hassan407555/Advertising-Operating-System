@@ -11,13 +11,15 @@ import { FormFieldText } from "@/components/shared/forms/form-field-text";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
+import { getCurrentUser } from "@/features/auth/api/auth.api";
 import { useLoginMutation } from "@/features/auth/hooks/use-auth-mutations";
 import { loginSchema, type LoginSchema } from "@/features/auth/schemas/auth.schemas";
+import { getSafeRedirectPath } from "@/lib/navigation/safe-redirect";
 import { useSession } from "@/providers/session-provider";
 import { getErrorMessage } from "@/utils/errors";
 
 export default function LoginPage() {
-  const { applyAuthLogin, setTokens } = useSession();
+  const { applyAuthLogin, applyCurrentUser, setTokens, setActiveOrganization } = useSession();
   const router = useRouter();
   const params = useSearchParams();
   const mutation = useLoginMutation();
@@ -39,8 +41,15 @@ export default function LoginPage() {
       const payload = await mutation.mutateAsync(values);
       setTokens(payload.tokens);
       applyAuthLogin(payload);
+      try {
+        const currentUser = await getCurrentUser();
+        applyCurrentUser(currentUser);
+        setActiveOrganization(payload.organization.id);
+      } catch {
+        // Keep login payload session if /auth/me hydration fails.
+      }
       toast.success("Logged in successfully.");
-      router.replace(params.get("redirectTo") ?? ROUTES.DASHBOARD);
+      router.replace(getSafeRedirectPath(params.get("redirectTo"), ROUTES.DASHBOARD));
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to login."));
     }

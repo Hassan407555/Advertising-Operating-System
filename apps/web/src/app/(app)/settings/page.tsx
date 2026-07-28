@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { SettingsPageContent } from "@/features/settings/components/settings-page";
 
 export default function SettingsPage() {
-  return (
-    <PlaceholderPage
-      title="Settings Route Scaffold"
-      description="Settings feature implementation is deferred."
-    />
-  );
+  return <SettingsPageContent />;
 }

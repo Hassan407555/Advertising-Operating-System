@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { AnalyticsPageContent } from "@/features/analytics/components/analytics-page";
 
 export default function AnalyticsPage() {
-  return (
-    <PlaceholderPage
-      title="Analytics"
-      description="Analytics module implementation is intentionally deferred to a later phase."
-    />
-  );
+  return <AnalyticsPageContent />;
 }

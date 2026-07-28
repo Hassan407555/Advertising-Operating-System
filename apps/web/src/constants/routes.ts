@@ -25,6 +25,8 @@ export const ROUTES = {
   ANALYTICS_DETAILS: (id: string) => `/analytics/${id}`,
   REPORTS: "/reports",
   SHOPIFY: "/shopify",
+  SHOPIFY_CONNECTIONS: "/shopify/connections",
+  SHOPIFY_DETAILS: "/shopify/details",
   PLATFORM_CONNECTIONS: "/platform-connections",
   PLATFORM_CREDENTIALS: "/platform-credentials",
   AD_ACCOUNTS: "/ad-accounts",

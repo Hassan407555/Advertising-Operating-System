@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageEmpty } from "@/components/shared/states/page-empty";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { usePermission } from "@/hooks/use-permission";
 import { getErrorMessage } from "@/utils/errors";
@@ -102,6 +103,16 @@ export function AutomationWorkflowsPageContent() {
         <Card>
           <h2 className="text-lg font-semibold">Unable to load workflow options</h2>
           <p className="mt-1 text-sm text-muted-foreground">{getErrorMessage(campaignsQuery.error ?? adAccountsQuery.error)}</p>
+          <Button
+            type="button"
+            className="mt-3"
+            onClick={() => {
+              campaignsQuery.refetch();
+              adAccountsQuery.refetch();
+            }}
+          >
+            Retry
+          </Button>
         </Card>
       ) : null}
 
@@ -125,6 +136,9 @@ export function AutomationWorkflowsPageContent() {
         <Card>
           <h2 className="text-lg font-semibold">Unable to load workflow status</h2>
           <p className="mt-1 text-sm text-muted-foreground">{getErrorMessage(workflowQuery.error)}</p>
+          <Button type="button" className="mt-3" onClick={() => workflowQuery.refetch()}>
+            Retry
+          </Button>
         </Card>
       ) : null}
 
