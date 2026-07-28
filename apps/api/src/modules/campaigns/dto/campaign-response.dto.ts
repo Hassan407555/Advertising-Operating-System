@@ -194,4 +194,41 @@ export class CampaignResponseDto {
     required: false,
   })
   adAccount?: AdAccountSummaryDto;
+
+  @ApiProperty({
+    description: 'AI draft provenance when campaign was saved from an AI session',
+    required: false,
+    nullable: true,
+    example: 'ai-session',
+  })
+  source?: string | null;
+
+  @ApiProperty({
+    description: 'AI campaign type (IMAGE | CAROUSEL | VIDEO) when from AI draft',
+    required: false,
+    nullable: true,
+    example: 'IMAGE',
+  })
+  campaignType?: string | null;
+
+  @ApiProperty({
+    description: 'Linked AI session ID when from AI draft',
+    required: false,
+    nullable: true,
+  })
+  aiSessionId?: string | null;
+
+  @ApiProperty({
+    description: 'Shopify store summary when from AI draft',
+    required: false,
+    nullable: true,
+  })
+  store?: { id: string; name: string } | null;
+
+  @ApiProperty({
+    description: 'Shopify product summary when from AI draft',
+    required: false,
+    nullable: true,
+  })
+  product?: { id: string; title: string } | null;
 }

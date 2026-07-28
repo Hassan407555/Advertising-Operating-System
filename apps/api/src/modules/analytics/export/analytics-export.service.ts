@@ -109,7 +109,7 @@ export class AnalyticsExportService {
 
    return {
   report: {
-    title: 'Advertising Operating System',
+    title: 'AI Meta Ads Studio',
     generatedAt: new Date(),
     generatedBy:
       currentUser.email ??

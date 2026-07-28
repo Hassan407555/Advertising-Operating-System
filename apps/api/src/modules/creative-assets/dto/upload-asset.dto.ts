@@ -2,10 +2,10 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
-  IsUUID,
   Min,
 } from 'class-validator';
 
@@ -16,11 +16,13 @@ export class UploadAssetDto {
   assetType: CreativeAssetType;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @IsNotEmpty()
   creativeId?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @IsNotEmpty()
   adId?: string;
 
   @IsOptional()

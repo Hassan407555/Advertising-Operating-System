@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
 
-export default function Home() {
-  // Auth is enforced by proxy + AuthGuard; send users into the app shell.
-  redirect(ROUTES.DASHBOARD);
+export default async function Home() {
+  const cookieStore = await cookies();
+  const hasAccessToken = Boolean(cookieStore.get("aos.access-token")?.value);
+  redirect(hasAccessToken ? ROUTES.DASHBOARD : ROUTES.LOGIN);
 }

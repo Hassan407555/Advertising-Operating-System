@@ -7,7 +7,6 @@ import {
   IsDateString,
   IsOptional,
   IsString,
-  IsUUID,
   MaxLength,
 } from 'class-validator';
 

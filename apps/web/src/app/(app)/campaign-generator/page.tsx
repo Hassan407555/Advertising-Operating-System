@@ -1,5 +1,6 @@
-import { CampaignGeneratorPageContent } from "@/features/campaign-generator/components/campaign-generator-page";
+import { notFound } from "next/navigation";
 
-export default function CampaignGeneratorPage() {
-  return <CampaignGeneratorPageContent />;
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

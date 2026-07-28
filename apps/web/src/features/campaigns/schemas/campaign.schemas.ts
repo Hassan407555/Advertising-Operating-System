@@ -21,8 +21,14 @@ export const createCampaignSchema = z
     objective: z.enum(CAMPAIGN_OBJECTIVE_OPTIONS),
     buyingType: z.enum(CAMPAIGN_BUYING_TYPE_OPTIONS),
     currency: z.string(),
-    dailyBudget: z.coerce.number().min(0).optional(),
-    lifetimeBudget: z.coerce.number().min(0).optional(),
+    dailyBudget: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(0).optional(),
+    ),
+    lifetimeBudget: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(0).optional(),
+    ),
     startDate: z.string().optional().or(z.literal("")),
     endDate: z.string().optional().or(z.literal("")),
     isActive: z.boolean(),

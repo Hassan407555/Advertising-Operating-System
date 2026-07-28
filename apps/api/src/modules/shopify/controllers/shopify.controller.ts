@@ -62,6 +62,15 @@ export class ShopifyController {
       dto.code,
       dto.shop,
       dto.state,
+      dto.hmac,
+      {
+        code: dto.code,
+        shop: dto.shop,
+        state: dto.state,
+        host: dto.host,
+        timestamp: dto.timestamp,
+        hmac: dto.hmac,
+      },
     );
   }
 

@@ -1,5 +1,6 @@
-import { SynchronizationPageContent } from "@/features/synchronization/components/synchronization-page";
+import { notFound } from "next/navigation";
 
-export default function SynchronizationPage() {
-  return <SynchronizationPageContent />;
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

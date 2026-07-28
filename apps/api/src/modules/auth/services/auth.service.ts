@@ -238,9 +238,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
-    // TODO:
-    // Support organization switching.
-    // Currently the first membership is selected.
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('User is inactive.');
+    }
+
+    // Login selects the earliest membership; callers can switch via
+    // POST /auth/switch-organization after authentication.
 
     const membership = user.memberships[0];
 
@@ -256,6 +259,11 @@ export class AuthService {
       membership.organizationId,
       membership.role,
     );
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
 
     await this.logAudit({
       organizationId: membership.organizationId,

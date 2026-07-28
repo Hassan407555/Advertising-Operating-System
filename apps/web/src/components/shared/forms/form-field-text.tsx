@@ -20,13 +20,26 @@ export function FormFieldText<T extends FieldValues>({
   placeholder,
   type = "text",
 }: FormFieldTextProps<T>) {
+  const errorId = `${String(name)}-error`;
+
   return (
     <div className="space-y-1">
       <label className="text-sm font-medium" htmlFor={name}>
         {label}
       </label>
-      <Input id={name} type={type} placeholder={placeholder} {...register(name)} />
-      {error ? <p className="text-xs text-red-400">{error}</p> : null}
+      <Input
+        id={name}
+        type={type}
+        placeholder={placeholder}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+        {...register(name)}
+      />
+      {error ? (
+        <p id={errorId} role="alert" className="text-xs text-red-400">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -1,10 +1,6 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { notFound } from "next/navigation";
 
-export default function AutomationPipelinesPage() {
-  return (
-    <PlaceholderPage
-      title="Automation Pipelines"
-      description="Automation module implementation is intentionally deferred to a later phase."
-    />
-  );
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

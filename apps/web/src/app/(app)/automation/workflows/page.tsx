@@ -1,5 +1,6 @@
-import { AutomationWorkflowsPageContent } from "@/features/automation/components/automation-workflows-page";
+import { notFound } from "next/navigation";
 
-export default function AutomationWorkflowsPage() {
-  return <AutomationWorkflowsPageContent />;
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

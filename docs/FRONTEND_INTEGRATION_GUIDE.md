@@ -216,9 +216,9 @@ Advertising Operating System backend provides end-to-end APIs for:
 - **URL:** `/api/auth/switch-organization`
 - **Auth required:** Yes (`JwtAuthGuard`)
 - **Request DTO:** `SwitchOrganizationDto`
-  - `organizationId: uuid`
+  - `organizationId: string` (CUID; must match an organization the user belongs to)
 - **Response DTO:** runtime shape with selected org, membership, and rotated tokens
-- **Errors:** 401 no membership in target org
+- **Errors:** 401 no membership in target org; 400 invalid payload
 
 ### 2.7 Forgot/reset password
 - **Forgot Password:** not implemented
@@ -345,6 +345,32 @@ Token lifecycle is handled by `platform-credentials` endpoints and Shopify OAuth
 | DELETE | `/api/campaigns/:id` | JWT | `OWNER/ADMIN` | none | void |
 
 Supports filtering, sorting, and pagination via `CampaignQueryDto`.
+
+### Phase 8 — Campaign History & Draft Management
+
+**List foundation:** queries use indexed columns (`organizationId`, `status`, `deletedAt`). Default history UI requests `status=DRAFT`.
+
+**Optional filters** (in addition to existing search / status / objective / platform):
+
+| Query param | Purpose |
+|---|---|
+| `storeId` | Lightweight metadata match on AI-draft provenance (`metadata.shopifyStoreId`) |
+| `campaignType` | `IMAGE` \| `CAROUSEL` \| `VIDEO` via draft metadata |
+| `sortBy` + `sortOrder` | Prefer `createdAt` / `updatedAt` for Newest / Oldest / Recently Updated |
+
+**Response enrichment** (from Phase 7 campaign metadata + batch lookups; not used as list foundation):
+
+| Field | Meaning |
+|---|---|
+| `source` | e.g. `ai-session` |
+| `campaignType` | AI ad type |
+| `aiSessionId` | Linked AI session |
+| `store` | `{ id, name }` Shopify store summary |
+| `product` | `{ id, title }` product summary |
+
+**Delete draft behavior:** soft-deletes Campaign → AdSets → Ads → Creatives in one transaction. If `metadata.aiSessionId` is present, clears `workflowContext.draftCampaignIds` on that AI Session. Does **not** delete the AI Session or `generatedCampaign`.
+
+**UI:** `/campaigns` is draft history. Row / Open → Campaign Details. Continue Editing → AI Session review when `aiSessionId` is present. Members are read-only; Owner/Admin may edit or delete.
 
 ---
 
@@ -818,6 +844,53 @@ Status-code caveat:
 - [x] Publisher/Sync failure semantics documented
 - [x] Mermaid sequence diagrams included
 - [x] Missing requested-but-absent APIs explicitly called out
+
+---
+
+## AI Sessions (Advertise Product)
+
+Store-scoped AI campaign sessions. Products UI must start via Advertising Entry (`POST /api/stores/:storeId/products/:productId/advertise`), not by creating sessions directly.
+
+| Method | Path | Roles | Notes |
+|---|---|---|---|
+| POST | `/api/ai-sessions` | OWNER/ADMIN/MEMBER | Internal/testing create or reuse |
+| GET | `/api/ai-sessions` | OWNER/ADMIN/MEMBER/VIEWER | List (filter by storeId/productId/status) |
+| GET | `/api/ai-sessions/:id` | OWNER/ADMIN/MEMBER/VIEWER | Snapshot + messages |
+| GET | `/api/ai-sessions/:id/messages` | OWNER/ADMIN/MEMBER/VIEWER | Messages |
+| POST | `/api/ai-sessions/:id/resume` | OWNER/ADMIN/MEMBER | Resume |
+| POST | `/api/ai-sessions/:id/advance` | OWNER/ADMIN/MEMBER | Interview step (`{ value }`) |
+| POST | `/api/ai-sessions/:id/generate` | OWNER/ADMIN/MEMBER | **Phase 6** — Gemini Meta campaign JSON |
+| POST | `/api/ai-sessions/:id/save-draft` | OWNER/ADMIN | **Phase 7** — Save/update draft entities from reviewed payload |
+| POST | `/api/ai-sessions/:id/cancel` | OWNER/ADMIN/MEMBER | Cancel |
+
+### Phase 6 generate behavior
+
+- Requires session status `READY_FOR_ANALYSIS` (interview complete).
+- Collects product + analytics + store advertising config + interview answers.
+- Calls Gemini; validates structured JSON by ad type (`IMAGE` / `CAROUSEL` / `VIDEO`).
+- On success: stores result in `workflowContext.generatedCampaign` and sets status to `REVIEWING`.
+- Does **not** create Campaign / AdSet / Ad / Creative draft entities (Phase 7 Save Draft).
+- On failure: status `FAILED`, `errorMessage` set, no partial `generatedCampaign` saved.
+
+Requires `GEMINI_API_KEY` (`AI_PROVIDER=GEMINI`).
+
+### Phase 7 save-draft behavior
+
+- Requires session status `REVIEWING` and existing `workflowContext.generatedCampaign`.
+- Body: `{ payload: <reviewed GeneratedCampaignPayload> }` (edited Image / Carousel / Video JSON).
+- Validates payload; maps into existing entities: Creative → Campaign → AdSet → Ad (all `DRAFT`).
+- Budget stored on **Campaign only** (not duplicated on AdSet).
+- `Campaign` / `AdSet` / `Ad` require `externalId` in schema — uses stable `pending:ai-session:{sessionId}:{kind}` (not a Meta ID). Creative `externalId` left unset.
+- Stores IDs in `workflowContext.draftCampaignIds`: `{ campaignId, adSetId, adId, creativeId }`.
+- Session status stays `REVIEWING` (a saved draft is not approved/published). `currentPhase` becomes `DRAFT_SAVED`.
+- **Idempotent:** if `draftCampaignIds` already exist, updates those entities instead of creating duplicates.
+- Roles: `OWNER` / `ADMIN` only (Members may generate/review, not save).
+
+### Phase 8 draft history
+
+- Use `GET /api/campaigns?status=DRAFT` as the Campaign History list (Campaign is the primary record).
+- Enriched fields (`store`, `product`, `campaignType`, `aiSessionId`) come from Phase 7 metadata + lookups.
+- `DELETE /api/campaigns/:id` cascades soft-delete of draft AdSets/Ads/Creatives and clears `draftCampaignIds` on the linked AI Session without deleting the session or `generatedCampaign`.
 
 ---
 

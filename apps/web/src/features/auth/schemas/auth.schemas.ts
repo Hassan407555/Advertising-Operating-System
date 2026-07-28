@@ -1,21 +1,27 @@
 import { z } from "zod";
 
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters.")
+  .max(100, "Password must be at most 100 characters.")
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
+    message: "Password must contain at least one uppercase letter, one lowercase letter, and one number.",
+  });
+
 export const loginSchema = z.object({
-  email: z.email(),
-  password: z.string().min(8),
+  email: z.email("Invalid email address."),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters.")
+    .max(100, "Password must be at most 100 characters."),
 });
 
 export const registerSchema = z.object({
   organizationName: z.string().min(2).max(100),
-  email: z.email(),
+  email: z.email("Invalid email address."),
   firstName: z.string().min(2).max(100),
   lastName: z.string().min(2).max(100),
-  password: z
-    .string()
-    .min(8)
-    .regex(/[A-Z]/)
-    .regex(/[a-z]/)
-    .regex(/[0-9]/),
+  password: passwordSchema,
 });
 
 export type LoginSchema = z.infer<typeof loginSchema>;

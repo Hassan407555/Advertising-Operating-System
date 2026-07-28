@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageEmpty } from "@/components/shared/states/page-empty";
+import { PageError } from "@/components/shared/states/page-error";
+import { PageHeader } from "@/components/shared/page-header";
 import { ROUTES } from "@/constants/routes";
 import { usePermission } from "@/hooks/use-permission";
 import { AppError } from "@/lib/api/errors";
@@ -13,7 +15,11 @@ import { getErrorMessage } from "@/utils/errors";
 import { ShopifyConnectForm } from "@/features/shopify/components/shopify-connect-form";
 import { ShopifyConnectionHealth } from "@/features/shopify/components/shopify-connection-health";
 import { ShopifyConnectionsTable } from "@/features/shopify/components/shopify-connections-table";
-import { useConnectShopifyMutation, useDisconnectShopifyMutation, useShopifyConnectionQuery } from "@/features/shopify/hooks/use-shopify";
+import {
+  useConnectShopifyMutation,
+  useDisconnectShopifyMutation,
+  useShopifyConnectionQuery,
+} from "@/features/shopify/hooks/use-shopify";
 import type { ConnectShopifyFormValues } from "@/features/shopify/schemas/shopify.schemas";
 
 export function ShopifyPageContent() {
@@ -40,7 +46,7 @@ export function ShopifyPageContent() {
       }
       window.location.href = response.authorizationUrl;
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to start Shopify OAuth."));
+      toast.error(getErrorMessage(error, "Failed to start Shopify connection."));
     }
   };
 
@@ -53,9 +59,9 @@ export function ShopifyPageContent() {
     try {
       await disconnectMutation.mutateAsync();
       await connectionQuery.refetch();
-      toast.success("Shopify store disconnected.");
+      toast.success("Store disconnected.");
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to disconnect Shopify store."));
+      toast.error(getErrorMessage(error, "Failed to disconnect store."));
     }
   };
 
@@ -64,26 +70,36 @@ export function ShopifyPageContent() {
   }
 
   const connectionError =
-    connectionQuery.isError && !(connectionQuery.error instanceof AppError && connectionQuery.error.statusCode === 404)
+    connectionQuery.isError &&
+    !(connectionQuery.error instanceof AppError && connectionQuery.error.statusCode === 404)
       ? getErrorMessage(connectionQuery.error)
       : undefined;
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">Shopify Connections</h1>
-          <p className="text-sm text-muted-foreground">Establish and manage your Shopify store connection.</p>
-        </div>
-        <Link href={ROUTES.SHOPIFY_DETAILS}>
-          <Button type="button" variant="secondary" disabled={!connection}>
-            View Connection Details
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Shopify"
+        description="Connect a Shopify store to sync products and generate Meta ads."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Link href={ROUTES.SHOPIFY}>
+              <Button type="button" variant="secondary">
+                Sync Products
+              </Button>
+            </Link>
+            <Link href={ROUTES.SHOPIFY_DETAILS}>
+              <Button type="button" variant="secondary" disabled={!connection}>
+                Connection Details
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-semibold">{connection ? "Reconnect Shopify Store" : "Connect Shopify Store"}</h2>
+        <h2 className="text-lg font-semibold">
+          {connection ? "Reconnect Shopify Store" : "Connect Shopify Store"}
+        </h2>
         <ShopifyConnectForm
           loading={connectMutation.isPending}
           serverError={connectMutation.isError ? getErrorMessage(connectMutation.error) : undefined}
@@ -92,17 +108,15 @@ export function ShopifyPageContent() {
       </Card>
 
       {connectionError ? (
-        <Card>
-          <h2 className="text-lg font-semibold">Unable to load Shopify connection</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{connectionError}</p>
-          <Button type="button" className="mt-3" onClick={() => connectionQuery.refetch()}>
-            Retry
-          </Button>
-        </Card>
+        <PageError
+          title="Unable to load Shopify connection"
+          message={connectionError}
+          onRetry={() => connectionQuery.refetch()}
+        />
       ) : null}
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-semibold">Connections</h2>
+        <h2 className="text-lg font-semibold">Connected stores</h2>
         <ShopifyConnectionsTable connection={connection} loading={connectionQuery.isPending} />
       </Card>
 
@@ -110,23 +124,29 @@ export function ShopifyPageContent() {
 
       {connection ? (
         <Card className="space-y-2">
-          <h3 className="text-lg font-semibold">Connection Actions</h3>
+          <h3 className="text-lg font-semibold">Connection actions</h3>
           <p className="text-sm text-muted-foreground">
-            Disconnect deactivates the current Shopify credentials. Reconnect by running the OAuth flow again.
+            Disconnect deactivates the current Shopify credentials. Reconnect by running the connection
+            flow again.
           </p>
           <div className="flex flex-wrap justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => connectionQuery.refetch()}>
               Refresh
             </Button>
-            <Button type="button" variant="outline" onClick={handleDisconnect} disabled={disconnectMutation.isPending}>
-              {disconnectMutation.isPending ? "Disconnecting..." : "Disconnect Store"}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDisconnect}
+              disabled={!canManage || disconnectMutation.isPending}
+            >
+              {disconnectMutation.isPending ? "Disconnecting…" : "Disconnect Store"}
             </Button>
           </div>
         </Card>
       ) : (
         <PageEmpty
-          title="No connected Shopify store"
-          description="Connect a Shopify store to enable Shopify-related workflows."
+          title="No stores connected"
+          description="Connect a Shopify store to sync products and start generating AI campaigns."
         />
       )}
     </div>

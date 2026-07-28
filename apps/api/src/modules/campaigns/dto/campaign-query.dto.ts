@@ -104,6 +104,24 @@ export class CampaignQueryDto {
   isActive?: boolean;
 
   @ApiPropertyOptional({
+    description:
+      'Filter by Shopify store ID (lightweight metadata match for AI drafts)',
+    example: 'clxstore123',
+  })
+  @IsOptional()
+  @IsString()
+  storeId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Filter by AI campaign type (IMAGE | CAROUSEL | VIDEO) via draft metadata',
+    enum: ['IMAGE', 'CAROUSEL', 'VIDEO'],
+  })
+  @IsOptional()
+  @IsIn(['IMAGE', 'CAROUSEL', 'VIDEO'])
+  campaignType?: 'IMAGE' | 'CAROUSEL' | 'VIDEO';
+
+  @ApiPropertyOptional({
     enum: CAMPAIGN_SORT_FIELDS,
     default: DEFAULT_SORT_BY,
   })

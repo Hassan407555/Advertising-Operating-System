@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { getCurrentUser } from "@/features/auth/api/auth.api";
 import { useLogoutMutation, useSwitchOrganizationMutation } from "@/features/auth/hooks/use-auth-mutations";
+import { StoreSwitcher } from "@/features/stores/components/store-switcher";
 import { useSession } from "@/providers/session-provider";
 import { getErrorMessage } from "@/utils/errors";
 
@@ -77,10 +78,12 @@ export function TopBar({ setSidebarOpen }: TopBarProps) {
         >
           <Menu className="size-4" />
         </button>
-        <div className="text-sm text-muted-foreground">Advertising Operating System</div>
+        <div className="text-sm text-muted-foreground">AI Meta Ads Studio</div>
       </div>
 
       <div className="flex items-center gap-2">
+        <StoreSwitcher />
+
         {memberships.length > 1 ? (
           <label className="flex items-center gap-2 text-sm">
             <span className="sr-only">Select organization</span>

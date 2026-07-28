@@ -15,7 +15,6 @@ export interface DashboardSummary {
   };
   advertising: {
     metaCampaigns: number;
-    tiktokCampaigns: number;
   };
   automation: {
     totalWorkflowRuns: number;
@@ -48,6 +47,10 @@ export interface DashboardSummary {
     products: number;
     collections: number;
     storeConnected: boolean;
+    connectedStores: number;
+  };
+  aiSessions: {
+    total: number;
   };
   platforms: {
     meta: {
@@ -57,16 +60,32 @@ export interface DashboardSummary {
       accountName: string | null;
       lastSyncedAt: string | null;
     };
-    tiktok: {
-      connected: boolean;
-      tokenStatus: string;
-      connectionStatus: string | null;
-      accountName: string | null;
-      lastSyncedAt: string | null;
-    };
   };
   recent: {
-    campaigns: Array<{ id: string; name: string; status: string; platform?: string | null; updatedAt: string }>;
+    campaigns: Array<{
+      id: string;
+      name: string;
+      status: string;
+      platform?: string | null;
+      updatedAt: string;
+    }>;
+    aiSessions: Array<{
+      id: string;
+      status: string;
+      currentPhase: string;
+      productId: string;
+      productTitle: string | null;
+      shopifyStoreId: string;
+      storeName: string | null;
+      lastActivityAt: string;
+    }>;
+    stores: Array<{
+      id: string;
+      name: string;
+      shopDomain: string;
+      status: string;
+      updatedAt: string;
+    }>;
     automationRuns: Array<{
       id: string;
       pipelineId: string;

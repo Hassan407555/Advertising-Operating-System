@@ -1,4 +1,4 @@
-const FALLBACK_API_URL = "http://localhost:3000/api";
+const FALLBACK_API_URL = "http://localhost:3001/api";
 
 const configuredBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 

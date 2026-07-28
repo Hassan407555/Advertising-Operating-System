@@ -5,8 +5,27 @@ export const ROUTES = {
   UNAUTHORIZED: "/unauthorized",
   FORBIDDEN: "/forbidden",
   DASHBOARD: "/dashboard",
+  PRODUCTS: "/products",
   CAMPAIGNS: "/campaigns",
   CAMPAIGN_DETAILS: (id: string) => `/campaigns/${id}`,
+  AI_SESSIONS: "/ai-sessions",
+  AI_SESSION_DETAILS: (id: string) => `/ai-sessions/${id}`,
+  ANALYTICS: "/analytics",
+  ANALYTICS_DETAILS: (id: string) => `/analytics/${id}`,
+  SHOPIFY: "/shopify",
+  SHOPIFY_CONNECTIONS: "/shopify/connections",
+  SHOPIFY_DETAILS: "/shopify/details",
+  ADVERTISING_CONFIGURATION: "/advertising",
+  ORGANIZATION: "/organization",
+  MEMBERS: "/members",
+  INVITATIONS: "/invitations",
+  PROFILE: "/profile",
+  SETTINGS: "/settings",
+
+  /**
+   * @deprecated Legacy Advertising OS routes — pages return 404.
+   * Kept temporarily for deep-link compatibility until Phase 10 cleanup.
+   */
   AD_SETS: "/ad-sets",
   ADS: "/ads",
   CREATIVES: "/creatives",
@@ -21,21 +40,11 @@ export const ROUTES = {
   AUTOMATION_RUNS: "/automation/runs",
   AUTOMATION_RUN_DETAILS: (id: string) => `/automation/runs/${id}`,
   AUTOMATION_WORKFLOWS: "/automation/workflows",
-  ANALYTICS: "/analytics",
-  ANALYTICS_DETAILS: (id: string) => `/analytics/${id}`,
   REPORTS: "/reports",
-  SHOPIFY: "/shopify",
-  SHOPIFY_CONNECTIONS: "/shopify/connections",
-  SHOPIFY_DETAILS: "/shopify/details",
   PLATFORM_CONNECTIONS: "/platform-connections",
   PLATFORM_CREDENTIALS: "/platform-credentials",
   AD_ACCOUNTS: "/ad-accounts",
-  ORGANIZATION: "/organization",
-  MEMBERS: "/members",
-  INVITATIONS: "/invitations",
   MEMBERSHIPS: "/memberships",
-  PROFILE: "/profile",
-  SETTINGS: "/settings",
 } as const;
 
 export const PUBLIC_ROUTES = [ROUTES.LOGIN, ROUTES.REGISTER, ROUTES.UNAUTHORIZED];

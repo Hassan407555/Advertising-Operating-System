@@ -1,5 +1,6 @@
-import { AiCopyPageContent } from "@/features/ai-copy/components/ai-copy-page";
+import { notFound } from "next/navigation";
 
-export default function AiCopyPage() {
-  return <AiCopyPageContent />;
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

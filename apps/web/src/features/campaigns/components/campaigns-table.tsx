@@ -1,14 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { type ColumnDef, type RowSelectionState, type SortingState } from "@tanstack/react-table";
+import Link from "next/link";
+import { type ColumnDef, type SortingState } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/shared/dialogs/confirm-dialog";
 import { DataTable } from "@/components/shared/data-table/data-table";
 import { DataTablePagination } from "@/components/shared/data-table/data-table-pagination";
 import { PageEmpty } from "@/components/shared/states/page-empty";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
+import { useDeleteCampaignMutation } from "@/features/campaigns/hooks/use-campaigns";
+import { usePermission } from "@/hooks/use-permission";
 import type { Campaign } from "@/types/campaign";
+import { getErrorMessage } from "@/utils/errors";
 import { formatDateTime } from "@/utils/formatters";
 
 interface CampaignsTableProps {
@@ -21,6 +28,8 @@ interface CampaignsTableProps {
   sortOrder: "asc" | "desc";
   onSortChange: (sortBy: string, sortOrder: "asc" | "desc") => void;
   onPageChange: (page: number) => void;
+  /** True when no filters are applied beyond the default draft history view. */
+  showGenerateCta?: boolean;
 }
 
 function SortHeader({
@@ -59,33 +68,34 @@ export function CampaignsTable({
   sortOrder,
   onSortChange,
   onPageChange,
+  showGenerateCta = true,
 }: CampaignsTableProps) {
   const router = useRouter();
-  const [selection, setSelection] = useState<RowSelectionState>({});
+  const canDelete = usePermission("delete");
+  const deleteMutation = useDeleteCampaignMutation();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [deleteTarget, setDeleteTarget] = useState<Campaign | null>(null);
 
-  const selectedCount = Object.keys(selection).length;
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+    try {
+      await deleteMutation.mutateAsync(deleteTarget.id);
+      toast.success("Draft deleted.");
+      setDeleteTarget(null);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete draft."));
+    }
+  };
 
   const columns = useMemo<ColumnDef<Campaign>[]>(
     () => [
       {
-        id: "select",
-        header: () => null,
-        cell: ({ row }) => (
-          <input
-            aria-label={`Select campaign ${row.original.name}`}
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={row.getToggleSelectedHandler()}
-            onClick={(event) => event.stopPropagation()}
-          />
-        ),
-      },
-      {
         accessorKey: "name",
         header: () => (
           <SortHeader
-            label="Name"
+            label="Campaign"
             field="name"
             sortBy={sortBy}
             sortOrder={sortOrder}
@@ -94,21 +104,19 @@ export function CampaignsTable({
         ),
       },
       {
-        id: "platform",
-        header: "Platform",
-        cell: ({ row }) => row.original.adAccount?.platform ?? "N/A",
+        id: "campaignType",
+        header: "Type",
+        cell: ({ row }) => row.original.campaignType ?? "—",
       },
       {
-        accessorKey: "objective",
-        header: () => (
-          <SortHeader
-            label="Objective"
-            field="objective"
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onChange={onSortChange}
-          />
-        ),
+        id: "product",
+        header: "Product",
+        cell: ({ row }) => row.original.product?.title ?? "—",
+      },
+      {
+        id: "store",
+        header: "Store",
+        cell: ({ row }) => row.original.store?.name ?? "—",
       },
       {
         accessorKey: "status",
@@ -121,22 +129,13 @@ export function CampaignsTable({
             onChange={onSortChange}
           />
         ),
-      },
-      {
-        id: "organization",
-        header: "Organization",
-        cell: ({ row }) => row.original.organization?.name ?? "N/A",
-      },
-      {
-        id: "createdBy",
-        header: "Created By",
-        cell: () => "N/A",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
         accessorKey: "createdAt",
         header: () => (
           <SortHeader
-            label="Created Date"
+            label="Created"
             field="createdAt"
             sortBy={sortBy}
             sortOrder={sortOrder}
@@ -149,7 +148,7 @@ export function CampaignsTable({
         accessorKey: "updatedAt",
         header: () => (
           <SortHeader
-            label="Updated Date"
+            label="Updated"
             field="updatedAt"
             sortBy={sortBy}
             sortOrder={sortOrder}
@@ -158,34 +157,82 @@ export function CampaignsTable({
         ),
         cell: ({ row }) => formatDateTime(row.original.updatedAt),
       },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const campaign = row.original;
+          return (
+            <div className="flex flex-wrap gap-1" onClick={(event) => event.stopPropagation()}>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => router.push(ROUTES.CAMPAIGN_DETAILS(campaign.id))}
+              >
+                Open
+              </Button>
+              {campaign.aiSessionId ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => router.push(ROUTES.AI_SESSION_DETAILS(campaign.aiSessionId!))}
+                >
+                  Continue Editing
+                </Button>
+              ) : null}
+              {canDelete ? (
+                <Button type="button" size="sm" variant="secondary" onClick={() => setDeleteTarget(campaign)}>
+                  Delete
+                </Button>
+              ) : null}
+            </div>
+          );
+        },
+      },
     ],
-    [onSortChange, sortBy, sortOrder],
+    [canDelete, onSortChange, router, sortBy, sortOrder],
   );
 
   if (!loading && data.length === 0) {
-    return <PageEmpty title="No campaigns found" description="Create a campaign to get started." />;
+    return (
+      <PageEmpty
+        title="No draft campaigns yet"
+        description="Generate your first AI campaign from a product to see it here."
+        action={
+          showGenerateCta ? (
+            <Link href={ROUTES.PRODUCTS}>
+              <Button type="button">Generate your first AI campaign</Button>
+            </Link>
+          ) : undefined
+        }
+      />
+    );
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{selectedCount} selected</p>
-        <Button type="button" variant="secondary" disabled>
-          Bulk actions unavailable
-        </Button>
-      </div>
       <DataTable
         columns={columns}
         data={data}
         loading={loading}
         onRowClick={(row) => router.push(ROUTES.CAMPAIGN_DETAILS(row.id))}
-        rowSelection={selection}
-        onRowSelectionChange={setSelection}
         getRowId={(row) => row.id}
         sorting={sorting}
         onSortingChange={setSorting}
       />
       <DataTablePagination page={page} limit={limit} total={total} onPageChange={onPageChange} />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete draft campaign?"
+        description="This removes the Campaign, Ad Set, Ad, and Creative draft entities. The linked AI Session and its generated campaign JSON are kept so you can review or save again later."
+        confirmLabel="Delete draft"
+        confirming={deleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

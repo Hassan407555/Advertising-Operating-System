@@ -16,15 +16,19 @@ import {
   type CreateInvitationFormValues,
 } from "@/features/organizations/schemas/organization.schemas";
 import { useAcceptInvitationMutation, useCreateInvitationMutation } from "@/features/organizations/hooks/use-organizations";
+import { getCurrentUser } from "@/features/auth/api/auth.api";
 import { usePermission } from "@/hooks/use-permission";
 import { useSession } from "@/providers/session-provider";
 import { getErrorMessage } from "@/utils/errors";
 import { formatDateTime } from "@/utils/formatters";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/constants/query-keys";
 
 export function InvitationsPageContent() {
   const canView = usePermission("view");
   const canManage = usePermission("manage");
-  const { organization } = useSession();
+  const queryClient = useQueryClient();
+  const { organization, applyCurrentUser } = useSession();
   const createInvitationMutation = useCreateInvitationMutation();
   const acceptInvitationMutation = useAcceptInvitationMutation();
 
@@ -142,7 +146,15 @@ export function InvitationsPageContent() {
           <p className="text-sm">
             Expires: <span className="text-muted-foreground">{formatDateTime(createInvitationMutation.data.invitation.expiresAt)}</span>
           </p>
-          <p className="text-xs text-muted-foreground">Invitation token returned by backend has been copied to clipboard when possible.</p>
+          <p className="text-sm">
+            Invitation Token:{" "}
+            <span data-testid="invitation-token" className="break-all text-muted-foreground">
+              {createInvitationMutation.data.token}
+            </span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Invitation token is shown above and copied to clipboard when possible.
+          </p>
         </Card>
       ) : null}
 
@@ -163,6 +175,9 @@ export function InvitationsPageContent() {
             }
             try {
               await acceptInvitationMutation.mutateAsync(parsed.data);
+              const currentUser = await getCurrentUser();
+              applyCurrentUser(currentUser);
+              await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORGANIZATIONS });
               toast.success("Invitation accepted.");
               acceptForm.reset();
             } catch (error) {

@@ -1,5 +1,6 @@
-import { AutomationRunsPageContent } from "@/features/automation/components/automation-runs-page";
+import { notFound } from "next/navigation";
 
-export default function AutomationRunsPage() {
-  return <AutomationRunsPageContent />;
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

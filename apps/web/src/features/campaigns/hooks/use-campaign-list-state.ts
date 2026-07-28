@@ -16,9 +16,9 @@ export function useCampaignListState() {
       page: Number(params.get("page") ?? 1),
       limit: Number(params.get("limit") ?? DEFAULT_LIMIT),
       search: params.get("search") ?? undefined,
-      status: (params.get("status") as CampaignListQuery["status"]) ?? undefined,
-      objective: (params.get("objective") as CampaignListQuery["objective"]) ?? undefined,
-      platform: (params.get("platform") as CampaignListQuery["platform"]) ?? undefined,
+      status: (params.get("status") as CampaignListQuery["status"]) ?? "DRAFT",
+      storeId: params.get("storeId") ?? undefined,
+      campaignType: (params.get("campaignType") as CampaignListQuery["campaignType"]) ?? undefined,
       sortBy: (params.get("sortBy") as CampaignListQuery["sortBy"]) ?? "createdAt",
       sortOrder: (params.get("sortOrder") as CampaignListQuery["sortOrder"]) ?? "desc",
     };

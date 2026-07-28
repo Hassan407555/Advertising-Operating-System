@@ -38,6 +38,8 @@ model Organization {
   automationRuns      AutomationRun[]
   automationSteps     AutomationStep[]
   publishJobs         PublishJob[]
+  storeAdvertisingConfigurations StoreAdvertisingConfiguration[]
+  aiSessions                     AiSession[]
 }
 
 model User {
@@ -69,6 +71,7 @@ model User {
   apiKeys                    ApiKey[]
   createdReports             Report[]             @relation("ReportCreator")
   requestedPublishJobs       PublishJob[]         @relation("PublishJobRequester")
+  createdAiSessions          AiSession[]          @relation("AiSessionCreator")
 }
 
 model Membership {
@@ -240,6 +243,14 @@ enum AuditAction {
   AUTOMATION_RUN_STARTED
   AUTOMATION_RUN_COMPLETED
   AUTOMATION_RUN_FAILED
+
+  // AI Sessions
+  AI_SESSION_CREATED
+  AI_SESSION_RESUMED
+  AI_SESSION_ADVANCED
+  AI_SESSION_COMPLETED
+  AI_SESSION_FAILED
+  AI_SESSION_CANCELLED
 }
 
 enum StorageProvider {
@@ -266,6 +277,7 @@ enum AuditEntity {
   CREATIVE_ASSET
   API_KEY
   AUTOMATION
+  AI_SESSION
 }
 
 // ============================================
@@ -535,6 +547,10 @@ model PlatformConnection {
   credentials     PlatformCredential[]
   adAccounts      AdAccount[]
   shopifyProducts ShopifyProduct[]
+  shopifyAdvertisingConfiguration StoreAdvertisingConfiguration? @relation("ShopifyStoreAdvertisingConfig")
+  metaAdvertisingConfigurations   StoreAdvertisingConfiguration[] @relation("MetaStoreAdvertisingConfig")
+  aiSessions                      AiSession[]
+  campaigns                       Campaign[] @relation("CampaignShopifyStore")
 
   @@unique([organizationId, platform, accountId])
   @@index([organizationId, deletedAt])
@@ -599,6 +615,7 @@ model AdAccount {
   platformConnection PlatformConnection @relation(fields: [platformConnectionId], references: [id], onDelete: Restrict)
   campaigns          Campaign[]
   publishJobs        PublishJob[]
+  storeAdvertisingConfigurations StoreAdvertisingConfiguration[]
 
   @@unique([organizationId, platformConnectionId, externalId])
   @@unique([platformConnectionId, externalId])
@@ -616,6 +633,7 @@ model Campaign {
   id                   String             @id @default(cuid())
   organizationId       String // RESTORED for fast tenant filtering
   adAccountId          String
+  shopifyStoreId       String?
   externalId           String             @db.VarChar(255)
   externalName         String?            @db.VarChar(255) // Renamed
   externalStatus       String?            @db.VarChar(50) // Renamed
@@ -647,6 +665,7 @@ model Campaign {
 
   organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   adAccount          AdAccount           @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  shopifyStore       PlatformConnection? @relation("CampaignShopifyStore", fields: [shopifyStoreId], references: [id], onDelete: SetNull)
   adSets             AdSet[]
   analyticsSnapshots AnalyticsSnapshot[]
   publishJobs        PublishJob[]
@@ -658,6 +677,8 @@ model Campaign {
   @@index([organizationId, slug])
   @@index([organizationId, deletedAt])
   @@index([organizationId])
+  @@index([organizationId, shopifyStoreId])
+  @@index([shopifyStoreId])
   @@index([adAccountId])
   @@index([status])
   @@index([objective])
@@ -1192,6 +1213,46 @@ model PublishJob {
   @@index([organizationId, createdAt])
 }
 
+// ============================================
+// STORE ADVERTISING CONFIGURATION
+// Shopify store ↔ Meta advertising resource IDs (no display-name duplication)
+// ============================================
+
+model StoreAdvertisingConfiguration {
+  id             String @id @default(cuid())
+  organizationId String
+
+  /// Shopify PlatformConnection id for this store
+  shopifyStoreId String @unique
+
+  /// Optional Meta PlatformConnection used for this store
+  metaPlatformConnectionId String?
+
+  /// External Meta Business Manager ID
+  metaBusinessId String? @db.VarChar(255)
+
+  /// Local AdAccount row selected for this store
+  adAccountId String?
+
+  /// External Meta resource IDs only
+  facebookPageId     String? @db.VarChar(255)
+  instagramAccountId String? @db.VarChar(255)
+  pixelId            String? @db.VarChar(255)
+  catalogId          String? @db.VarChar(255)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization           Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  shopifyStore           PlatformConnection  @relation("ShopifyStoreAdvertisingConfig", fields: [shopifyStoreId], references: [id], onDelete: Cascade)
+  metaPlatformConnection PlatformConnection? @relation("MetaStoreAdvertisingConfig", fields: [metaPlatformConnectionId], references: [id], onDelete: SetNull)
+  adAccount              AdAccount?          @relation(fields: [adAccountId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([metaPlatformConnectionId])
+  @@index([adAccountId])
+}
+
 model ShopifyProduct {
   id String @id @default(cuid())
 
@@ -1232,6 +1293,8 @@ model ShopifyProduct {
   variants ShopifyVariant[]
 
   images ShopifyImage[]
+
+  aiSessions AiSession[]
 
   @@unique([platformConnectionId, externalId])
   @@index([organizationId])
@@ -1303,4 +1366,98 @@ model ShopifyImage {
 
   @@unique([productId, externalId])
   @@index([productId])
+}
+
+// ============================================
+// AI SESSION (workflow engine backbone)
+// ============================================
+
+enum AiSessionStatus {
+  CREATED
+  AWAITING_INPUT
+  INTERVIEWING
+  READY_FOR_ANALYSIS
+  ANALYZING
+  PLANNING
+  BUILDING
+  REVIEWING
+  AWAITING_APPROVAL
+  APPROVED
+  FAILED
+  CANCELLED
+  ARCHIVED
+}
+
+enum AiSessionMessageRole {
+  SYSTEM
+  ASSISTANT
+  USER
+}
+
+enum AiSessionSource {
+  PRODUCT_PAGE
+}
+
+model AiSession {
+  id             String @id @default(cuid())
+  organizationId String
+  shopifyStoreId String
+  productId      String
+  createdByUserId String
+
+  /// Entry point that created this session (preserved on resume).
+  sessionSource  AiSessionSource @default(PRODUCT_PAGE)
+
+  status         AiSessionStatus @default(CREATED)
+  currentManager String          @db.VarChar(100)
+  currentPhase   String          @db.VarChar(100)
+
+  /// Immutable workflow engine metadata (definition id, step catalog, etc.)
+  workflowMetadata Json
+
+  /// Mutable workflow context (step pointer, collected answers)
+  workflowContext Json
+
+  /// Engine version for this session
+  workflowVersion String @db.VarChar(50)
+
+  /// Prompt template versions recorded for managers used in this session
+  promptVersions Json
+
+  errorMessage   String?   @db.VarChar(2000)
+  lastActivityAt DateTime  @default(now())
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  shopifyStore PlatformConnection @relation(fields: [shopifyStoreId], references: [id], onDelete: Cascade)
+  product      ShopifyProduct     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdBy    User               @relation("AiSessionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  messages     AiSessionMessage[]
+
+  @@index([organizationId])
+  @@index([shopifyStoreId])
+  @@index([productId])
+  @@index([organizationId, shopifyStoreId, productId])
+  @@index([organizationId, status])
+  @@index([createdByUserId])
+  @@index([lastActivityAt])
+}
+
+model AiSessionMessage {
+  id        String               @id @default(cuid())
+  sessionId String
+  role      AiSessionMessageRole
+  content   String               @db.Text
+  stepKey   String?              @db.VarChar(100)
+  metadata  Json?
+  createdAt DateTime             @default(now())
+
+  session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([sessionId, createdAt])
 }

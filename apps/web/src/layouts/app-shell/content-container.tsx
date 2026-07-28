@@ -6,5 +6,5 @@ interface ContentContainerProps extends PropsWithChildren {
 }
 
 export function ContentContainer({ className, children }: ContentContainerProps) {
-  return <main className={cn("flex-1 p-4", className)}>{children}</main>;
+  return <main className={cn("flex-1 space-y-4 p-4 md:p-6", className)}>{children}</main>;
 }

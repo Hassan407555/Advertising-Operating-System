@@ -1,10 +1,6 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { notFound } from "next/navigation";
 
-export default function AdAccountsPage() {
-  return (
-    <PlaceholderPage
-      title="Ad Accounts"
-      description="Ad Accounts module implementation is intentionally deferred to a later phase."
-    />
-  );
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

@@ -85,9 +85,9 @@ export class DashboardController {
   @ApiOperation({ summary: 'Dashboard automation run summary' })
   @ApiResponse({ status: 200, type: AutomationSummaryDto })
   getAutomation(
-    @CurrentUser() currentUser: JwtPayload,
+    @CurrentUser() _currentUser: JwtPayload,
   ): Promise<AutomationSummaryDto> {
-    return this.dashboardService.getAutomationSummary(currentUser);
+    return this.dashboardService.getAutomationSummary();
   }
 
   @Get('platforms')
@@ -96,7 +96,7 @@ export class DashboardController {
     MembershipRole.ADMIN,
     MembershipRole.MEMBER,
   )
-  @ApiOperation({ summary: 'Dashboard Meta/TikTok connection and token status' })
+  @ApiOperation({ summary: 'Dashboard Meta connection and token status' })
   @ApiResponse({ status: 200, type: PlatformsSummaryDto })
   getPlatforms(
     @CurrentUser() currentUser: JwtPayload,
@@ -111,8 +111,7 @@ export class DashboardController {
     MembershipRole.MEMBER,
   )
   @ApiOperation({
-    summary:
-      'Recent campaigns, automation runs, publish jobs, and synchronizations',
+    summary: 'Recent campaigns, AI sessions, and stores',
   })
   @ApiResponse({ status: 200, type: RecentActivityDto })
   getRecent(

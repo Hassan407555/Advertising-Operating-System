@@ -22,7 +22,7 @@ export class ExcelExporterService
     const workbook = new ExcelJS.Workbook();
 
     workbook.creator =
-      'Advertising Operating System';
+      'AI Meta Ads Studio';
 
     workbook.created = new Date();
 

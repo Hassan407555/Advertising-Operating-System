@@ -1,10 +1,6 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { notFound } from "next/navigation";
 
-export default function PlatformCredentialsPage() {
-  return (
-    <PlaceholderPage
-      title="Platform Credentials"
-      description="Platform Credentials module implementation is intentionally deferred to a later phase."
-    />
-  );
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

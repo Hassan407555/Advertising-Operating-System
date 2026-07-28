@@ -81,7 +81,7 @@ export class CsvExporterService
     ]);
 
     csv.write([
-      'Advertising Operating System',
+      'AI Meta Ads Studio',
     ]);
 
     csv.write([

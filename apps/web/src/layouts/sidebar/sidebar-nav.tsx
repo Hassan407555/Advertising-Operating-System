@@ -7,15 +7,12 @@ import {
   ChartLine,
   Megaphone,
   LayoutDashboard,
+  Package,
   Settings,
-  Sparkles,
   Store,
   Users,
   UsersRound,
   Waypoints,
-  Workflow,
-  RefreshCw,
-  ListChecks,
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { usePermission } from "@/hooks/use-permission";
@@ -32,17 +29,15 @@ const navItems: Array<{
   allowViewer?: boolean;
 }> = [
   { href: ROUTES.DASHBOARD, label: "Dashboard", icon: LayoutDashboard, action: "view" },
-  { href: ROUTES.CAMPAIGNS, label: "Campaigns", icon: Megaphone, action: "view" },
-  { href: ROUTES.CAMPAIGN_GENERATOR, label: "Campaign Generator", icon: Sparkles, action: "view" },
-  { href: ROUTES.AI_COPY, label: "AI Copy", icon: Bot, action: "view" },
-  { href: ROUTES.PUBLISHER, label: "Publisher", icon: Waypoints, action: "view" },
-  { href: ROUTES.SYNCHRONIZATION, label: "Synchronization", icon: RefreshCw, action: "view" },
-  { href: ROUTES.AUTOMATION_WORKFLOWS, label: "Automation", icon: Workflow, action: "view" },
-  { href: ROUTES.AUTOMATION_RUNS, label: "Automation Runs", icon: ListChecks, action: "view" },
+  { href: ROUTES.PRODUCTS, label: "Products", icon: Package, action: "view" },
+  { href: ROUTES.CAMPAIGNS, label: "Campaign History", icon: Megaphone, action: "view" },
+  { href: ROUTES.AI_SESSIONS, label: "AI Sessions", icon: Bot, action: "view" },
   { href: ROUTES.ANALYTICS, label: "Analytics", icon: ChartLine, action: "view" },
-  { href: ROUTES.SHOPIFY, label: "Shopify", icon: Store, action: "view" },
+  { href: ROUTES.ADVERTISING_CONFIGURATION, label: "Advertising", icon: Waypoints, action: "view" },
+  { href: ROUTES.SHOPIFY_CONNECTIONS, label: "Shopify", icon: Store, action: "view" },
   { href: ROUTES.ORGANIZATION, label: "Organization", icon: Users, action: "view", allowViewer: true },
   { href: ROUTES.MEMBERS, label: "Members", icon: UsersRound, action: "view", allowViewer: true },
+  { href: ROUTES.INVITATIONS, label: "Invitations", icon: Users, action: "manage" },
   { href: ROUTES.SETTINGS, label: "Settings", icon: Settings, action: "view" },
 ];
 
@@ -54,6 +49,7 @@ interface SidebarNavProps {
 export function SidebarNav({ open, onClose }: SidebarNavProps) {
   const pathname = usePathname();
   const canView = usePermission("view");
+  const canManage = usePermission("manage");
   const { membership } = useSession();
   const isViewer = membership?.role === "VIEWER";
 
@@ -69,29 +65,36 @@ export function SidebarNav({ open, onClose }: SidebarNavProps) {
       )}
       aria-label="Sidebar"
     >
-      <div className="mb-4 text-sm font-semibold text-muted-foreground">Advertising OS</div>
-      <nav className="space-y-1">
+      <div className="mb-4 text-sm font-semibold text-foreground">AI Meta Ads Studio</div>
+      <nav className="space-y-1" aria-label="Primary">
         {navItems
           .filter((item) => {
             if (item.allowViewer && isViewer) {
               return true;
             }
-            return item.action === "view" ? canView : false;
+            if (item.action === "manage") {
+              return canManage;
+            }
+            return canView;
           })
-          .map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted",
-                pathname.startsWith(item.href) && "bg-muted text-foreground",
-              )}
-            >
-              <item.icon className="size-4" aria-hidden />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          .map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  active && "bg-muted text-foreground",
+                )}
+              >
+                <item.icon className="size-4" aria-hidden />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
       </nav>
     </aside>
   );

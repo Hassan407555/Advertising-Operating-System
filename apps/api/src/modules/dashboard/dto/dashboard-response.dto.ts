@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class OrganizationSummaryDto {
-  @ApiProperty({ description: 'Always 1 for JWT-scoped org context' })
+  @ApiProperty({ description: 'Count of organizations the current user belongs to' })
   totalOrganizations!: number;
 
   @ApiProperty()
@@ -39,9 +39,6 @@ export class CampaignSummaryDto {
 export class AdvertisingSummaryDto {
   @ApiProperty()
   metaCampaigns!: number;
-
-  @ApiProperty()
-  tiktokCampaigns!: number;
 }
 
 export class AutomationSummaryDto {
@@ -120,6 +117,16 @@ export class ShopifySummaryDto {
 
   @ApiProperty()
   storeConnected!: boolean;
+
+  @ApiProperty({
+    description: 'Active Shopify store connections for the organization',
+  })
+  connectedStores!: number;
+}
+
+export class AiSessionsSummaryDto {
+  @ApiProperty()
+  total!: number;
 }
 
 export class PlatformConnectionSummaryDto {
@@ -144,9 +151,6 @@ export class PlatformConnectionSummaryDto {
 export class PlatformsSummaryDto {
   @ApiProperty({ type: PlatformConnectionSummaryDto })
   meta!: PlatformConnectionSummaryDto;
-
-  @ApiProperty({ type: PlatformConnectionSummaryDto })
-  tiktok!: PlatformConnectionSummaryDto;
 }
 
 export class RecentCampaignItemDto {
@@ -235,9 +239,58 @@ export class RecentSynchronizationItemDto {
   lastFailedSyncAt!: string | null;
 }
 
+export class RecentAiSessionItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  status!: string;
+
+  @ApiProperty()
+  currentPhase!: string;
+
+  @ApiProperty()
+  productId!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  productTitle!: string | null;
+
+  @ApiProperty()
+  shopifyStoreId!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  storeName!: string | null;
+
+  @ApiProperty()
+  lastActivityAt!: string;
+}
+
+export class RecentStoreItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  shopDomain!: string;
+
+  @ApiProperty()
+  status!: string;
+
+  @ApiProperty()
+  updatedAt!: string;
+}
+
 export class RecentActivityDto {
   @ApiProperty({ type: [RecentCampaignItemDto] })
   campaigns!: RecentCampaignItemDto[];
+
+  @ApiProperty({ type: [RecentAiSessionItemDto] })
+  aiSessions!: RecentAiSessionItemDto[];
+
+  @ApiProperty({ type: [RecentStoreItemDto] })
+  stores!: RecentStoreItemDto[];
 
   @ApiProperty({ type: [RecentAutomationRunItemDto] })
   automationRuns!: RecentAutomationRunItemDto[];
@@ -273,6 +326,9 @@ export class DashboardSummaryDto {
 
   @ApiProperty({ type: ShopifySummaryDto })
   shopify!: ShopifySummaryDto;
+
+  @ApiProperty({ type: AiSessionsSummaryDto })
+  aiSessions!: AiSessionsSummaryDto;
 
   @ApiProperty({ type: PlatformsSummaryDto })
   platforms!: PlatformsSummaryDto;

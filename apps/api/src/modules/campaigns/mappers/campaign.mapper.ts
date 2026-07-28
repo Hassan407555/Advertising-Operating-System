@@ -6,9 +6,20 @@ import {
 } from '../constants/campaign.constants';
 import { CampaignResponseDto } from '../dto/campaign-response.dto';
 
+export interface CampaignDraftEnrichment {
+  source?: string | null;
+  campaignType?: string | null;
+  aiSessionId?: string | null;
+  store?: { id: string; name: string } | null;
+  product?: { id: string; title: string } | null;
+}
+
 @Injectable()
 export class CampaignMapper {
-  toResponse(campaign: CampaignWithRelations): CampaignResponseDto {
+  toResponse(
+    campaign: CampaignWithRelations,
+    enrichment?: CampaignDraftEnrichment,
+  ): CampaignResponseDto {
     return {
       id: campaign.id,
       organizationId: campaign.organizationId,
@@ -60,6 +71,12 @@ export class CampaignMapper {
             isActive: campaign.adAccount.isActive,
           }
         : undefined,
+
+      source: enrichment?.source ?? null,
+      campaignType: enrichment?.campaignType ?? null,
+      aiSessionId: enrichment?.aiSessionId ?? null,
+      store: enrichment?.store ?? null,
+      product: enrichment?.product ?? null,
     };
   }
 }

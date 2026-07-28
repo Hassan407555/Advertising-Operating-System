@@ -11,7 +11,7 @@ import {
 } from "react";
 import { getCurrentUser } from "@/features/auth/api/auth.api";
 import { setUnauthorizedHandler } from "@/lib/api/client";
-import { readTokens, writeTokens } from "@/lib/auth/token-storage";
+import { readTokens, syncAccessCookieFromStorage, writeTokens } from "@/lib/auth/token-storage";
 import type {
   AuthLoginResponse,
   MembershipSummary,
@@ -25,6 +25,7 @@ interface SessionContextValue extends SessionState {
   applyAuthLogin: (payload: AuthLoginResponse) => void;
   applyCurrentUser: (payload: { organizations: OrganizationSummary[]; memberships: MembershipSummary[]; user: SessionState["user"] }) => void;
   setActiveOrganization: (organizationId: string) => void;
+  patchActiveOrganization: (patch: Partial<Pick<OrganizationSummary, "name" | "slug">>) => void;
   clearSession: () => void;
   isAuthenticated: boolean;
 }
@@ -32,7 +33,9 @@ interface SessionContextValue extends SessionState {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 const initialTokens = readTokens();
-
+if (initialTokens) {
+  syncAccessCookieFromStorage();
+}
 export function SessionProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<SessionState>({
     user: null,
@@ -100,6 +103,22 @@ export function SessionProvider({ children }: PropsWithChildren) {
     }));
   }, []);
 
+  const patchActiveOrganization = useCallback((patch: Partial<Pick<OrganizationSummary, "name" | "slug">>) => {
+    setSession((prev) => {
+      if (!prev.organization) {
+        return prev;
+      }
+      const nextOrganization = { ...prev.organization, ...patch };
+      return {
+        ...prev,
+        organization: nextOrganization,
+        organizations: prev.organizations.map((organization) =>
+          organization.id === nextOrganization.id ? nextOrganization : organization,
+        ),
+      };
+    });
+  }, []);
+
   const clearSession = useCallback(() => {
     writeTokens(null);
     setSession({
@@ -150,10 +169,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
       applyAuthLogin,
       applyCurrentUser,
       setActiveOrganization,
+      patchActiveOrganization,
       clearSession,
       isAuthenticated: Boolean(session.tokens?.accessToken),
     }),
-    [session, clearSession, applyAuthLogin, applyCurrentUser, setActiveOrganization, setTokens],
+    [session, clearSession, applyAuthLogin, applyCurrentUser, setActiveOrganization, patchActiveOrganization, setTokens],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

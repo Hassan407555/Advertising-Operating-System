@@ -25,6 +25,8 @@ export type PlatformType =
   | "AMAZON"
   | "SHOPIFY";
 
+export type AiCampaignType = "IMAGE" | "CAROUSEL" | "VIDEO";
+
 export interface Campaign {
   id: string;
   organizationId: string;
@@ -61,6 +63,12 @@ export interface Campaign {
     timezone: string;
     isActive: boolean;
   };
+  /** Present when campaign was saved from an AI session. */
+  source?: string | null;
+  campaignType?: AiCampaignType | string | null;
+  aiSessionId?: string | null;
+  store?: { id: string; name: string } | null;
+  product?: { id: string; title: string } | null;
 }
 
 export interface CampaignListQuery {
@@ -72,6 +80,8 @@ export interface CampaignListQuery {
   adAccountId?: string;
   platform?: PlatformType;
   isActive?: boolean;
+  storeId?: string;
+  campaignType?: AiCampaignType;
   sortBy?: "name" | "status" | "objective" | "createdAt" | "updatedAt" | "startDate" | "endDate";
   sortOrder?: "asc" | "desc";
 }

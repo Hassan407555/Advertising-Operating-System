@@ -5,6 +5,10 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageEmpty } from "@/components/shared/states/page-empty";
+import { PageError } from "@/components/shared/states/page-error";
+import { PageHeader } from "@/components/shared/page-header";
+import { PageLoading } from "@/components/shared/states/page-loading";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { ROUTES } from "@/constants/routes";
 import { getCurrentUser } from "@/features/auth/api/auth.api";
 import { OrganizationSettingsForm } from "@/features/settings/components/organization-settings-form";
@@ -27,7 +31,7 @@ import { formatDateTime } from "@/utils/formatters";
 export function SettingsPageContent() {
   const canView = usePermission("view");
   const canManage = usePermission("manage");
-  const { applyCurrentUser } = useSession();
+  const { applyCurrentUser, patchActiveOrganization } = useSession();
 
   const profileQuery = useUserProfileQuery();
   const updateProfileMutation = useUpdateUserProfileMutation();
@@ -61,7 +65,8 @@ export function SettingsPageContent() {
     }
 
     try {
-      await updateOrganizationMutation.mutateAsync(values);
+      const updated = await updateOrganizationMutation.mutateAsync(values);
+      patchActiveOrganization({ name: updated.name, slug: updated.slug });
       toast.success("Organization settings updated.");
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to update organization settings."));
@@ -74,27 +79,27 @@ export function SettingsPageContent() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">{SETTINGS_COPY.title}</h1>
-          <p className="text-sm text-muted-foreground">{SETTINGS_COPY.description}</p>
-        </div>
-        <Link href={ROUTES.ORGANIZATION}>
-          <Button type="button" variant="secondary">
-            Open Organization Admin
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title={SETTINGS_COPY.title}
+        description={SETTINGS_COPY.description}
+        actions={
+          <Link href={ROUTES.ORGANIZATION}>
+            <Button type="button" variant="secondary">
+              Open Organization
+            </Button>
+          </Link>
+        }
+      />
 
       {profileQuery.isError ? (
-        <Card>
-          <h2 className="text-lg font-semibold">Unable to load profile</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{getErrorMessage(profileQuery.error)}</p>
-          <Button type="button" className="mt-3" onClick={() => profileQuery.refetch()}>
-            Retry
-          </Button>
-        </Card>
+        <PageError
+          title="Unable to load profile"
+          message={getErrorMessage(profileQuery.error, "Profile settings could not be loaded.")}
+          onRetry={() => profileQuery.refetch()}
+        />
       ) : null}
+
+      {profileQuery.isLoading ? <PageLoading cards={2} /> : null}
 
       {profileQuery.data ? (
         <>
@@ -104,8 +109,9 @@ export function SettingsPageContent() {
               <p>
                 <span className="text-muted-foreground">Email:</span> {profileQuery.data.email}
               </p>
-              <p>
-                <span className="text-muted-foreground">Status:</span> {profileQuery.data.status}
+              <p className="flex items-center gap-2">
+                <span className="text-muted-foreground">Status:</span>{" "}
+                <StatusBadge status={profileQuery.data.status} />
               </p>
               <p>
                 <span className="text-muted-foreground">Last Login:</span>{" "}
@@ -131,27 +137,21 @@ export function SettingsPageContent() {
             />
           </Card>
         </>
-      ) : (
-        <Card>
-          <p className="text-sm text-muted-foreground">Loading profile settings...</p>
-        </Card>
-      )}
+      ) : null}
 
       {organizationQuery.isError ? (
-        <Card>
-          <h2 className="text-lg font-semibold">Unable to load organization settings</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{getErrorMessage(organizationQuery.error)}</p>
-          <Button type="button" className="mt-3" onClick={() => organizationQuery.refetch()}>
-            Retry
-          </Button>
-        </Card>
+        <PageError
+          title="Unable to load organization settings"
+          message={getErrorMessage(organizationQuery.error, "Organization settings could not be loaded.")}
+          onRetry={() => organizationQuery.refetch()}
+        />
       ) : null}
 
       {organizationQuery.data ? (
         <Card className="space-y-3">
           <h2 className="text-lg font-semibold">{SETTINGS_COPY.organizationTitle}</h2>
           <p className="text-sm text-muted-foreground">
-            Backend supports updating organization name and slug for the current organization.
+            Update the name and slug for your current organization.
           </p>
           <OrganizationSettingsForm
             defaultValues={{

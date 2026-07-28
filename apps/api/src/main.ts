@@ -48,8 +48,8 @@ async function bootstrap() {
 
   if (swaggerEnabled) {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('Advertising Operating System API')
-      .setDescription('Backend API Documentation')
+      .setTitle('AI Meta Ads Studio API')
+      .setDescription('Backend API for AI Meta Ads Studio')
       .setVersion('1.0.0')
       .addBearerAuth(
         {
@@ -65,7 +65,7 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = configService.get<number>('PORT', 3000);
+  const port = configService.get<number>('PORT', 3001);
 
   await app.listen(port);
 

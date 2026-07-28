@@ -1,10 +1,6 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { notFound } from "next/navigation";
 
-export default function PlatformConnectionsPage() {
-  return (
-    <PlaceholderPage
-      title="Platform Connections"
-      description="Platform Connections module implementation is intentionally deferred to a later phase."
-    />
-  );
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

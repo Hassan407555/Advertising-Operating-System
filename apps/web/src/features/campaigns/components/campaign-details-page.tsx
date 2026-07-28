@@ -5,6 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/dialogs/confirm-dialog";
+import { RequireActiveStore } from "@/components/shared/stores/require-active-store";
+import { PageEmpty } from "@/components/shared/states/page-empty";
+import { PageError } from "@/components/shared/states/page-error";
+import { PageHeader } from "@/components/shared/page-header";
+import { PageLoading } from "@/components/shared/states/page-loading";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { CampaignForm } from "@/features/campaigns/components/campaign-form";
 import {
   useAdAccountsQuery,
@@ -28,7 +34,11 @@ function toIsoDateTime(value?: string) {
   if (!value) {
     return undefined;
   }
-  return new Date(value).toISOString();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Invalid date value.");
+  }
+  return date.toISOString();
 }
 
 function toDateTimeLocal(value: string | null): string {
@@ -51,6 +61,7 @@ export function CampaignDetailsPage({ id }: CampaignDetailsPageProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const campaign = detailsQuery.data;
+  const isAiDraft = campaign?.source === "ai-session" || Boolean(campaign?.aiSessionId);
 
   const defaultValues = useMemo(() => {
     if (!campaign) {
@@ -92,79 +103,90 @@ export function CampaignDetailsPage({ id }: CampaignDetailsPageProps) {
         isActive: values.isActive,
         version: campaign.version,
       });
-      toast.success("Campaign updated.");
+      toast.success("Draft updated.");
       setEditOpen(false);
       detailsQuery.refetch();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update campaign."));
+      toast.error(getErrorMessage(error, "Failed to update draft."));
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success("Campaign deleted.");
+      toast.success("Draft deleted.");
       setConfirmDelete(false);
       router.push(ROUTES.CAMPAIGNS);
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to delete campaign."));
+      toast.error(getErrorMessage(error, "Failed to delete draft."));
     }
   };
 
   if (!canView) {
     return (
-      <Card>
-        <h1 className="text-xl font-semibold">Forbidden</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Your role cannot view campaign details.</p>
-      </Card>
+      <RequireActiveStore>
+        <PageEmpty title="Access restricted" description="Your role cannot view campaign details." />
+      </RequireActiveStore>
     );
   }
 
   if (detailsQuery.isLoading) {
-    return <Card className="h-64 animate-pulse bg-muted/30" />;
+    return (
+      <RequireActiveStore>
+        <PageLoading cards={2} />
+      </RequireActiveStore>
+    );
   }
 
   if (detailsQuery.isError || !campaign) {
     return (
-      <Card>
-        <h1 className="text-xl font-semibold">Unable to load campaign</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{getErrorMessage(detailsQuery.error, "Campaign not found.")}</p>
-        <Button type="button" className="mt-3" onClick={() => detailsQuery.refetch()}>
-          Retry
-        </Button>
-      </Card>
+      <RequireActiveStore>
+        <PageError
+          title="Unable to load campaign"
+          message={getErrorMessage(detailsQuery.error, "Campaign not found.")}
+          onRetry={() => detailsQuery.refetch()}
+        />
+      </RequireActiveStore>
     );
   }
 
   return (
+    <RequireActiveStore>
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">{campaign.name}</h1>
-          <p className="text-sm text-muted-foreground">Campaign details and lifecycle controls.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href={ROUTES.CAMPAIGNS}>
-            <Button type="button" variant="secondary">
-              Back to list
-            </Button>
-          </Link>
-          {canEdit ? (
-            <Button type="button" onClick={() => setEditOpen((value) => !value)}>
-              {editOpen ? "Close Edit" : "Edit Campaign"}
-            </Button>
-          ) : null}
-          {canDelete ? (
-            <Button type="button" variant="secondary" onClick={() => setConfirmDelete(true)}>
-              Delete
-            </Button>
-          ) : null}
-        </div>
-      </div>
+      <PageHeader
+        title={campaign.name}
+        description={isAiDraft ? "AI-generated draft campaign." : "Campaign details."}
+        actions={
+          <>
+            <Link href={ROUTES.CAMPAIGNS}>
+              <Button type="button" variant="secondary">
+                Back to Campaign History
+              </Button>
+            </Link>
+            {campaign.aiSessionId ? (
+              <Link href={ROUTES.AI_SESSION_DETAILS(campaign.aiSessionId)}>
+                <Button type="button" variant="secondary">
+                  Continue Editing
+                </Button>
+              </Link>
+            ) : null}
+            {canEdit ? (
+              <Button type="button" onClick={() => setEditOpen((value) => !value)}>
+                {editOpen ? "Close Edit" : "Edit Draft"}
+              </Button>
+            ) : null}
+            {canDelete ? (
+              <Button type="button" variant="secondary" onClick={() => setConfirmDelete(true)}>
+                Delete Draft
+              </Button>
+            ) : null}
+          </>
+        }
+      />
 
       {editOpen && canEdit ? (
         <Card>
-          <h2 className="mb-3 text-lg font-semibold">Edit Campaign</h2>
+          <h2 className="mb-3 text-lg font-semibold">Edit Draft</h2>
           <CampaignForm
             adAccounts={adAccountsQuery.data ?? []}
             mode="edit"
@@ -180,42 +202,105 @@ export function CampaignDetailsPage({ id }: CampaignDetailsPageProps) {
       <Card>
         <h2 className="text-lg font-semibold">General Information</h2>
         <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-          <p><span className="text-muted-foreground">Name:</span> {campaign.name}</p>
-          <p><span className="text-muted-foreground">Slug:</span> {campaign.slug ?? "N/A"}</p>
-          <p><span className="text-muted-foreground">Status:</span> {campaign.status}</p>
-          <p><span className="text-muted-foreground">External Status:</span> {campaign.externalStatus ?? "N/A"}</p>
-          <p><span className="text-muted-foreground">Platform:</span> {campaign.adAccount?.platform ?? "N/A"}</p>
-          <p><span className="text-muted-foreground">Objective:</span> {campaign.objective}</p>
-          <p><span className="text-muted-foreground">Buying Type:</span> {campaign.buyingType}</p>
-          <p><span className="text-muted-foreground">Currency:</span> {campaign.currency}</p>
+          <p>
+            <span className="text-muted-foreground">Name:</span> {campaign.name}
+          </p>
+          <p className="flex items-center gap-2">
+            <span className="text-muted-foreground">Status:</span>{" "}
+            <StatusBadge status={campaign.status} />
+          </p>
+          <p>
+            <span className="text-muted-foreground">Type:</span> {campaign.campaignType ?? "—"}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Product:</span> {campaign.product?.title ?? "—"}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Store:</span> {campaign.store?.name ?? "—"}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Objective:</span> {campaign.objective}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Buying Type:</span> {campaign.buyingType}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Currency:</span> {campaign.currency}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Daily Budget:</span>{" "}
+            {campaign.dailyBudget ?? "N/A"}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Lifetime Budget:</span>{" "}
+            {campaign.lifetimeBudget ?? "N/A"}
+          </p>
         </div>
       </Card>
 
+      {isAiDraft ? (
+        <Card>
+          <h2 className="text-lg font-semibold">AI Session</h2>
+          <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+            <p>
+              <span className="text-muted-foreground">Source:</span> AI generation
+            </p>
+            <p>
+              <span className="text-muted-foreground">Session:</span>{" "}
+              {campaign.aiSessionId ? (
+                <Link
+                  className="underline underline-offset-2"
+                  href={ROUTES.AI_SESSION_DETAILS(campaign.aiSessionId)}
+                >
+                  Open interview & review
+                </Link>
+              ) : (
+                "—"
+              )}
+            </p>
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Open the AI session for interview answers or the generated campaign review form. This draft
+            remains the primary saved record.
+          </p>
+        </Card>
+      ) : null}
+
       <Card>
-        <h2 className="text-lg font-semibold">Metadata & Audit</h2>
+        <h2 className="text-lg font-semibold">Metadata</h2>
         <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-          <p><span className="text-muted-foreground">Campaign ID:</span> {campaign.id}</p>
-          <p><span className="text-muted-foreground">External ID:</span> {campaign.externalId}</p>
-          <p><span className="text-muted-foreground">Version:</span> {campaign.version}</p>
-          <p><span className="text-muted-foreground">Created:</span> {formatDateTime(campaign.createdAt)}</p>
-          <p><span className="text-muted-foreground">Updated:</span> {formatDateTime(campaign.updatedAt)}</p>
-          <p><span className="text-muted-foreground">Archived At:</span> {campaign.archivedAt ? formatDateTime(campaign.archivedAt) : "N/A"}</p>
-          <p><span className="text-muted-foreground">Start Date:</span> {campaign.startDate ? formatDateTime(campaign.startDate) : "N/A"}</p>
-          <p><span className="text-muted-foreground">End Date:</span> {campaign.endDate ? formatDateTime(campaign.endDate) : "N/A"}</p>
-          <p><span className="text-muted-foreground">Organization:</span> {campaign.organization?.name ?? campaign.organizationId}</p>
-          <p><span className="text-muted-foreground">Ad Account:</span> {campaign.adAccount?.accountName ?? campaign.adAccountId}</p>
+          <p>
+            <span className="text-muted-foreground">Campaign ID:</span> {campaign.id}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Created:</span>{" "}
+            {formatDateTime(campaign.createdAt)}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Updated:</span>{" "}
+            {formatDateTime(campaign.updatedAt)}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Organization:</span>{" "}
+            {campaign.organization?.name ?? campaign.organizationId}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Ad Account:</span>{" "}
+            {campaign.adAccount?.accountName ?? campaign.adAccountId}
+          </p>
         </div>
       </Card>
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete campaign?"
-        description="This action performs a backend soft delete and cannot be undone from this screen."
-        confirmLabel="Delete"
+        title="Delete draft campaign?"
+        description="This removes the draft campaign. The linked AI session is kept so you can review or save again later."
+        confirmLabel="Delete draft"
         confirming={deleteMutation.isPending}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
       />
     </div>
+    </RequireActiveStore>
   );
 }

@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Advertising Operating System",
-  description: "Frontend foundation",
+  title: "AI Meta Ads Studio",
+  description:
+    "Generate high-quality Meta Ads campaigns for Shopify products using AI.",
 };
 
 export default function RootLayout({

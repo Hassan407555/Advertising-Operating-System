@@ -7,8 +7,8 @@ export abstract class PdfExportBase {
       margin: 50,
       bufferPages: true,
       info: {
-        Producer: 'Advertising Operating System',
-        Creator: 'Advertising Operating System',
+        Producer: 'AI Meta Ads Studio',
+        Creator: 'AI Meta Ads Studio',
       },
     });
   }

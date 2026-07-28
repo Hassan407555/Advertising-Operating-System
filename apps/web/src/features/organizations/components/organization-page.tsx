@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ import { FormFieldText } from "@/components/shared/forms/form-field-text";
 import { PageEmpty } from "@/components/shared/states/page-empty";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ROUTES } from "@/constants/routes";
 import { getCurrentUser } from "@/features/auth/api/auth.api";
 import {
   updateOrganizationSchema,
@@ -24,7 +26,8 @@ import { formatDateTime } from "@/utils/formatters";
 export function OrganizationPageContent() {
   const canView = usePermission("view");
   const canManage = usePermission("manage");
-  const { organizations, organization, membership, setTokens, applyCurrentUser, setActiveOrganization } = useSession();
+  const { organizations, organization, membership, setTokens, applyCurrentUser, setActiveOrganization, patchActiveOrganization } =
+    useSession();
   const isViewer = membership?.role === "VIEWER";
   const canAccess = canView || isViewer;
 
@@ -73,6 +76,18 @@ export function OrganizationPageContent() {
       <div>
         <h1 className="text-2xl font-semibold">Organization Administration</h1>
         <p className="text-sm text-muted-foreground">Manage your current organization profile and switch active organization.</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Link href={ROUTES.MEMBERS}>
+            <Button type="button" variant="secondary">
+              Members
+            </Button>
+          </Link>
+          <Link href={ROUTES.INVITATIONS}>
+            <Button type="button" variant="secondary">
+              Invitations
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {organizationQuery.isError ? (
@@ -121,7 +136,8 @@ export function OrganizationPageContent() {
             }
 
             try {
-              await updateOrganizationMutation.mutateAsync(parsed.data);
+              const updated = await updateOrganizationMutation.mutateAsync(parsed.data);
+              patchActiveOrganization({ name: updated.name, slug: updated.slug });
               toast.success("Organization updated.");
             } catch (error) {
               toast.error(getErrorMessage(error, "Failed to update organization."));

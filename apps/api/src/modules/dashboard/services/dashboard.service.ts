@@ -1,28 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  AutomationRunStatus,
   CampaignStatus,
   ConnectionStatus,
   CreativeAssetType,
   PlatformType,
-  PublishJobStatus,
 } from '@prisma/client';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { AnalyticsService } from '../../analytics/services/analytics.service';
 import { AnalyticsQueryDto } from '../../analytics/dto/analytics-query.dto';
-import { AutomationRunService } from '../../automation/services/automation-run.service';
 import { CampaignsService } from '../../campaigns/services/campaigns.service';
 import { CreativeAssetsService } from '../../creative-assets/creative-assets.service';
 import { OrganizationsService } from '../../organizations/services/organizations.service';
 import { PlatformConnectionsService } from '../../platform-connections/platform-connections.service';
 import { PlatformCredentialsService } from '../../platform-credentials/platform-credentials.service';
 import { ShopifyService } from '../../shopify/services/shopify.service';
-import { SynchronizationService } from '../../synchronization/services/synchronization.service';
-import { SYNC_LOCAL_EXTERNAL_ID_PREFIXES } from '../../synchronization/constants/synchronization.constants';
 
 import {
+  AiSessionsSummaryDto,
   AnalyticsSummaryDto,
   AssetsSummaryDto,
   AutomationSummaryDto,
@@ -39,6 +35,9 @@ import {
 
 const RECENT_LIMIT = 5;
 
+/** Prefixes that indicate the entity was never published to a live platform. */
+const LOCAL_EXTERNAL_ID_PREFIXES = ['local_', 'meta_dry_', 'pending:'] as const;
+
 @Injectable()
 export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
@@ -50,9 +49,7 @@ export class DashboardService {
     private readonly creativeAssetsService: CreativeAssetsService,
     private readonly platformConnectionsService: PlatformConnectionsService,
     private readonly platformCredentialsService: PlatformCredentialsService,
-    private readonly automationRunService: AutomationRunService,
     private readonly shopifyService: ShopifyService,
-    private readonly synchronizationService: SynchronizationService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -66,17 +63,19 @@ export class DashboardService {
       analytics,
       assets,
       shopify,
+      aiSessions,
       platforms,
       recent,
     ] = await Promise.all([
       this.getOrganizationSummary(currentUser),
       this.getCampaignSummary(currentUser),
       this.getAdvertisingSummary(currentUser),
-      this.getAutomationSummary(currentUser),
-      this.getSynchronizationSummary(currentUser),
+      this.getAutomationSummary(),
+      this.getSynchronizationSummary(),
       this.getAnalyticsSummary(currentUser),
       this.getAssetsSummary(currentUser),
       this.getShopifySummary(currentUser),
+      this.getAiSessionsSummary(currentUser),
       this.getPlatformsSummary(currentUser),
       this.getRecentActivity(currentUser),
     ]);
@@ -90,6 +89,7 @@ export class DashboardService {
       analytics,
       assets,
       shopify,
+      aiSessions,
       platforms,
       recent,
     };
@@ -133,7 +133,7 @@ export class DashboardService {
           where: {
             organizationId: orgId,
             deletedAt: null,
-            AND: SYNC_LOCAL_EXTERNAL_ID_PREFIXES.map((prefix) => ({
+            AND: LOCAL_EXTERNAL_ID_PREFIXES.map((prefix) => ({
               NOT: { externalId: { startsWith: prefix } },
             })),
           },
@@ -153,29 +153,22 @@ export class DashboardService {
   async getAdvertisingSummary(
     currentUser: JwtPayload,
   ): Promise<AdvertisingSummaryDto> {
-    const [metaCampaigns, tiktokCampaigns] = await Promise.all([
-      this.countCampaigns(currentUser, undefined, PlatformType.META),
-      this.countCampaigns(currentUser, undefined, PlatformType.TIKTOK),
-    ]);
+    const metaCampaigns = await this.countCampaigns(
+      currentUser,
+      undefined,
+      PlatformType.META,
+    );
 
-    return { metaCampaigns, tiktokCampaigns };
+    return { metaCampaigns };
   }
 
-  async getAutomationSummary(
-    currentUser: JwtPayload,
-  ): Promise<AutomationSummaryDto> {
-    const [total, running, completed, failed] = await Promise.all([
-      this.countAutomationRuns(currentUser),
-      this.countAutomationRuns(currentUser, AutomationRunStatus.RUNNING),
-      this.countAutomationRuns(currentUser, AutomationRunStatus.COMPLETED),
-      this.countAutomationRuns(currentUser, AutomationRunStatus.FAILED),
-    ]);
-
+  async getAutomationSummary(): Promise<AutomationSummaryDto> {
+    // Legacy automation module is unwired — keep DTO shape for clients.
     return {
-      totalWorkflowRuns: total,
-      running,
-      completed,
-      failed,
+      totalWorkflowRuns: 0,
+      running: 0,
+      completed: 0,
+      failed: 0,
     };
   }
 
@@ -190,22 +183,16 @@ export class DashboardService {
     const metaConnection = connections.data.find(
       (c) => c.platform === PlatformType.META,
     );
-    const tiktokConnection = connections.data.find(
-      (c) => c.platform === PlatformType.TIKTOK,
-    );
 
-    const [meta, tiktok] = await Promise.all([
-      this.toPlatformSummary(metaConnection, currentUser),
-      this.toPlatformSummary(tiktokConnection, currentUser),
-    ]);
+    const meta = await this.toPlatformSummary(metaConnection, currentUser);
 
-    return { meta, tiktok };
+    return { meta };
   }
 
   async getRecentActivity(currentUser: JwtPayload): Promise<RecentActivityDto> {
     const orgId = currentUser.organizationId;
 
-    const [campaignsPage, runsPage, publishJobs, syncRows] = await Promise.all([
+    const [campaignsPage, recentAiSessions, recentStores] = await Promise.all([
       this.campaignsService.findAll(
         {
           page: 1,
@@ -215,20 +202,37 @@ export class DashboardService {
         },
         currentUser,
       ),
-      this.automationRunService.findAll(
-        {
-          page: 1,
-          limit: RECENT_LIMIT,
-          sortBy: 'createdAt',
-          sortOrder: 'desc',
+      this.prisma.aiSession.findMany({
+        where: { organizationId: orgId },
+        orderBy: { lastActivityAt: 'desc' },
+        take: RECENT_LIMIT,
+        select: {
+          id: true,
+          status: true,
+          currentPhase: true,
+          productId: true,
+          shopifyStoreId: true,
+          lastActivityAt: true,
+          product: { select: { title: true } },
+          shopifyStore: { select: { accountName: true } },
         },
-        currentUser,
-      ),
-      this.findRecentPublishJobs(orgId),
-      this.synchronizationService.listRecentSynchronizations(
-        orgId,
-        RECENT_LIMIT,
-      ),
+      }),
+      this.prisma.platformConnection.findMany({
+        where: {
+          organizationId: orgId,
+          platform: PlatformType.SHOPIFY,
+          deletedAt: null,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: RECENT_LIMIT,
+        select: {
+          id: true,
+          accountName: true,
+          accountId: true,
+          status: true,
+          updatedAt: true,
+        },
+      }),
     ]);
 
     return {
@@ -239,66 +243,66 @@ export class DashboardService {
         platform: campaign.adAccount?.platform ?? null,
         updatedAt: this.toIsoRequired(campaign.updatedAt),
       })),
-      automationRuns: runsPage.data.map((run) => ({
-        id: run.id,
-        pipelineId: run.pipelineId,
-        status: run.status,
-        triggerType: run.triggerType,
-        startedAt: this.toIso(run.startedAt),
-        completedAt: this.toIso(run.completedAt),
-        createdAt: this.toIsoRequired(run.createdAt),
+      aiSessions: recentAiSessions.map((session) => ({
+        id: session.id,
+        status: session.status,
+        currentPhase: session.currentPhase,
+        productId: session.productId,
+        productTitle: session.product.title ?? null,
+        shopifyStoreId: session.shopifyStoreId,
+        storeName: session.shopifyStore.accountName ?? null,
+        lastActivityAt: this.toIsoRequired(session.lastActivityAt),
       })),
-      publishJobs,
-      synchronizations: syncRows.map((campaign) => ({
-        campaignId: campaign.id,
-        name: campaign.name,
-        externalStatus: campaign.externalStatus,
-        lastSyncedAt: this.toIso(campaign.lastSyncedAt),
-        lastSuccessfulSyncAt: this.toIso(campaign.lastSuccessfulSyncAt),
-        lastFailedSyncAt: this.toIso(campaign.lastFailedSyncAt),
+      stores: recentStores.map((store) => ({
+        id: store.id,
+        name: store.accountName,
+        shopDomain: store.accountId,
+        status: store.status,
+        updatedAt: this.toIsoRequired(store.updatedAt),
       })),
+      automationRuns: [],
+      publishJobs: [],
+      synchronizations: [],
     };
   }
 
   private async getOrganizationSummary(
     currentUser: JwtPayload,
   ): Promise<OrganizationSummaryDto> {
-    const [org, connections] = await Promise.all([
+    const [org, connections, totalOrganizations] = await Promise.all([
       this.organizationsService.getCurrent(currentUser),
       this.platformConnectionsService.findAll(
         { page: 1, limit: 100, sortBy: 'createdAt', sortOrder: 'desc' },
         currentUser,
       ),
+      this.prisma.membership.count({
+        where: { userId: currentUser.sub },
+      }),
     ]);
 
     const connectedPlatforms = [
       ...new Set(
         connections.data
           .filter((c) => c.status === ConnectionStatus.ACTIVE)
-          .map((c) => c.platform),
+          .map((c) => c.platform)
+          .filter((platform) => platform !== PlatformType.TIKTOK),
       ),
     ];
 
     return {
-      totalOrganizations: 1,
+      totalOrganizations,
       activeOrganizationId: org.id,
       activeOrganizationName: org.name,
       connectedPlatforms,
     };
   }
 
-  private async getSynchronizationSummary(
-    currentUser: JwtPayload,
-  ): Promise<SynchronizationSummaryDto> {
-    const summary =
-      await this.synchronizationService.getOrganizationSyncSummary(
-        currentUser.organizationId,
-      );
-
+  private async getSynchronizationSummary(): Promise<SynchronizationSummaryDto> {
+    // Legacy synchronization module is unwired — keep DTO shape for clients.
     return {
-      lastSynchronization: this.toIso(summary.lastSynchronization),
-      campaignsSynced: summary.campaignsSynced,
-      failedSyncs: summary.failedSyncs,
+      lastSynchronization: null,
+      campaignsSynced: 0,
+      failedSyncs: 0,
     };
   }
 
@@ -317,7 +321,7 @@ export class DashboardService {
   private async getShopifySummary(
     currentUser: JwtPayload,
   ): Promise<ShopifySummaryDto> {
-    const [products, store] = await Promise.all([
+    const [products, store, connectedStores] = await Promise.all([
       this.prisma.shopifyProduct.count({
         where: {
           organizationId: currentUser.organizationId,
@@ -332,13 +336,32 @@ export class DashboardService {
         );
         return null;
       }),
+      this.prisma.platformConnection.count({
+        where: {
+          organizationId: currentUser.organizationId,
+          platform: PlatformType.SHOPIFY,
+          deletedAt: null,
+          status: ConnectionStatus.ACTIVE,
+        },
+      }),
     ]);
 
     return {
       products,
       collections: 0,
-      storeConnected: Boolean(store),
+      storeConnected: Boolean(store) || connectedStores > 0,
+      connectedStores,
     };
+  }
+
+  private async getAiSessionsSummary(
+    currentUser: JwtPayload,
+  ): Promise<AiSessionsSummaryDto> {
+    const total = await this.prisma.aiSession.count({
+      where: { organizationId: currentUser.organizationId },
+    });
+
+    return { total };
   }
 
   private async toPlatformSummary(
@@ -421,24 +444,6 @@ export class DashboardService {
     return result.meta.total;
   }
 
-  private async countAutomationRuns(
-    currentUser: JwtPayload,
-    status?: AutomationRunStatus,
-  ): Promise<number> {
-    const result = await this.automationRunService.findAll(
-      {
-        page: 1,
-        limit: 1,
-        status,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      },
-      currentUser,
-    );
-
-    return result.meta.total;
-  }
-
   private async countAssets(
     currentUser: JwtPayload,
     assetType?: CreativeAssetType,
@@ -455,36 +460,6 @@ export class DashboardService {
     );
 
     return result.meta.total;
-  }
-
-  private async findRecentPublishJobs(organizationId: string) {
-    // No Publisher list API exists yet — Prisma read-only access is required.
-    const jobs = await this.prisma.publishJob.findMany({
-      where: { organizationId },
-      orderBy: { createdAt: 'desc' },
-      take: RECENT_LIMIT,
-      select: {
-        id: true,
-        campaignId: true,
-        platform: true,
-        status: true,
-        dryRun: true,
-        startedAt: true,
-        completedAt: true,
-        createdAt: true,
-      },
-    });
-
-    return jobs.map((job) => ({
-      id: job.id,
-      campaignId: job.campaignId,
-      platform: job.platform,
-      status: job.status as PublishJobStatus | string,
-      dryRun: job.dryRun,
-      startedAt: this.toIso(job.startedAt),
-      completedAt: this.toIso(job.completedAt),
-      createdAt: this.toIsoRequired(job.createdAt),
-    }));
   }
 
   private toIso(value?: Date | string | null): string | null {

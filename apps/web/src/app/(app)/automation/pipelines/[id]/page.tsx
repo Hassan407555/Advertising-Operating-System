@@ -1,16 +1,6 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { notFound } from "next/navigation";
 
-interface AutomationPipelineProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function AutomationPipelinePage({ params }: AutomationPipelineProps) {
-  const { id } = await params;
-
-  return (
-    <PlaceholderPage
-      title={`Automation Pipeline Scaffold: ${id}`}
-      description="Automation pipeline details implementation is deferred."
-    />
-  );
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

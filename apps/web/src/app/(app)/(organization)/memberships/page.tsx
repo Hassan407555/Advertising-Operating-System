@@ -1,5 +1,6 @@
-import { MembershipsPageContent } from "@/features/organizations/components/memberships-page";
+import { notFound } from "next/navigation";
 
-export default function MembershipsPage() {
-  return <MembershipsPageContent />;
+/** Deprecated Advertising OS route — unwired for AI Meta Ads Studio. */
+export default function DeprecatedLegacyRoutePage() {
+  notFound();
 }

@@ -20,16 +20,4 @@ export const CAMPAIGN_BUYING_TYPE_OPTIONS: CampaignBuyingType[] = [
   "FIXED",
   "PROGRAMMATIC",
 ];
-export const PLATFORM_OPTIONS: PlatformType[] = [
-  "META",
-  "GOOGLE",
-  "TIKTOK",
-  "LINKEDIN",
-  "SNAPCHAT",
-  "PINTEREST",
-  "MICROSOFT",
-  "TWITTER",
-  "REDDIT",
-  "AMAZON",
-  "SHOPIFY",
-];
+export const PLATFORM_OPTIONS: PlatformType[] = ["META", "SHOPIFY"];

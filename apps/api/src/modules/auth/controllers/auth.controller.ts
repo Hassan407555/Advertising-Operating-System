@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { Public } from '../decorators/public.decorator';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshDto } from '../dto/refresh.dto';
 import { RegisterDto } from '../dto/register.dto';
@@ -13,16 +14,19 @@ import { AuthService } from '../services/auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('register')
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
+  @Public()
   @Post('login')
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
+  @Public()
   @Post('refresh')
   refresh(@Body() refreshDto: RefreshDto) {
     return this.authService.refresh(refreshDto.refreshToken);

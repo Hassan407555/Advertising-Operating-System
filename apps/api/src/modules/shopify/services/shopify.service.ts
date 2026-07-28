@@ -86,12 +86,16 @@ async callback(
   code: string,
   shop: string,
   state?: string,
+  hmac?: string,
+  queryParams?: Record<string, string | undefined>,
 ): Promise<void> {
   if (!shop || !code || !state) {
     throw new BadRequestException(
       'Missing Shopify OAuth parameters.',
     );
   }
+
+  this.verifyShopifyCallbackHmac(hmac, queryParams);
 
   const decodedState = this.verifyOAuthState(state);
   const organizationId = decodedState.organizationId;
@@ -553,6 +557,49 @@ async callback(
     }
 
     return payload;
+  }
+
+  /**
+   * Verifies Shopify's OAuth callback `hmac` query parameter.
+   * @see https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/authorization-code-grant
+   */
+  private verifyShopifyCallbackHmac(
+    hmac: string | undefined,
+    queryParams?: Record<string, string | undefined>,
+  ): void {
+    if (!hmac || !queryParams) {
+      throw new BadRequestException(
+        'Missing Shopify OAuth HMAC.',
+      );
+    }
+
+    const message = Object.keys(queryParams)
+      .filter(
+        (key) =>
+          key !== 'hmac' &&
+          key !== 'signature' &&
+          queryParams[key] !== undefined &&
+          queryParams[key] !== '',
+      )
+      .sort()
+      .map((key) => `${key}=${queryParams[key]}`)
+      .join('&');
+
+    const digest = createHmac('sha256', this.getOAuthStateSecret())
+      .update(message)
+      .digest('hex');
+
+    const provided = Buffer.from(hmac, 'utf8');
+    const expected = Buffer.from(digest, 'utf8');
+
+    if (
+      provided.length !== expected.length ||
+      !timingSafeEqual(provided, expected)
+    ) {
+      throw new BadRequestException(
+        'Invalid Shopify OAuth HMAC.',
+      );
+    }
   }
 
   private signOAuthStateBody(body: string): string {

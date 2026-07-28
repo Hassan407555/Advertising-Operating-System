@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Meta Ads Studio — Web
 
-## Getting Started
+Next.js frontend for **AI Meta Ads Studio**: generate Meta Ads campaign drafts for Shopify products using AI.
 
-First, run the development server:
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+cp .env.example .env.local
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+API must be running on port **3001** (see `apps/api`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment
 
-## Learn More
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_API_BASE_URL` | Yes (production) | API base including `/api`, e.g. `http://localhost:3001/api` |
 
-To learn more about Next.js, take a look at the following resources:
+See `.env.example`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Script | Purpose |
+|--------|---------|
+| `pnpm dev` | Development server |
+| `pnpm build` / `pnpm start` | Production build |
+| `pnpm lint` / `pnpm typecheck` | Quality checks |
+| `pnpm test:e2e` | Playwright (disabled until specs are restored) |
 
-## Deploy on Vercel
+## Product navigation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Dashboard · Products · Campaign History · AI Sessions · Analytics · Advertising · Shopify · Organization · Settings
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Legacy Advertising OS routes (`/publisher`, `/campaign-generator`, etc.) return **404** and are marked deprecated under `src/features/LEGACY_FEATURES.md`.
+
+## Auth note
+
+Access and refresh tokens are stored in `localStorage` and mirrored to a non-HttpOnly cookie for edge gating (`src/proxy.ts`). Treat XSS hardening as a production concern; the API remains Bearer-token based.

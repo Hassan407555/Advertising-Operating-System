@@ -1,6 +1,6 @@
 import type { GeneratorCreativeType, GeneratorPlatform, MarketingGoal } from "@/features/campaign-generator/types/campaign-generator.types";
 
-export const SUPPORTED_GENERATOR_PLATFORMS: GeneratorPlatform[] = ["META", "TIKTOK"];
+export const SUPPORTED_GENERATOR_PLATFORMS: GeneratorPlatform[] = ["META"];
 export const MARKETING_GOAL_OPTIONS: MarketingGoal[] = ["AWARENESS", "TRAFFIC", "SALES", "ENGAGEMENT", "LEADS"];
 export const CREATIVE_TYPE_OPTIONS: GeneratorCreativeType[] = [
   "IMAGE",

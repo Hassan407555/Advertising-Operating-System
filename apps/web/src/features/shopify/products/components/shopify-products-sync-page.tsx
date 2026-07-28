@@ -3,12 +3,17 @@
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { PageEmpty } from "@/components/shared/states/page-empty";
+import { PageError } from "@/components/shared/states/page-error";
+import { PageHeader } from "@/components/shared/page-header";
+import { PageLoading } from "@/components/shared/states/page-loading";
 import { ROUTES } from "@/constants/routes";
 import { usePermission } from "@/hooks/use-permission";
 import { getErrorMessage } from "@/utils/errors";
-import { useRunShopifyProductSyncMutation, useShopifyProductSyncStatusQuery } from "@/features/shopify/products/hooks/use-shopify-products-sync";
+import {
+  useRunShopifyProductSyncMutation,
+  useShopifyProductSyncStatusQuery,
+} from "@/features/shopify/products/hooks/use-shopify-products-sync";
 import { ShopifyProductSyncStatusCard } from "@/features/shopify/products/components/shopify-product-sync-status-card";
 import { ShopifyProductSyncSummary } from "@/features/shopify/products/components/shopify-product-sync-summary";
 
@@ -21,16 +26,16 @@ export function ShopifyProductsSyncPageContent() {
 
   const runSync = async () => {
     if (!canSync) {
-      toast.error("Your role cannot execute Shopify product synchronization.");
+      toast.error("Your role cannot sync products.");
       return;
     }
 
     try {
       const result = await syncMutation.mutateAsync();
-      toast.success("Shopify products synchronized.");
+      toast.success("Products synced.");
       return result;
     } catch (error) {
-      toast.error(getErrorMessage(error, "Shopify product synchronization failed."));
+      toast.error(getErrorMessage(error, "Product sync failed."));
       return null;
     }
   };
@@ -39,66 +44,61 @@ export function ShopifyProductsSyncPageContent() {
     return <PageEmpty title="Access restricted" description="Your role does not have Shopify access." />;
   }
 
+  if (statusQuery.isLoading) {
+    return <PageLoading cards={2} />;
+  }
+
   if (statusQuery.isError) {
     return (
-      <Card>
-        <h2 className="text-lg font-semibold">Unable to load Shopify synchronization status</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{getErrorMessage(statusQuery.error)}</p>
-        <Button type="button" className="mt-3" onClick={() => statusQuery.refetch()}>
-          Retry
-        </Button>
-      </Card>
+      <PageError
+        title="Unable to load sync status"
+        message={getErrorMessage(statusQuery.error, "Product sync status could not be loaded.")}
+        onRetry={() => statusQuery.refetch()}
+      />
     );
   }
 
   if (!statusQuery.data) {
     return (
-      <div className="space-y-4">
-        <PageEmpty
-          title="No active Shopify connection"
-          description="Connect a Shopify store before running product synchronization."
-        />
-        <div className="flex justify-end">
+      <PageEmpty
+        title="No stores connected"
+        description="Connect a Shopify store before syncing products."
+        action={
           <Link href={ROUTES.SHOPIFY_CONNECTIONS}>
-            <Button type="button" variant="secondary">
-              Go to Shopify Connections
-            </Button>
+            <Button type="button">Connect Shopify Store</Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">Shopify Product Synchronization</h1>
-          <p className="text-sm text-muted-foreground">
-            Manually synchronize Shopify products and monitor backend synchronization state.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" onClick={() => statusQuery.refetch()}>
-            Refresh Status
-          </Button>
-          <Button type="button" disabled={syncMutation.isPending || !canSync} onClick={runSync}>
-            {syncMutation.isPending ? "Running..." : "Run Product Sync"}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Sync Products"
+        description="Pull the latest products from your connected Shopify store."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Link href={ROUTES.PRODUCTS}>
+              <Button type="button" variant="secondary">
+                View Products
+              </Button>
+            </Link>
+            <Button type="button" variant="secondary" onClick={() => statusQuery.refetch()}>
+              Refresh
+            </Button>
+            <Button type="button" disabled={syncMutation.isPending || !canSync} onClick={runSync}>
+              {syncMutation.isPending ? "Syncing…" : "Sync Products"}
+            </Button>
+          </div>
+        }
+      />
 
       <ShopifyProductSyncStatusCard status={statusQuery.data} />
 
-      {syncMutation.isSuccess && syncMutation.data ? <ShopifyProductSyncSummary summary={syncMutation.data} /> : null}
-
-      <Card className="space-y-2">
-        <h2 className="text-lg font-semibold">Backend-Supported Scope</h2>
-        <p className="text-sm text-muted-foreground">
-          Product list, product detail endpoint, and sync history endpoints are not exposed by current Shopify controller APIs.
-          This dashboard surfaces supported capabilities only: status from `/shopify/store` and manual sync via `/shopify/sync`.
-        </p>
-      </Card>
+      {syncMutation.isSuccess && syncMutation.data ? (
+        <ShopifyProductSyncSummary summary={syncMutation.data} />
+      ) : null}
     </div>
   );
 }

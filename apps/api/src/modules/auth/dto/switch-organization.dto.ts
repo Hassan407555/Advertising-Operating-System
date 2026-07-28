@@ -1,6 +1,7 @@
-import { IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class SwitchOrganizationDto {
-  @IsUUID()
-  organizationId: string;
+  @IsString()
+  @IsNotEmpty()
+  organizationId!: string;
 }

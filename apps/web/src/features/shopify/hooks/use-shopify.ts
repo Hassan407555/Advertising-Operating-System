@@ -36,6 +36,9 @@ export function useDisconnectShopifyMutation() {
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.SHOPIFY,
       });
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.STORES,
+      });
     },
   });
 }

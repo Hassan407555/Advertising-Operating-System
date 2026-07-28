@@ -10,12 +10,7 @@ import { AdSetsModule } from './modules/ad-sets/ad-sets.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { AutomationModule } from './modules/automation/automation.module';
-import { CampaignGeneratorModule } from './modules/campaign-generator/campaign-generator.module';
 import { AiModule } from './modules/ai/ai.module';
-import { AiCopyModule } from './modules/ai-copy/ai-copy.module';
-import { PublisherModule } from './modules/publisher/publisher.module';
-import { SynchronizationModule } from './modules/synchronization/synchronization.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { CreativeAssetsModule } from './modules/creative-assets/creative-assets.module';
 import { CreativesModule } from './modules/creatives/creatives.module';
@@ -25,11 +20,24 @@ import { MembershipsModule } from './modules/memberships/memberships.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { PlatformConnectionsModule } from './modules/platform-connections/platform-connections.module';
 import { PlatformCredentialsModule } from './modules/platform-credentials/platform-credentials.module';
-import { ReportingModule } from './modules/reporting/reporting.module';
 import { ShopifyModule } from './modules/shopify/shopify.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { AiSessionsModule } from './modules/ai-sessions/ai-sessions.module';
+import { StoresModule } from './modules/stores/stores.module';
 import { UsersModule } from './modules/users/users.module';
 
+/**
+ * AI Meta Ads Studio — active application modules.
+ *
+ * Legacy Advertising OS modules remain on disk (deprecated) but are not
+ * registered here. Re-enable only after verifying Phase 10 dependencies:
+ * - CampaignGeneratorModule
+ * - PublisherModule
+ * - SynchronizationModule
+ * - AutomationModule
+ * - AiCopyModule
+ * - ReportingModule
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -54,15 +62,11 @@ import { UsersModule } from './modules/users/users.module';
     AnalyticsModule,
     CreativeAssetsModule,
     StorageModule,
-    ReportingModule,
-    AutomationModule,
     EncryptionModule,
     ShopifyModule,
-    CampaignGeneratorModule,
+    StoresModule,
+    AiSessionsModule,
     AiModule,
-    AiCopyModule,
-    PublisherModule,
-    SynchronizationModule,
     DashboardModule,
     AdAccountsModule,
   ],

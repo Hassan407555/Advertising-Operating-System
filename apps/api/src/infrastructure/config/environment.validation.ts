@@ -31,6 +31,18 @@ export function validateEnvironment(
     );
   }
 
+  const jwtSecret = String(environment.JWT_SECRET).trim();
+  if (jwtSecret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters.');
+  }
+
+  const refreshTokenSecret = String(environment.REFRESH_TOKEN_SECRET).trim();
+  if (refreshTokenSecret.length < 32) {
+    throw new Error(
+      'REFRESH_TOKEN_SECRET must be at least 32 characters.',
+    );
+  }
+
   const aiProvider = String(environment.AI_PROVIDER ?? 'GEMINI')
     .trim()
     .toUpperCase();
@@ -57,6 +69,11 @@ export function validateEnvironment(
     if (typeof corsOrigin !== 'string' || corsOrigin.trim().length === 0) {
       throw new Error(
         'Missing required environment variable in production: CORS_ORIGIN',
+      );
+    }
+    if (corsOrigin.trim() === '*') {
+      throw new Error(
+        'CORS_ORIGIN cannot be "*" in production. Set explicit origin(s).',
       );
     }
   }
@@ -97,7 +114,7 @@ export function validateEnvironment(
   return {
     ...environment,
     NODE_ENV: nodeEnv,
-    PORT: port ?? 3000,
+    PORT: port ?? 3001,
     AUTH_RATE_LIMIT: authRateLimit ?? 10,
     AUTH_RATE_TTL_MS: authRateTtl ?? 60_000,
     INVITATION_EXPIRATION_HOURS: invitationExpirationHours ?? 168,
