@@ -24,11 +24,13 @@ export class MembershipsController {
   constructor(private readonly membershipsService: MembershipsService) {}
 
   @Get()
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.MEMBER)
   async findAll(@CurrentUser() user: JwtPayload) {
     return this.membershipsService.findAll(user);
   }
 
   @Get(':id')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.MEMBER)
   async findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.membershipsService.findOne(user, id);
   }

@@ -2,7 +2,9 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import {
   AuditAction,
@@ -12,6 +14,7 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { EncryptionService } from '../../infrastructure/encryption/encryption.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 import { AuditLogsService } from '../audit-logs/services/audit-logs.service';
@@ -30,12 +33,19 @@ import {
 } from './constants/platform-credential.constants';
 
 @Injectable()
-export class PlatformCredentialsService {
+export class PlatformCredentialsService implements OnModuleInit {
+  private readonly logger = new Logger(PlatformCredentialsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mapper: PlatformCredentialMapper,
     private readonly auditLogsService: AuditLogsService,
+    private readonly encryptionService: EncryptionService,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.encryptExistingPlaintextCredentials();
+  }
 
   async create(
     dto: CreatePlatformCredentialDto,
@@ -61,8 +71,10 @@ export class PlatformCredentialsService {
         await this.prisma.platformCredential.create({
           data: {
             platformConnectionId: dto.platformConnectionId,
-            accessToken: dto.accessToken,
-            refreshToken: dto.refreshToken,
+            accessToken: this.encryptionService.encrypt(dto.accessToken),
+            refreshToken: dto.refreshToken
+              ? this.encryptionService.encrypt(dto.refreshToken)
+              : null,
             expiresAt: dto.expiresAt
               ? new Date(dto.expiresAt)
               : null,
@@ -172,8 +184,16 @@ export class PlatformCredentialsService {
             id,
           },
           data: {
-            accessToken: dto.accessToken,
-            refreshToken: dto.refreshToken,
+            accessToken:
+              dto.accessToken !== undefined
+                ? this.encryptionService.encrypt(dto.accessToken)
+                : undefined,
+            refreshToken:
+              dto.refreshToken !== undefined
+                ? dto.refreshToken
+                  ? this.encryptionService.encrypt(dto.refreshToken)
+                  : null
+                : undefined,
             expiresAt: dto.expiresAt
               ? new Date(dto.expiresAt)
               : undefined,
@@ -319,6 +339,64 @@ export class PlatformCredentialsService {
     throw new BadRequestException(
       `Invalid sort field: ${field}`,
     );
+  }
+
+  private async encryptExistingPlaintextCredentials(): Promise<void> {
+    const credentials = await this.prisma.platformCredential.findMany({
+      select: {
+        id: true,
+        accessToken: true,
+        refreshToken: true,
+      },
+    });
+
+    let migrated = 0;
+
+    for (const credential of credentials) {
+      const accessToken = this.ensureEncrypted(credential.accessToken);
+      const refreshToken = credential.refreshToken
+        ? this.ensureEncrypted(credential.refreshToken)
+        : null;
+
+      const accessChanged = accessToken !== credential.accessToken;
+      const refreshChanged = refreshToken !== credential.refreshToken;
+
+      if (!accessChanged && !refreshChanged) {
+        continue;
+      }
+
+      await this.prisma.platformCredential.update({
+        where: { id: credential.id },
+        data: {
+          accessToken,
+          refreshToken,
+        },
+      });
+      migrated += 1;
+    }
+
+    if (migrated > 0) {
+      this.logger.log(
+        `Encrypted ${migrated} existing platform credential record(s).`,
+      );
+    }
+  }
+
+  private ensureEncrypted(value: string): string {
+    if (this.looksEncrypted(value)) {
+      return value;
+    }
+
+    return this.encryptionService.encrypt(value);
+  }
+
+  private looksEncrypted(value: string): boolean {
+    const parts = value.split(':');
+    if (parts.length !== 3) {
+      return false;
+    }
+
+    return parts.every((part) => /^[0-9a-f]+$/i.test(part) && part.length > 0);
   }
 
   private handlePrismaError(error: unknown): never {

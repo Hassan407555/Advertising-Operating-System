@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 import {
   AuditAction,
@@ -27,6 +28,14 @@ import {
   SHOPIFY_SCOPES,
 } from '../constants/shopify.constants';
 
+const SHOPIFY_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
+type ShopifyOAuthStatePayload = {
+  organizationId: string;
+  userId: string;
+  exp: number;
+};
+
 @Injectable()
 export class ShopifyService {
   constructor(
@@ -50,13 +59,11 @@ export class ShopifyService {
       );
     }
 
-    const state = Buffer.from(
-      JSON.stringify({
-        organizationId: currentUser.organizationId,
-        userId: currentUser.sub,
-        timestamp: Date.now(),
-      }),
-    ).toString('base64');
+    const state = this.createOAuthState({
+      organizationId: currentUser.organizationId,
+      userId: currentUser.sub,
+      exp: Date.now() + SHOPIFY_OAUTH_STATE_TTL_MS,
+    });
 
     const authorizationUrl =
   `${SHOPIFY_AUTHORIZE_ENDPOINT(shop)}` +
@@ -86,25 +93,9 @@ async callback(
     );
   }
 
-  let organizationId: string;
-  let userId: string;
-
-  try {
-    const decodedState = JSON.parse(
-      Buffer.from(state, 'base64').toString('utf8'),
-    );
-
-    organizationId = decodedState.organizationId;
-    userId = decodedState.userId;
-
-    if (!organizationId || !userId) {
-      throw new Error();
-    }
-  } catch {
-    throw new BadRequestException(
-      'Invalid Shopify OAuth state.',
-    );
-  }
+  const decodedState = this.verifyOAuthState(state);
+  const organizationId = decodedState.organizationId;
+  const userId = decodedState.userId;
 
   const accessToken =
     await this.shopifyApi.exchangeAccessToken(
@@ -496,5 +487,91 @@ async callback(
     return this.shopifyProductsService.syncProducts(
       currentUser,
     );
+  }
+
+  private createOAuthState(
+    payload: ShopifyOAuthStatePayload,
+  ): string {
+    const body = Buffer.from(
+      JSON.stringify(payload),
+      'utf8',
+    ).toString('base64url');
+    const signature = this.signOAuthStateBody(body);
+    return `${body}.${signature}`;
+  }
+
+  private verifyOAuthState(
+    state: string,
+  ): ShopifyOAuthStatePayload {
+    const [body, signature] = state.split('.');
+
+    if (!body || !signature) {
+      throw new BadRequestException(
+        'Invalid Shopify OAuth state.',
+      );
+    }
+
+    const expectedSignature = this.signOAuthStateBody(body);
+    const provided = Buffer.from(signature);
+    const expected = Buffer.from(expectedSignature);
+
+    if (
+      provided.length !== expected.length ||
+      !timingSafeEqual(provided, expected)
+    ) {
+      throw new BadRequestException(
+        'Invalid Shopify OAuth state.',
+      );
+    }
+
+    let payload: ShopifyOAuthStatePayload;
+
+    try {
+      payload = JSON.parse(
+        Buffer.from(body, 'base64url').toString('utf8'),
+      ) as ShopifyOAuthStatePayload;
+    } catch {
+      throw new BadRequestException(
+        'Invalid Shopify OAuth state.',
+      );
+    }
+
+    if (
+      !payload.organizationId ||
+      !payload.userId ||
+      typeof payload.exp !== 'number'
+    ) {
+      throw new BadRequestException(
+        'Invalid Shopify OAuth state.',
+      );
+    }
+
+    if (Date.now() > payload.exp) {
+      throw new BadRequestException(
+        'Shopify OAuth state has expired.',
+      );
+    }
+
+    return payload;
+  }
+
+  private signOAuthStateBody(body: string): string {
+    return createHmac('sha256', this.getOAuthStateSecret())
+      .update(body)
+      .digest('base64url');
+  }
+
+  private getOAuthStateSecret(): string {
+    const secret =
+      process.env.ENCRYPTION_KEY?.trim() ||
+      process.env.SHOPIFY_CLIENT_SECRET?.trim();
+
+    if (!secret) {
+      throw new BadRequestException(
+        'OAuth state signing secret is not configured.',
+      );
+    }
+
+    return secret;
   }
 }

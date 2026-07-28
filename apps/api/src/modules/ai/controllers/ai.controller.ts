@@ -37,7 +37,6 @@ export class AiController {
   @Roles(
     MembershipRole.OWNER,
     MembershipRole.ADMIN,
-    MembershipRole.MEMBER,
   )
   @ApiOperation({
     summary:

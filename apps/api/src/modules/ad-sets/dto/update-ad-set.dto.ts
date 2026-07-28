@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -11,7 +11,7 @@ import {
 import { CreateAdSetDto } from './create-ad-set.dto';
 
 export class UpdateAdSetDto extends PartialType(
-  CreateAdSetDto,
+  OmitType(CreateAdSetDto, ['campaignId'] as const),
 ) {
   @IsOptional()
   @Type(() => Boolean)

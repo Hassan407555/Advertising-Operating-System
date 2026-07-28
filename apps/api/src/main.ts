@@ -8,54 +8,71 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  console.log('CLIENT_ID =', process.env.SHOPIFY_CLIENT_ID);
-  console.log('REDIRECT_URI =', process.env.SHOPIFY_REDIRECT_URI);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
   const configService = app.get(ConfigService);
+  const logger = app.get(PinoLogger);
 
   app.enableShutdownHooks();
-  app.useLogger(app.get(PinoLogger));
+  app.useLogger(logger);
   app.setGlobalPrefix('api');
 
   app.use(helmet());
-  app.enableCors();
+
+  const corsOrigin = configService.get<string>('CORS_ORIGIN', '*');
+  app.enableCors({
+    origin:
+      corsOrigin === '*'
+        ? true
+        : corsOrigin.split(',').map((origin) => origin.trim()),
+    credentials: true,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-       transformOptions: {
-      enableImplicitConversion: true,
-    },
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Advertising Operating System API')
-    .setDescription('Backend API Documentation')
-    .setVersion('1.0.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-      },
-      'JWT',
-    )
-    .build();
+  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+  const swaggerEnabled =
+    String(
+      configService.get<string | boolean>('SWAGGER_ENABLED', nodeEnv !== 'production'),
+    ).toLowerCase() !== 'false';
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  if (swaggerEnabled) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Advertising Operating System API')
+      .setDescription('Backend API Documentation')
+      .setVersion('1.0.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+        'JWT',
+      )
+      .build();
 
-  SwaggerModule.setup('api/docs', app, document);
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = configService.get<number>('PORT', 3000);
 
   await app.listen(port);
 
-  console.log(`🚀 API running at http://localhost:${port}/api`);
-
-  console.log(`📚 Swagger: http://localhost:${port}/api/docs`);
+  logger.log(`API running at http://localhost:${port}/api`);
+  if (swaggerEnabled) {
+    logger.log(`Swagger: http://localhost:${port}/api/docs`);
+  }
 }
 
 void bootstrap();

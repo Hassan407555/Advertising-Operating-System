@@ -144,6 +144,57 @@ export class TikTokPublisherProvider
     const dryRun = this.isDryRun(request);
     const issues: PublishValidationIssue[] = [];
     const entities: PublishEntityResult[] = [];
+    // Intentionally defer local persistence until the remote publish sequence
+    // has fully completed, so failed runs do not leave partial local entity state.
+    const pendingLocalWrites: Array<{
+      entity: 'campaign' | 'adSet' | 'creative' | 'ad';
+      id: string;
+      data:
+        | Prisma.CampaignUpdateInput
+        | Prisma.AdSetUpdateInput
+        | Prisma.CreativeUpdateInput
+        | Prisma.AdUpdateInput;
+    }> = [];
+
+    const flushLocalWrites = async (): Promise<void> => {
+      if (pendingLocalWrites.length === 0) {
+        return;
+      }
+
+      const writes = [...pendingLocalWrites];
+      pendingLocalWrites.length = 0;
+
+      await this.prisma.$transaction(async (tx) => {
+        for (const write of writes) {
+          switch (write.entity) {
+            case 'campaign':
+              await tx.campaign.update({
+                where: { id: write.id },
+                data: write.data as Prisma.CampaignUpdateInput,
+              });
+              break;
+            case 'adSet':
+              await tx.adSet.update({
+                where: { id: write.id },
+                data: write.data as Prisma.AdSetUpdateInput,
+              });
+              break;
+            case 'creative':
+              await tx.creative.update({
+                where: { id: write.id },
+                data: write.data as Prisma.CreativeUpdateInput,
+              });
+              break;
+            case 'ad':
+              await tx.ad.update({
+                where: { id: write.id },
+                data: write.data as Prisma.AdUpdateInput,
+              });
+              break;
+          }
+        }
+      });
+    };
 
     const job = await this.prisma.publishJob.create({
       data: {
@@ -195,8 +246,9 @@ export class TikTokPublisherProvider
       });
 
       if (!dryRun) {
-        await this.prisma.campaign.update({
-          where: { id: context.campaign.id },
+        pendingLocalWrites.push({
+          entity: 'campaign',
+          id: context.campaign.id,
           data: {
             externalId: campaignExternalId,
             externalStatus: TIKTOK_OPERATION_STATUS_PAUSED,
@@ -222,8 +274,9 @@ export class TikTokPublisherProvider
         });
 
         if (!dryRun) {
-          await this.prisma.adSet.update({
-            where: { id: adSet.id },
+          pendingLocalWrites.push({
+            entity: 'adSet',
+            id: adSet.id,
             data: {
               externalId: adSetExternalId,
               externalStatus: TIKTOK_OPERATION_STATUS_PAUSED,
@@ -260,8 +313,9 @@ export class TikTokPublisherProvider
           });
 
           if (!dryRun) {
-            await this.prisma.creative.update({
-              where: { id: creative.id },
+            pendingLocalWrites.push({
+              entity: 'creative',
+              id: creative.id,
               data: {
                 externalId: creativeExternalId,
                 lastSuccessfulSyncAt: new Date(),
@@ -286,8 +340,9 @@ export class TikTokPublisherProvider
           });
 
           if (!dryRun) {
-            await this.prisma.ad.update({
-              where: { id: ad.id },
+            pendingLocalWrites.push({
+              entity: 'ad',
+              id: ad.id,
               data: {
                 externalId: adExternalId,
                 externalStatus: TIKTOK_OPERATION_STATUS_PAUSED,
@@ -298,6 +353,8 @@ export class TikTokPublisherProvider
           }
         }
       }
+
+      await flushLocalWrites();
 
       const completedAt = new Date();
       const result = this.toResult({
@@ -332,11 +389,30 @@ export class TikTokPublisherProvider
         message,
       });
 
-      await this.failJob(job.id, issues, startedAt, message);
+      const hasPublishedEntities = entities.some(
+        (entity) => entity.status === PublishStatus.PUBLISHED,
+      );
+      const terminalJobStatus = hasPublishedEntities
+        ? PublishJobStatus.PARTIAL
+        : PublishJobStatus.FAILED;
+      const terminalStatus = hasPublishedEntities
+        ? PublishStatus.PARTIAL
+        : PublishStatus.FAILED;
+
+      // Do not flush pending local writes on failure; this keeps local persistence
+      // deterministic and retry-safe even when remote calls partially succeeded.
+      await this.failJob(
+        job.id,
+        issues,
+        startedAt,
+        message,
+        terminalJobStatus,
+        entities,
+      );
 
       return this.toResult({
         success: false,
-        status: PublishStatus.FAILED,
+        status: terminalStatus,
         campaignId: request.campaignId,
         entities,
         issues,
@@ -1135,15 +1211,20 @@ export class TikTokPublisherProvider
     issues: PublishValidationIssue[],
     startedAt: Date,
     errorMessage?: string,
+    status: PublishJobStatus = PublishJobStatus.FAILED,
+    entities?: PublishEntityResult[],
   ): Promise<void> {
     await this.prisma.publishJob.update({
       where: { id: jobId },
       data: {
-        status: PublishJobStatus.FAILED,
+        status,
         errorMessage:
           errorMessage ??
           issues.map((issue) => issue.message).join(' | ').slice(0, 2000),
-        result: { issues } as unknown as Prisma.InputJsonValue,
+        result: {
+          issues,
+          entities: entities ?? [],
+        } as unknown as Prisma.InputJsonValue,
         completedAt: new Date(),
         startedAt,
       },

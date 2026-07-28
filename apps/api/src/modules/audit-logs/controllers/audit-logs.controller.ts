@@ -4,15 +4,18 @@ import { AuditLogsService } from '../services/audit-logs.service';
 import { QueryAuditLogsDto } from '../dto/query-audit-logs.dto';
 
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
+import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 import type { JwtPayload } from 'src/modules/auth/interfaces/jwt-payload.interface';
 
 @Controller('audit-logs')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AuditLogsController {
   constructor(private readonly auditLogsService: AuditLogsService) {}
 
   @Get()
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
   async findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryAuditLogsDto,

@@ -25,6 +25,7 @@ import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 import { AutomationPipelinesService } from '../services/automation-pipelines.service';
 import { AutomationRunService } from '../services/automation-run.service';
+import { AutomationService } from '../services/automation.service';
 import { AutomationTriggerService } from '../services/automation-trigger.service';
 import { CreateAutomationPipelineDto } from '../dto/create-automation-pipeline.dto';
 import { UpdateAutomationPipelineDto } from '../dto/update-automation-pipeline.dto';
@@ -33,6 +34,11 @@ import { TriggerAutomationDto } from '../dto/trigger-automation.dto';
 import { AutomationRunQueryDto } from '../dto/automation-run-query.dto';
 import { AutomationPipelineResponseDto } from '../dto/automation-pipeline-response.dto';
 import { AutomationRunResponseDto } from '../dto/automation-run-response.dto';
+import {
+  RunCampaignWorkflowDto,
+  RunFullWorkflowDto,
+  RunPublishWorkflowDto,
+} from '../dto/automation-workflow.dto';
 
 @ApiTags('Automation')
 @ApiBearerAuth()
@@ -43,6 +49,7 @@ export class AutomationController {
     private readonly pipelinesService: AutomationPipelinesService,
     private readonly runService: AutomationRunService,
     private readonly triggerService: AutomationTriggerService,
+    private readonly automationService: AutomationService,
   ) {}
 
   @Post('pipelines')
@@ -162,5 +169,60 @@ export class AutomationController {
     @CurrentUser() currentUser: JwtPayload,
   ): Promise<AutomationRunResponseDto> {
     return this.runService.findOne(id, currentUser);
+  }
+
+  @Post('workflows/campaign')
+  @Roles('OWNER', 'ADMIN')
+  @ApiOperation({
+    summary:
+      'Run campaign workflow: Generate Campaign → Generate AI Copy',
+  })
+  @ApiResponse({ status: 201, type: AutomationRunResponseDto })
+  runCampaignWorkflow(
+    @Body() dto: RunCampaignWorkflowDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<AutomationRunResponseDto> {
+    return this.automationService.runCampaignWorkflow(dto, currentUser);
+  }
+
+  @Post('workflows/publish')
+  @Roles('OWNER', 'ADMIN')
+  @ApiOperation({
+    summary:
+      'Run publish workflow: Publish Campaign → Synchronize Campaign',
+  })
+  @ApiResponse({ status: 201, type: AutomationRunResponseDto })
+  runPublishWorkflow(
+    @Body() dto: RunPublishWorkflowDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<AutomationRunResponseDto> {
+    return this.automationService.runPublishWorkflow(dto, currentUser);
+  }
+
+  @Post('workflows/full')
+  @Roles('OWNER', 'ADMIN')
+  @ApiOperation({
+    summary:
+      'Run full workflow: Generate Campaign → AI Copy → Publish → Synchronize',
+  })
+  @ApiResponse({ status: 201, type: AutomationRunResponseDto })
+  runFullWorkflow(
+    @Body() dto: RunFullWorkflowDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<AutomationRunResponseDto> {
+    return this.automationService.runFullWorkflow(dto, currentUser);
+  }
+
+  @Get('workflows/:id')
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
+  @ApiOperation({
+    summary: 'Get workflow run status by automation run ID',
+  })
+  @ApiResponse({ status: 200, type: AutomationRunResponseDto })
+  getWorkflow(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<AutomationRunResponseDto> {
+    return this.automationService.getWorkflow(id, currentUser);
   }
 }

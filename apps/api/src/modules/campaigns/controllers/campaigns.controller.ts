@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -17,6 +18,9 @@ import {
 
 import { PaginatedResponseDto } from '../../../common/dto/pagination.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { CreateCampaignDto } from '../dto/create-campaign.dto';
 import { UpdateCampaignDto } from '../dto/update-campaign.dto';
@@ -27,12 +31,14 @@ import { CampaignsService } from '../services/campaigns.service';
 @ApiTags('Campaigns')
 @ApiBearerAuth()
 @Controller('campaigns')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class CampaignsController {
   constructor(
     private readonly campaignsService: CampaignsService,
   ) {}
 
   @Post()
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Create campaign',
   })
@@ -48,6 +54,7 @@ export class CampaignsController {
   }
 
   @Get()
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
   @ApiOperation({
     summary: 'Get campaigns',
   })
@@ -64,6 +71,7 @@ export class CampaignsController {
   }
 
   @Get(':id')
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
   @ApiOperation({
     summary: 'Get campaign',
   })
@@ -82,6 +90,7 @@ export class CampaignsController {
   }
 
   @Patch(':id')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Update campaign',
   })
@@ -102,6 +111,7 @@ export class CampaignsController {
   }
 
   @Delete(':id')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Delete campaign',
   })

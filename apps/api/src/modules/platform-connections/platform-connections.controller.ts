@@ -17,8 +17,10 @@ import {
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
@@ -30,7 +32,7 @@ import { PlatformConnectionResponseDto } from './dto/platform-connection-respons
 
 @ApiTags('Platform Connections')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('platform-connections')
 export class PlatformConnectionsController {
   constructor(
@@ -38,6 +40,7 @@ export class PlatformConnectionsController {
   ) {}
 
   @Post()
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Create platform connection',
   })
@@ -53,6 +56,7 @@ export class PlatformConnectionsController {
   }
 
   @Get()
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
   @ApiOperation({
     summary: 'List platform connections',
   })
@@ -64,6 +68,7 @@ export class PlatformConnectionsController {
   }
 
   @Get(':id')
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
   @ApiOperation({
     summary: 'Get platform connection',
   })
@@ -79,6 +84,7 @@ export class PlatformConnectionsController {
   }
 
   @Patch(':id')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Update platform connection',
   })
@@ -99,6 +105,7 @@ export class PlatformConnectionsController {
   }
 
   @Delete(':id')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Delete platform connection',
   })

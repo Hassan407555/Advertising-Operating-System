@@ -68,6 +68,7 @@ model User {
   createdPlatformConnections PlatformConnection[] @relation("PlatformConnectionCreator")
   apiKeys                    ApiKey[]
   createdReports             Report[]             @relation("ReportCreator")
+  requestedPublishJobs       PublishJob[]         @relation("PublishJobRequester")
 }
 
 model Membership {
@@ -597,6 +598,7 @@ model AdAccount {
   organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   platformConnection PlatformConnection @relation(fields: [platformConnectionId], references: [id], onDelete: Restrict)
   campaigns          Campaign[]
+  publishJobs        PublishJob[]
 
   @@unique([organizationId, platformConnectionId, externalId])
   @@unique([platformConnectionId, externalId])
@@ -647,10 +649,13 @@ model Campaign {
   adAccount          AdAccount           @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
   adSets             AdSet[]
   analyticsSnapshots AnalyticsSnapshot[]
+  publishJobs        PublishJob[]
 
-  @@unique([organizationId, adAccountId, externalId])
-  @@unique([adAccountId, externalId])
-  @@unique([organizationId, slug]) // Optional if slugs are used
+  // Active-row uniqueness enforced via partial unique indexes in SQL
+  // (WHERE deletedAt IS NULL) — see migration soft_delete_partial_uniques.
+  @@index([organizationId, adAccountId, externalId])
+  @@index([adAccountId, externalId])
+  @@index([organizationId, slug])
   @@index([organizationId, deletedAt])
   @@index([organizationId])
   @@index([adAccountId])
@@ -701,8 +706,10 @@ model AdSet {
   ads                Ad[]
   analyticsSnapshots AnalyticsSnapshot[]
 
-  @@unique([organizationId, campaignId, externalId])
-  @@unique([campaignId, externalId])
+  // Active-row uniqueness enforced via partial unique indexes in SQL
+  // (WHERE deletedAt IS NULL) — see migration soft_delete_partial_uniques.
+  @@index([organizationId, campaignId, externalId])
+  @@index([campaignId, externalId])
   @@index([organizationId, deletedAt])
   @@index([organizationId])
   @@index([campaignId])
@@ -745,8 +752,10 @@ model Ad {
   assets             CreativeAsset[]
   analyticsSnapshots AnalyticsSnapshot[]
 
-  @@unique([organizationId, adSetId, externalId])
-  @@unique([adSetId, externalId])
+  // Active-row uniqueness enforced via partial unique indexes in SQL
+  // (WHERE deletedAt IS NULL) — see migration soft_delete_partial_uniques.
+  @@index([organizationId, adSetId, externalId])
+  @@index([adSetId, externalId])
   @@index([organizationId, deletedAt])
   @@index([organizationId])
   @@index([adSetId])
@@ -876,6 +885,9 @@ model AnalyticsSnapshot {
   adId       String?
   creativeId String?
 
+  // Deterministic grain key (COALESCE-safe uniqueness across nullable FKs)
+  uniqueKey String @unique @db.VarChar(512)
+
   // Date
   snapshotDate DateTime @db.Date
 
@@ -922,8 +934,6 @@ model AnalyticsSnapshot {
   ad Ad? @relation(fields: [adId], references: [id], onDelete: Cascade)
 
   creative Creative? @relation(fields: [creativeId], references: [id], onDelete: Cascade)
-
-  // @@unique([organizationId, platform, level, campaignId, adSetId, adId, creativeId, snapshotDate])
 
   @@index([organizationId])
   @@index([snapshotDate])
@@ -1044,6 +1054,7 @@ enum AutomationActionType {
   GENERATE_AI_COPY
   PROCESS_MEDIA
   PUBLISH_CAMPAIGN
+  SYNCHRONIZE_CAMPAIGN
   SEND_NOTIFICATION
 }
 
@@ -1151,26 +1162,30 @@ model AutomationStep {
 }
 
 model PublishJob {
-  id                String          @id @default(cuid())
+  id                String           @id @default(cuid())
   organizationId    String
   campaignId        String
   adAccountId       String
   platform          PlatformType
   status            PublishJobStatus @default(PENDING)
-  dryRun            Boolean         @default(false)
+  dryRun            Boolean          @default(false)
   requestedByUserId String?
-  errorMessage      String?         @db.VarChar(2000)
+  errorMessage      String?          @db.VarChar(2000)
   request           Json?
   result            Json?
   startedAt         DateTime?
   completedAt       DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaign        Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  adAccount       AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  requestedByUser User?        @relation("PublishJobRequester", fields: [requestedByUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([campaignId])
+  @@index([adAccountId])
   @@index([platform])
   @@index([status])
   @@index([organizationId, campaignId])

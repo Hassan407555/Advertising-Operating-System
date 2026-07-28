@@ -19,7 +19,9 @@ import {
 } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 import { AnalyticsBreakdownDto } from '../dto/analytics-breakdown.dto';
@@ -33,7 +35,8 @@ import { AnalyticsService } from '../services/analytics.service';
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('OWNER', 'ADMIN', 'MEMBER')
 @Controller('analytics')
 export class AnalyticsController {
   constructor(

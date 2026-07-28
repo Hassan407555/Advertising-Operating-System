@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 import { AcceptInvitationDto } from '../dto/accept-invitation.dto';
@@ -20,7 +22,8 @@ export class InvitationsController {
     private readonly invitationsService: InvitationsService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'ADMIN')
   @Post('organizations/:organizationId/invitations')
   create(
     @Param('organizationId') organizationId: string,

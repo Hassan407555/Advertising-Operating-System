@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "AutomationActionType" ADD VALUE 'SYNCHRONIZE_CAMPAIGN';

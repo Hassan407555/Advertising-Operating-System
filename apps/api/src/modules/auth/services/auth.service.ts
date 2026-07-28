@@ -12,6 +12,7 @@ import {
   AuditEntity,
   MembershipRole,
   Prisma,
+  UserStatus,
 } from '@prisma/client';
 
 import * as bcrypt from 'bcrypt';
@@ -288,6 +289,7 @@ export class AuthService {
       },
       select: {
         id: true,
+        status: true,
         refreshTokenHash: true,
       },
     });
@@ -297,6 +299,10 @@ export class AuthService {
       !(await bcrypt.compare(refreshToken, user.refreshTokenHash))
     ) {
       throw new UnauthorizedException('Invalid refresh token.');
+    }
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('User is inactive.');
     }
 
     const membership = await this.prisma.membership.findUnique({

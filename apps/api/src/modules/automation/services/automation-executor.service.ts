@@ -28,10 +28,11 @@ export class AutomationExecutorService {
       metadata,
     );
 
-    await this.runService.markRunRunning(
-      run.id,
-      currentUser,
-    );
+    await this.runService.markRunRunning(run.id, currentUser);
+
+    const workflowState: Record<string, unknown> = {
+      ...(metadata ?? {}),
+    };
 
     for (const step of run.steps) {
       await this.runService.markStepRunning(
@@ -43,9 +44,7 @@ export class AutomationExecutorService {
         step.input as unknown as AutomationActionDefinition;
 
       try {
-        const handler = this.registry.getHandler(
-          definition.type,
-        );
+        const handler = this.registry.getHandler(definition.type);
 
         const result = await handler.execute(definition, {
           organizationId: currentUser.organizationId,
@@ -53,7 +52,13 @@ export class AutomationExecutorService {
           runId: run.id,
           stepId: step.id,
           triggeredByUserId: currentUser.sub,
+          currentUser,
+          workflowState,
         });
+
+        if (result.output) {
+          Object.assign(workflowState, result.output);
+        }
 
         await this.runService.markStepCompleted(
           step.id,
@@ -84,20 +89,16 @@ export class AutomationExecutorService {
           errorMessage,
         );
 
-        const failedRun =
-          await this.runService.getRunOrThrow(
-            run.id,
-            currentUser.organizationId,
-          );
+        const failedRun = await this.runService.getRunOrThrow(
+          run.id,
+          currentUser.organizationId,
+        );
 
         return this.mapper.toRunResponse(failedRun);
       }
     }
 
-    await this.runService.markRunCompleted(
-      run.id,
-      currentUser,
-    );
+    await this.runService.markRunCompleted(run.id, currentUser);
 
     const completedRun = await this.runService.getRunOrThrow(
       run.id,

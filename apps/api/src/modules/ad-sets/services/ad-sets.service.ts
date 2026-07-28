@@ -245,6 +245,16 @@ async update(
     version,
     startDate,
     endDate,
+    name,
+    status,
+    dailyBudget,
+    lifetimeBudget,
+    bidAmount,
+    billingEvent,
+    targeting,
+    isActive,
+    metadata,
+    tags,
   } = updateAdSetDto;
 
   if (version === undefined) {
@@ -264,16 +274,22 @@ async update(
           version,
         },
         data: {
-          ...updateAdSetDto,
-
+          ...(name !== undefined ? { name } : {}),
+          ...(status !== undefined ? { status } : {}),
+          ...(dailyBudget !== undefined ? { dailyBudget } : {}),
+          ...(lifetimeBudget !== undefined ? { lifetimeBudget } : {}),
+          ...(bidAmount !== undefined ? { bidAmount } : {}),
+          ...(billingEvent !== undefined ? { billingEvent } : {}),
+          ...(targeting !== undefined ? { targeting } : {}),
+          ...(isActive !== undefined ? { isActive } : {}),
+          ...(metadata !== undefined ? { metadata } : {}),
+          ...(tags !== undefined ? { tags } : {}),
           startDate: startDate
             ? new Date(startDate)
             : undefined,
-
           endDate: endDate
             ? new Date(endDate)
             : undefined,
-
           version: {
             increment: 1,
           },

@@ -58,7 +58,6 @@ export class StorageController {
   @Roles(
     MembershipRole.OWNER,
     MembershipRole.ADMIN,
-    MembershipRole.MANAGER,
   )
   @ApiOperation({
     summary: 'Upload a file',
@@ -111,11 +110,6 @@ export class StorageController {
     @CurrentUser()
     currentUser: JwtPayload,
   ): Promise<StorageResponseDto> {
-    console.log('========== FILE ==========');
-    console.log(file);
-    console.log('========== DTO ==========');
-    console.log(dto);
-
     return this.storageAssetsService.upload(
       file,
       dto,
@@ -127,7 +121,6 @@ export class StorageController {
   @Roles(
     MembershipRole.OWNER,
     MembershipRole.ADMIN,
-    MembershipRole.MANAGER,
   )
   @ApiOperation({
     summary: 'Upload multiple files',
@@ -180,8 +173,6 @@ export class StorageController {
     @CurrentUser()
     currentUser: JwtPayload,
   ): Promise<StorageResponseDto[]> {
-    console.log(files);
-
     return this.storageAssetsService.uploadMultiple(
       files,
       dto,
@@ -193,7 +184,6 @@ export class StorageController {
   @Roles(
     MembershipRole.OWNER,
     MembershipRole.ADMIN,
-    MembershipRole.MANAGER,
     MembershipRole.MEMBER,
   )
   @ApiOperation({

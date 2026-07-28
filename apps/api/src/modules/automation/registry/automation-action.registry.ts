@@ -17,6 +17,10 @@ export class AutomationActionRegistry {
     this.handlers.set(handler.type, handler);
   }
 
+  hasHandler(type: AutomationActionType): boolean {
+    return this.handlers.has(type);
+  }
+
   getHandler(
     type: AutomationActionType,
   ): AutomationActionHandler {
@@ -29,5 +33,19 @@ export class AutomationActionRegistry {
     }
 
     return handler;
+  }
+
+  assertSupportedActions(
+    actions: Array<{ type: AutomationActionType }>,
+  ): void {
+    const unsupported = actions
+      .map((action) => action.type)
+      .filter((type) => !this.hasHandler(type));
+
+    if (unsupported.length > 0) {
+      throw new BadRequestException(
+        `Unsupported automation action(s): ${[...new Set(unsupported)].join(', ')}`,
+      );
+    }
   }
 }

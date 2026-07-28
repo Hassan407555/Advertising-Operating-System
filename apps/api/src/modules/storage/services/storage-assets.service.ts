@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -29,6 +30,8 @@ import { StorageResponseDto } from '../dto/storage-response.dto';
 
 @Injectable()
 export class StorageAssetsService {
+  private readonly logger = new Logger(StorageAssetsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
@@ -61,17 +64,6 @@ export class StorageAssetsService {
       );
 
 try {
-  console.log('========== CREATE ASSET ==========');
-  console.log({
-    organizationId: currentUser.organizationId,
-    creativeId: dto.creativeId || undefined,
-    adId: dto.adId || undefined,
-    assetType: dto.assetType,
-    isPrimary: dto.isPrimary,
-    uploadResult,
-  });
-  console.log('==================================');
-
   const asset = await this.prisma.creativeAsset.create({
     data: {
       organizationId: currentUser.organizationId,
@@ -138,9 +130,10 @@ try {
 
   return this.mapper.toResponse(asset);
 } catch (error) {
-  console.error('========== PRISMA ERROR ==========');
-  console.error(error);
-  console.error('=================================');
+  this.logger.error(
+    `Failed to persist creative asset for organization ${currentUser.organizationId}`,
+    error instanceof Error ? error.stack : undefined,
+  );
 
   await this.storageService.delete(
     uploadResult.storageKey,

@@ -22,6 +22,7 @@ import { UpdateAutomationPipelineDto } from '../dto/update-automation-pipeline.d
 import { AutomationPipelineQueryDto } from '../dto/automation-pipeline-query.dto';
 import { AutomationPipelineResponseDto } from '../dto/automation-pipeline-response.dto';
 import { AutomationMapper } from '../mappers/automation.mapper';
+import { AutomationActionRegistry } from '../registry/automation-action.registry';
 import {
   AUTOMATION_PIPELINE_SORT_FIELDS,
   AutomationPipelineSortField,
@@ -33,12 +34,15 @@ export class AutomationPipelinesService {
     private readonly prisma: PrismaService,
     private readonly auditLogsService: AuditLogsService,
     private readonly mapper: AutomationMapper,
+    private readonly actionRegistry: AutomationActionRegistry,
   ) {}
 
   async create(
     dto: CreateAutomationPipelineDto,
     currentUser: JwtPayload,
   ): Promise<AutomationPipelineResponseDto> {
+    this.actionRegistry.assertSupportedActions(dto.actions);
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         const pipeline = await tx.automationPipeline.create({
@@ -141,6 +145,10 @@ export class AutomationPipelinesService {
     dto: UpdateAutomationPipelineDto,
     currentUser: JwtPayload,
   ): Promise<AutomationPipelineResponseDto> {
+    if (dto.actions?.length) {
+      this.actionRegistry.assertSupportedActions(dto.actions);
+    }
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         const existing = await this.getPipelineOrThrow(

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { AdAccountsModule } from '../ad-accounts/ad-accounts.module';
 import { AdsModule } from '../ads/ads.module';
 import { AdSetsModule } from '../ad-sets/ad-sets.module';
@@ -12,6 +13,7 @@ import { CampaignGeneratorService } from './services/campaign-generator.service'
 
 @Module({
   imports: [
+    PrismaModule,
     ShopifyModule,
     CampaignsModule,
     AdSetsModule,

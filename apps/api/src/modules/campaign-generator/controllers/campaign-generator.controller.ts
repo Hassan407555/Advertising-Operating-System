@@ -35,7 +35,6 @@ export class CampaignGeneratorController {
   @Roles(
     MembershipRole.OWNER,
     MembershipRole.ADMIN,
-    MembershipRole.MEMBER,
   )
   @ApiOperation({
     summary:

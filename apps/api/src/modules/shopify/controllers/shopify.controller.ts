@@ -15,18 +15,20 @@ import {
 } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Public } from '../../auth/decorators/public.decorator';
 
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 import { ShopifyService } from '../services/shopify.service';
-import { Public } from '../../auth/decorators/public.decorator';
 import { ConnectShopifyDto } from '../dto/connect-shopify.dto';
 import { ShopifyCallbackDto } from '../dto/shopify-callback.dto';
 
 @ApiTags('Shopify')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('shopify')
 export class ShopifyController {
   constructor(
@@ -34,6 +36,7 @@ export class ShopifyController {
   ) {}
 
   @Post('connect')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Generate Shopify OAuth URL',
   })
@@ -47,34 +50,36 @@ export class ShopifyController {
     );
   }
 
-@Get('callback')
-@Public()
-@ApiOperation({
-  summary: 'Handle Shopify OAuth callback',
-})
-@Public()
-async callback(
-  @Query() dto: ShopifyCallbackDto,
-) {
-  return this.shopifyService.callback(
-    dto.code,
-    dto.shop,
-    dto.state,
-  );
-}
-@Get('store')
-@ApiOperation({
-  summary: 'Get connected Shopify store',
-})
-async getStore(
-  @CurrentUser() currentUser: JwtPayload,
-) {
-  return this.shopifyService.getStore(
-    currentUser,
-  );
-}
+  @Get('callback')
+  @Public()
+  @ApiOperation({
+    summary: 'Handle Shopify OAuth callback',
+  })
+  async callback(
+    @Query() dto: ShopifyCallbackDto,
+  ) {
+    return this.shopifyService.callback(
+      dto.code,
+      dto.shop,
+      dto.state,
+    );
+  }
+
+  @Get('store')
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
+  @ApiOperation({
+    summary: 'Get connected Shopify store',
+  })
+  async getStore(
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.shopifyService.getStore(
+      currentUser,
+    );
+  }
 
   @Post('sync')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Synchronize Shopify products',
   })
@@ -87,6 +92,7 @@ async getStore(
   }
 
   @Delete('disconnect')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Disconnect Shopify store',
   })

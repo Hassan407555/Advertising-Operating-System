@@ -81,6 +81,8 @@ export class AiCopyService {
     let lastProvider = this.aiService.getActiveProviderName();
     let lastModel: string | undefined;
 
+    // Each creative is processed independently. If execution fails mid-run,
+    // already-applied copy remains persisted and a retry can safely continue.
     for (const creative of creatives) {
       const product = productsByCreativeId.get(creative.id);
 
@@ -424,6 +426,24 @@ export class AiCopyService {
     const existingMetadata =
       (creative.metadata as Record<string, unknown> | null) ?? {};
     const callToAction = this.resolveCallToAction(copy);
+    const existingAiCopy = this.extractAiCopyMetadata(existingMetadata);
+
+    if (
+      creative.headline === copy.headline &&
+      creative.primaryText === copy.primaryText &&
+      creative.description === copy.description &&
+      (callToAction ? creative.callToAction === callToAction : true) &&
+      existingAiCopy?.cta === copy.cta &&
+      existingAiCopy?.suggestedHook === copy.suggestedHook &&
+      existingAiCopy?.targetAudienceSummary === copy.targetAudienceSummary &&
+      existingAiCopy?.offerAngle === copy.offerAngle &&
+      existingAiCopy?.marketingAngle === copy.marketingAngle &&
+      existingAiCopy?.platformNotes === copy.platformNotes &&
+      existingAiCopy?.tone === copy.tone &&
+      existingAiCopy?.provider === provider
+    ) {
+      return;
+    }
 
     await this.creativesService.update(
       creative.id,
@@ -461,6 +481,16 @@ export class AiCopyService {
   ): Promise<void> {
     const existingMetadata =
       (ad.metadata as Record<string, unknown> | null) ?? {};
+    const existingAiCopy = this.extractAiCopyMetadata(existingMetadata);
+
+    if (
+      existingAiCopy?.headline === copy.headline &&
+      existingAiCopy?.primaryText === copy.primaryText &&
+      existingAiCopy?.description === copy.description &&
+      existingAiCopy?.cta === copy.cta
+    ) {
+      return;
+    }
 
     await this.adsService.update(
       ad.id,
@@ -479,5 +509,15 @@ export class AiCopyService {
       },
       currentUser,
     );
+  }
+
+  private extractAiCopyMetadata(
+    metadata: Record<string, unknown>,
+  ): Record<string, unknown> | null {
+    const aiCopy = metadata.aiCopy;
+    if (!aiCopy || typeof aiCopy !== 'object') {
+      return null;
+    }
+    return aiCopy as Record<string, unknown>;
   }
 }

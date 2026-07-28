@@ -52,28 +52,16 @@ export class AuditLogsService {
         },
       });
     } catch (error) {
-      console.log('\n========================================');
-      console.log('AUDIT LOG CREATE FAILED');
-      console.log('========================================');
-
-      console.log('\nPARAMS:');
-      console.dir(params, { depth: null });
-
-      console.log('\nERROR OBJECT:');
-      console.dir(error, { depth: null });
+      this.logger.error(
+        `Audit log creation failed for ${params.entity}:${params.entityId}`,
+        error instanceof Error ? error.stack : undefined,
+      );
 
       if (error instanceof PrismaClientKnownRequestError) {
-        console.log('\nPRISMA ERROR');
-        console.log('Code:', error.code);
-        console.log('Meta:', error.meta);
+        this.logger.error(
+          `Prisma audit log error code=${error.code}`,
+        );
       }
-
-      if (error instanceof Error) {
-        console.log('\nSTACK TRACE');
-        console.log(error.stack);
-      }
-
-      this.logger.error('Audit log creation failed');
 
       throw error;
     }

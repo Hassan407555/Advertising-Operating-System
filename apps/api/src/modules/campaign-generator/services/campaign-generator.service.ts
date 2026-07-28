@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import {
   CreativeType,
@@ -8,6 +9,7 @@ import {
   PlatformType,
 } from '@prisma/client';
 
+import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { AdAccountsService } from '../../ad-accounts/ad-accounts.service';
 import { AdsService } from '../../ads/ads.service';
@@ -33,7 +35,10 @@ import type { GenerateCampaignResult } from '../interfaces/generate-campaign-res
 
 @Injectable()
 export class CampaignGeneratorService {
+  private readonly logger = new Logger(CampaignGeneratorService.name);
+
   constructor(
+    private readonly prisma: PrismaService,
     private readonly shopifyProductsService: ShopifyProductsService,
     private readonly shopifyService: ShopifyService,
     private readonly adAccountsService: AdAccountsService,
@@ -81,120 +86,185 @@ export class CampaignGeneratorService {
       creatives: [],
     };
 
-    for (const platform of platforms) {
-      const adAccountId = this.requireAdAccountId(platform, dto);
-      const campaignName = `${namePrefix} — ${platform}`;
+    try {
+      for (const platform of platforms) {
+        const adAccountId = this.requireAdAccountId(platform, dto);
+        const campaignName = `${namePrefix} — ${platform}`;
 
-      const campaign = await this.campaignsService.create(
-        {
-          adAccountId,
-          name: campaignName,
-          objective,
-          dailyBudget: platformBudget,
-          currency,
-        },
-        currentUser,
-      );
-
-      result.campaigns.push({
-        id: campaign.id,
-        platform,
-        name: campaign.name,
-      });
-
-      const adSetBudget = this.splitBudget(
-        platformBudget,
-        dto.countries.length,
-      );
-
-      for (const country of dto.countries) {
-        const normalizedCountry = country.trim().toUpperCase();
-        const adSetName = `${campaignName} — ${normalizedCountry}`;
-
-        const adSet = await this.adSetsService.create(
+        const campaign = await this.campaignsService.create(
           {
-            campaignId: campaign.id,
-            name: adSetName,
-            dailyBudget: adSetBudget,
-            targeting: {
-              countries: [normalizedCountry],
-              language: dto.language,
-            },
-            metadata: {
-              platform,
-              country: normalizedCountry,
-              language: dto.language,
-              placements: PLATFORM_PLACEMENTS[platform],
-              optimizationGoal: PLATFORM_OPTIMIZATION_GOALS[platform],
-            },
+            adAccountId,
+            name: campaignName,
+            objective,
+            dailyBudget: platformBudget,
+            currency,
           },
           currentUser,
         );
 
-        result.adSets.push({
-          id: adSet.id,
-          campaignId: campaign.id,
+        result.campaigns.push({
+          id: campaign.id,
           platform,
-          country: normalizedCountry,
-          name: adSet.name,
+          name: campaign.name,
         });
 
-        const creativeName = `${product.title} — ${platform} — ${normalizedCountry}`;
+        const adSetBudget = this.splitBudget(
+          platformBudget,
+          dto.countries.length,
+        );
 
-        const creative = await this.creativesService.create(
-          {
-            name: creativeName,
-            type: creativeType,
-            callToAction,
-            ...(destinationUrl
-              ? { landingPageUrl: destinationUrl }
-              : {}),
-            metadata: {
-              platform,
-              country: normalizedCountry,
-              language: dto.language,
-              productId: product.id,
-              sourceImageUrls: product.images.map((image) => image.url),
-              featuredImageUrl: product.featuredImageUrl,
-              aspectRatios: CREATIVE_ASPECT_RATIOS[creativeType] ?? [],
-              placements: PLATFORM_PLACEMENTS[platform],
-              requiredImages: creativeType === CreativeType.VIDEO ? 0 : 1,
-              requiredVideos: creativeType === CreativeType.VIDEO ? 1 : 0,
-              assetRecommendations: [
-                'Use product featured image as primary creative',
-                'AI copy and media processing will fill this placeholder later',
-              ],
+        for (const country of dto.countries) {
+          const normalizedCountry = country.trim().toUpperCase();
+          const adSetName = `${campaignName} — ${normalizedCountry}`;
+
+          const adSet = await this.adSetsService.create(
+            {
+              campaignId: campaign.id,
+              name: adSetName,
+              dailyBudget: adSetBudget,
+              targeting: {
+                countries: [normalizedCountry],
+                language: dto.language,
+              },
+              metadata: {
+                platform,
+                country: normalizedCountry,
+                language: dto.language,
+                placements: PLATFORM_PLACEMENTS[platform],
+                optimizationGoal: PLATFORM_OPTIMIZATION_GOALS[platform],
+              },
             },
-          },
-          currentUser,
-        );
+            currentUser,
+          );
 
-        result.creatives.push({
-          id: creative.id,
-          type: creative.type,
-          name: creative.name,
-        });
+          result.adSets.push({
+            id: adSet.id,
+            campaignId: campaign.id,
+            platform,
+            country: normalizedCountry,
+            name: adSet.name,
+          });
 
-        const adName = `${product.title} — ${normalizedCountry}`;
+          const creativeName = `${product.title} — ${platform} — ${normalizedCountry}`;
 
-        const ad = await this.adsService.create(
-          {
+          const creative = await this.creativesService.create(
+            {
+              name: creativeName,
+              type: creativeType,
+              callToAction,
+              ...(destinationUrl
+                ? { landingPageUrl: destinationUrl }
+                : {}),
+              metadata: {
+                platform,
+                country: normalizedCountry,
+                language: dto.language,
+                productId: product.id,
+                sourceImageUrls: product.images.map((image) => image.url),
+                featuredImageUrl: product.featuredImageUrl,
+                aspectRatios: CREATIVE_ASPECT_RATIOS[creativeType] ?? [],
+                placements: PLATFORM_PLACEMENTS[platform],
+                requiredImages: creativeType === CreativeType.VIDEO ? 0 : 1,
+                requiredVideos: creativeType === CreativeType.VIDEO ? 1 : 0,
+                assetRecommendations: [
+                  'Use product featured image as primary creative',
+                  'AI copy and media processing will fill this placeholder later',
+                ],
+              },
+            },
+            currentUser,
+          );
+
+          result.creatives.push({
+            id: creative.id,
+            type: creative.type,
+            name: creative.name,
+          });
+
+          const adName = `${product.title} — ${normalizedCountry}`;
+
+          const ad = await this.adsService.create(
+            {
+              adSetId: adSet.id,
+              creativeId: creative.id,
+              name: adName,
+            },
+            currentUser,
+          );
+
+          result.ads.push({
+            id: ad.id,
             adSetId: adSet.id,
-            creativeId: creative.id,
-            name: adName,
-          },
-          currentUser,
-        );
-
-        result.ads.push({
-          id: ad.id,
-          adSetId: adSet.id,
-          name: ad.name,
-        });
+            name: ad.name,
+          });
+        }
       }
+    } catch (error) {
+      await this.rollbackGeneratedEntities(result, currentUser.organizationId);
+      throw error;
     }
 
     return result;
+  }
+
+  private async rollbackGeneratedEntities(
+    result: GenerateCampaignResult,
+    organizationId: string,
+  ): Promise<void> {
+    const deletedAt = new Date();
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        if (result.ads.length > 0) {
+          await tx.ad.updateMany({
+            where: {
+              organizationId,
+              id: { in: result.ads.map((ad) => ad.id) },
+              deletedAt: null,
+            },
+            data: { deletedAt, isActive: false },
+          });
+        }
+
+        if (result.creatives.length > 0) {
+          await tx.creative.updateMany({
+            where: {
+              organizationId,
+              id: { in: result.creatives.map((creative) => creative.id) },
+              deletedAt: null,
+            },
+            data: { deletedAt, isActive: false },
+          });
+        }
+
+        if (result.adSets.length > 0) {
+          await tx.adSet.updateMany({
+            where: {
+              organizationId,
+              id: { in: result.adSets.map((adSet) => adSet.id) },
+              deletedAt: null,
+            },
+            data: { deletedAt, isActive: false },
+          });
+        }
+
+        if (result.campaigns.length > 0) {
+          await tx.campaign.updateMany({
+            where: {
+              organizationId,
+              id: { in: result.campaigns.map((campaign) => campaign.id) },
+              deletedAt: null,
+            },
+            data: { deletedAt, isActive: false },
+          });
+        }
+      });
+    } catch (rollbackError) {
+      this.logger.error(
+        `Failed to roll back partial campaign generation for organization ${organizationId}`,
+        rollbackError instanceof Error ? rollbackError.stack : undefined,
+      );
+    }
   }
 
   private validatePlatforms(

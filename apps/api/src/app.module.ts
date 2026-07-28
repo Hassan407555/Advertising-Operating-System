@@ -15,6 +15,8 @@ import { CampaignGeneratorModule } from './modules/campaign-generator/campaign-g
 import { AiModule } from './modules/ai/ai.module';
 import { AiCopyModule } from './modules/ai-copy/ai-copy.module';
 import { PublisherModule } from './modules/publisher/publisher.module';
+import { SynchronizationModule } from './modules/synchronization/synchronization.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { CreativeAssetsModule } from './modules/creative-assets/creative-assets.module';
 import { CreativesModule } from './modules/creatives/creatives.module';
 import { HealthModule } from './modules/health/health.module';
@@ -60,6 +62,8 @@ import { UsersModule } from './modules/users/users.module';
     AiModule,
     AiCopyModule,
     PublisherModule,
+    SynchronizationModule,
+    DashboardModule,
     AdAccountsModule,
   ],
 })

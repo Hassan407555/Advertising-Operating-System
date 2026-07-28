@@ -18,18 +18,20 @@ import {
 
 import { PaginatedResponseDto } from '../../../common/dto/pagination.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 
 import { CreateReportDto } from '../dto/create-report.dto';
 import { UpdateReportDto } from '../dto/update-report.dto';
 import { ReportQueryDto } from '../dto/report-query.dto';
 import { ReportResponseDto } from '../dto/report-response.dto';
 import { ReportingService } from '../services/reporting.service';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @ApiTags('Reporting')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('reports')
 export class ReportingController {
   constructor(
@@ -37,19 +39,20 @@ export class ReportingController {
   ) {}
 
   @Post()
-create(
-  @Body() dto: CreateReportDto,
-  @CurrentUser() currentUser: JwtPayload,
-): Promise<ReportResponseDto> {
-  console.log('Current User:', currentUser);
-
-  return this.reportingService.create(
-    dto,
-    currentUser,
-  );
-}
+  @Roles('OWNER', 'ADMIN')
+  @ApiOperation({ summary: 'Create report' })
+  create(
+    @Body() dto: CreateReportDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<ReportResponseDto> {
+    return this.reportingService.create(
+      dto,
+      currentUser,
+    );
+  }
 
   @Get()
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
   @ApiOperation({
     summary: 'Get reports',
   })
@@ -64,8 +67,9 @@ create(
       currentUser,
     );
   }
-  
+
   @Get(':id')
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
   @ApiOperation({
     summary: 'Get report',
   })
@@ -84,6 +88,7 @@ create(
   }
 
   @Patch(':id')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Update report',
   })
@@ -104,6 +109,7 @@ create(
   }
 
   @Delete(':id')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({
     summary: 'Delete report',
   })

@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 
 import { HttpService } from '@nestjs/axios';
@@ -13,6 +14,8 @@ import { ShopifyProductsResponse } from '../interfaces/shopify-product.interface
 
 @Injectable()
 export class ShopifyApiService {
+  private readonly logger = new Logger(ShopifyApiService.name);
+
   constructor(
     private readonly http: HttpService,
   ) {}
@@ -102,18 +105,13 @@ export class ShopifyApiService {
       ),
     );
 
-    console.log(
-  JSON.stringify(response.data, null, 2),
-);
-
    if (response.data.errors) {
-  console.error(
-    'Shopify GraphQL Errors:',
-    JSON.stringify(response.data.errors, null, 2),
+  this.logger.error(
+    `Shopify GraphQL errors for shop ${shop}`,
   );
 
   throw new BadRequestException(
-    JSON.stringify(response.data.errors),
+    'Shopify GraphQL request failed.',
   );
 }
 
