@@ -18,7 +18,19 @@ export const TIKTOK_V1_OBJECTIVE_MAP: Record<string, string> = {
   LEADS: 'LEAD_GENERATION',
 };
 
-export const TIKTOK_V1_SUPPORTED_CREATIVE_TYPES = ['IMAGE'] as const;
+/**
+ * IMAGE = temporary legacy SINGLE_IMAGE compatibility only.
+ * VIDEO = primary current TikTok creative path (SINGLE_VIDEO).
+ * Carousel will replace SINGLE_IMAGE in a later milestone — do not expand IMAGE.
+ */
+export const TIKTOK_V1_SUPPORTED_CREATIVE_TYPES = ['IMAGE', 'VIDEO'] as const;
+
+/** MIME types accepted for TikTok single-video upload (V1). */
+export const TIKTOK_V1_SUPPORTED_VIDEO_MIME_TYPES = [
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+] as const;
 
 export const TIKTOK_V1_CTA_MAP: Record<string, string> = {
   SHOP_NOW: 'SHOP_NOW',

@@ -4,8 +4,8 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import {
-  CampaignObjective,
   CallToAction,
+  ConnectionStatus,
   CreativeAssetType,
   CreativeType,
   MembershipRole,
@@ -16,7 +16,6 @@ import {
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { EncryptionService } from '../../../../infrastructure/encryption/encryption.service';
-import { StorageService } from '../../../storage/services/storage.service';
 import type { JwtPayload } from '../../../auth/interfaces/jwt-payload.interface';
 import { AdAccountsService } from '../../../ad-accounts/ad-accounts.service';
 import { AdsService } from '../../../ads/ads.service';
@@ -28,6 +27,8 @@ import type { CampaignResponseDto } from '../../../campaigns/dto/campaign-respon
 import { CreativesService } from '../../../creatives/creatives.service';
 import type { CreativeResponseDto } from '../../../creatives/dto/creative-response.dto';
 import { CreativeAssetsService } from '../../../creative-assets/creative-assets.service';
+import { PlatformConnectionsService } from '../../../platform-connections/platform-connections.service';
+import { StorageService } from '../../../storage/services/storage.service';
 
 import {
   PublishEntityType,
@@ -44,12 +45,14 @@ import type {
 } from '../interfaces/publisher-provider.interface';
 import { PublisherRegistry } from '../publisher.registry';
 import {
-  META_V1_CTA_MAP,
-  META_V1_OBJECTIVE_MAP,
-  META_V1_SUPPORTED_CREATIVE_TYPES,
-  META_V1_SUPPORTED_VIDEO_MIME_TYPES,
-} from './meta.constants';
-import { MetaGraphClient } from './meta-graph.client';
+  TIKTOK_OPERATION_STATUS_PAUSED,
+  TIKTOK_V1_COUNTRY_LOCATION_IDS,
+  TIKTOK_V1_CTA_MAP,
+  TIKTOK_V1_OBJECTIVE_MAP,
+  TIKTOK_V1_SUPPORTED_CREATIVE_TYPES,
+  TIKTOK_V1_SUPPORTED_VIDEO_MIME_TYPES,
+} from './tiktok.constants';
+import { TikTokApiClient } from './tiktok-api.client';
 
 interface ResolvedVideoMedia {
   url: string;
@@ -57,35 +60,40 @@ interface ResolvedVideoMedia {
   thumbnailUrl: string | null;
 }
 
-interface MetaPublishContext {
+interface TikTokPublishContext {
   campaign: CampaignResponseDto;
-  adAccountExternalId: string;
+  advertiserId: string;
   accessToken: string;
-  pageId: string | null;
+  identityId: string | null;
+  displayName: string;
   dryRun: boolean;
   adSets: AdSetResponseDto[];
   ads: AdResponseDto[];
   creativesById: Map<string, CreativeResponseDto>;
-  /** creativeId → resolved VIDEO media (Creative Assets / Storage / metadata) */
+  /**
+   * Temporary IMAGE compatibility only (legacy SINGLE_IMAGE).
+   * Do not expand — Carousel will replace this path.
+   */
+  imageUrlByCreativeId: Map<string, string>;
+  /** Primary creative path: VIDEO → SINGLE_VIDEO */
   videoByCreativeId: Map<string, ResolvedVideoMedia>;
 }
 
 /**
- * Meta Marketing API publisher — V1 scope only:
- * - Standard campaign objectives (mapped to OUTCOME_*)
- * - Single-image (or text) ads
- * - Single-video ads (upload existing video asset)
+ * TikTok Marketing API publisher — V1 scope:
+ * - VIDEO (SINGLE_VIDEO) is the primary creative format
+ * - IMAGE (SINGLE_IMAGE) retained temporarily as compatibility only
  * - Existing AI-generated copy fields
  * - Existing campaign → ad set → ad → creative structure
- * - Publish only (campaigns created as PAUSED)
+ * - Publish only (entities created as DISABLE / paused)
  */
 @Injectable()
-export class MetaPublisherProvider
+export class TikTokPublisherProvider
   implements PublisherProvider, OnModuleInit
 {
-  readonly platform = PublisherPlatform.META;
+  readonly platform = PublisherPlatform.TIKTOK;
 
-  private readonly logger = new Logger(MetaPublisherProvider.name);
+  private readonly logger = new Logger(TikTokPublisherProvider.name);
 
   constructor(
     private readonly registry: PublisherRegistry,
@@ -94,11 +102,12 @@ export class MetaPublisherProvider
     private readonly storageService: StorageService,
     private readonly campaignsService: CampaignsService,
     private readonly adAccountsService: AdAccountsService,
+    private readonly platformConnectionsService: PlatformConnectionsService,
     private readonly adSetsService: AdSetsService,
     private readonly adsService: AdsService,
     private readonly creativesService: CreativesService,
     private readonly creativeAssetsService: CreativeAssetsService,
-    private readonly metaGraphClient: MetaGraphClient,
+    private readonly tikTokApiClient: TikTokApiClient,
   ) {}
 
   onModuleInit(): void {
@@ -115,11 +124,11 @@ export class MetaPublisherProvider
       await this.buildContext(request, issues, dryRun);
     } catch (error) {
       issues.push({
-        code: 'META_CONTEXT_ERROR',
+        code: 'TIKTOK_CONTEXT_ERROR',
         message:
           error instanceof Error
             ? error.message
-            : 'Failed to build Meta publish context.',
+            : 'Failed to build TikTok publish context.',
       });
     }
 
@@ -141,7 +150,7 @@ export class MetaPublisherProvider
         organizationId: request.organizationId,
         campaignId: request.campaignId,
         adAccountId: request.adAccountId,
-        platform: PlatformType.META,
+        platform: PlatformType.TIKTOK,
         status: PublishJobStatus.VALIDATING,
         dryRun,
         requestedByUserId: request.requestedByUserId,
@@ -170,12 +179,12 @@ export class MetaPublisherProvider
         data: { status: PublishJobStatus.PUBLISHING },
       });
 
-      const metaObjective =
-        META_V1_OBJECTIVE_MAP[context.campaign.objective];
+      const tikTokObjective =
+        TIKTOK_V1_OBJECTIVE_MAP[context.campaign.objective];
 
       const campaignExternalId = await this.publishCampaign(
         context,
-        metaObjective,
+        tikTokObjective,
       );
 
       entities.push({
@@ -190,7 +199,7 @@ export class MetaPublisherProvider
           where: { id: context.campaign.id },
           data: {
             externalId: campaignExternalId,
-            externalStatus: 'PAUSED',
+            externalStatus: TIKTOK_OPERATION_STATUS_PAUSED,
             lastSuccessfulSyncAt: new Date(),
             lastSyncedAt: new Date(),
           },
@@ -202,6 +211,7 @@ export class MetaPublisherProvider
           context,
           adSet,
           campaignExternalId,
+          tikTokObjective,
         );
 
         entities.push({
@@ -216,7 +226,7 @@ export class MetaPublisherProvider
             where: { id: adSet.id },
             data: {
               externalId: adSetExternalId,
-              externalStatus: 'PAUSED',
+              externalStatus: TIKTOK_OPERATION_STATUS_PAUSED,
               lastSuccessfulSyncAt: new Date(),
               lastSyncedAt: new Date(),
             },
@@ -264,6 +274,7 @@ export class MetaPublisherProvider
             context,
             ad,
             adSetExternalId,
+            creative,
             creativeExternalId,
           );
 
@@ -279,7 +290,7 @@ export class MetaPublisherProvider
               where: { id: ad.id },
               data: {
                 externalId: adExternalId,
-                externalStatus: 'PAUSED',
+                externalStatus: TIKTOK_OPERATION_STATUS_PAUSED,
                 lastSuccessfulSyncAt: new Date(),
                 lastSyncedAt: new Date(),
               },
@@ -313,11 +324,11 @@ export class MetaPublisherProvider
       return result;
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Meta publish failed.';
+        error instanceof Error ? error.message : 'TikTok publish failed.';
       this.logger.error(message);
 
       issues.push({
-        code: 'META_PUBLISH_FAILED',
+        code: 'TIKTOK_PUBLISH_FAILED',
         message,
       });
 
@@ -338,7 +349,7 @@ export class MetaPublisherProvider
     request: PublishRequest,
     issues: PublishValidationIssue[],
     dryRun: boolean,
-  ): Promise<MetaPublishContext> {
+  ): Promise<TikTokPublishContext> {
     const currentUser = this.toSystemUser(request);
 
     const campaign = await this.campaignsService.findOne(
@@ -356,19 +367,19 @@ export class MetaPublisherProvider
       });
     }
 
-    if (campaign.adAccount?.platform !== PlatformType.META) {
+    if (campaign.adAccount?.platform !== PlatformType.TIKTOK) {
       issues.push({
         code: 'PLATFORM_MISMATCH',
-        message: 'Campaign ad account is not a Meta account.',
+        message: 'Campaign ad account is not a TikTok account.',
         entityType: PublishEntityType.CAMPAIGN,
         entityId: campaign.id,
       });
     }
 
-    if (!META_V1_OBJECTIVE_MAP[campaign.objective]) {
+    if (!TIKTOK_V1_OBJECTIVE_MAP[campaign.objective]) {
       issues.push({
         code: 'UNSUPPORTED_OBJECTIVE',
-        message: `V1 Meta publisher does not support objective ${campaign.objective}. Supported: ${Object.keys(META_V1_OBJECTIVE_MAP).join(', ')}.`,
+        message: `V1 TikTok publisher does not support objective ${campaign.objective}. Supported: ${Object.keys(TIKTOK_V1_OBJECTIVE_MAP).join(', ')}.`,
         entityType: PublishEntityType.CAMPAIGN,
         entityId: campaign.id,
         field: 'objective',
@@ -380,10 +391,10 @@ export class MetaPublisherProvider
       currentUser,
     );
 
-    if (adAccount.platform !== PlatformType.META) {
+    if (adAccount.platform !== PlatformType.TIKTOK) {
       issues.push({
-        code: 'AD_ACCOUNT_NOT_META',
-        message: 'Selected ad account is not a Meta account.',
+        code: 'AD_ACCOUNT_NOT_TIKTOK',
+        message: 'Selected ad account is not a TikTok account.',
         field: 'adAccountId',
       });
     }
@@ -391,21 +402,49 @@ export class MetaPublisherProvider
     if (!adAccount.isActive) {
       issues.push({
         code: 'AD_ACCOUNT_INACTIVE',
-        message: 'Selected Meta ad account is inactive.',
+        message: 'Selected TikTok ad account is inactive.',
         field: 'adAccountId',
       });
     }
 
-    const pageId = this.resolvePageId(request, adAccount.metadata);
-    if (!dryRun && !pageId) {
+    const connection = await this.platformConnectionsService.findOne(
+      adAccount.platformConnectionId,
+      currentUser,
+    );
+
+    if (connection.platform !== PlatformType.TIKTOK) {
       issues.push({
-        code: 'PAGE_ID_REQUIRED',
-        message:
-          'Meta pageId is required for live publish. Pass options.pageId or set adAccount.metadata.pageId.',
-        field: 'options.pageId',
+        code: 'CONNECTION_NOT_TIKTOK',
+        message: 'Platform connection is not a TikTok connection.',
+        field: 'platformConnectionId',
       });
     }
 
+    if (connection.status !== ConnectionStatus.ACTIVE) {
+      issues.push({
+        code: 'CONNECTION_INACTIVE',
+        message: `TikTok platform connection is ${connection.status}. Expected ACTIVE.`,
+        field: 'platformConnectionId',
+      });
+    }
+
+    const identityId = this.resolveIdentityId(request, adAccount.metadata);
+    if (!dryRun && !identityId) {
+      issues.push({
+        code: 'IDENTITY_ID_REQUIRED',
+        message:
+          'TikTok identityId is required for live publish. Pass options.identityId or set adAccount.metadata.identityId.',
+        field: 'options.identityId',
+      });
+    }
+
+    const displayName = this.resolveDisplayName(
+      request,
+      adAccount.metadata,
+      adAccount.accountName,
+    );
+
+    // Access tokens are not exposed by PlatformConnectionsService DTOs.
     const credential = await this.prisma.platformCredential.findFirst({
       where: {
         platformConnectionId: adAccount.platformConnectionId,
@@ -417,14 +456,22 @@ export class MetaPublisherProvider
 
     if (!credential?.accessToken) {
       issues.push({
-        code: 'META_CREDENTIALS_MISSING',
-        message: 'No active Meta access token found for this ad account connection.',
+        code: 'TIKTOK_CREDENTIALS_MISSING',
+        message:
+          'No active TikTok access token found for this ad account connection.',
       });
     }
 
     const accessToken = credential
       ? this.safeDecrypt(credential.accessToken)
       : '';
+
+    if (credential?.expiresAt && credential.expiresAt.getTime() < Date.now()) {
+      issues.push({
+        code: 'TIKTOK_TOKEN_EXPIRED',
+        message: 'TikTok access token has expired. Reconnect the platform.',
+      });
+    }
 
     const adSetsPage = await this.adSetsService.findAll(
       {
@@ -450,6 +497,20 @@ export class MetaPublisherProvider
         entityType: PublishEntityType.CAMPAIGN,
         entityId: campaign.id,
       });
+    }
+
+    for (const adSet of adSets) {
+      const locationIds = this.resolveLocationIds(adSet);
+      if (locationIds.length === 0) {
+        issues.push({
+          code: 'UNSUPPORTED_GEO',
+          message:
+            'Ad set targeting.countries has no mapped TikTok location_ids. Use a supported ISO country code (e.g. US, GB, CA).',
+          entityType: PublishEntityType.AD_SET,
+          entityId: adSet.id,
+          field: 'targeting.countries',
+        });
+      }
     }
 
     const adsPages = await Promise.all(
@@ -490,15 +551,6 @@ export class MetaPublisherProvider
       ),
     ];
 
-    if (request.entityIds?.creativeIds?.length) {
-      const allowed = new Set(request.entityIds.creativeIds);
-      for (const id of creativeIds) {
-        if (!allowed.has(id)) {
-          // filtered later via ads without those creatives — skip
-        }
-      }
-    }
-
     const creatives = await Promise.all(
       creativeIds.map((id) =>
         this.creativesService.findOne(id, currentUser),
@@ -509,14 +561,22 @@ export class MetaPublisherProvider
       creatives.map((creative) => [creative.id, creative]),
     );
 
+    const imageUrlByCreativeId = new Map<string, string>();
     const videoByCreativeId = new Map<string, ResolvedVideoMedia>();
+
     for (const creative of creatives) {
-      if (creative.type !== CreativeType.VIDEO) {
-        continue;
+      if (creative.type === CreativeType.IMAGE) {
+        const imageUrl = await this.resolveImageUrl(creative, currentUser);
+        if (imageUrl) {
+          imageUrlByCreativeId.set(creative.id, imageUrl);
+        }
       }
-      const video = await this.resolveVideoMedia(creative, currentUser);
-      if (video) {
-        videoByCreativeId.set(creative.id, video);
+
+      if (creative.type === CreativeType.VIDEO) {
+        const video = await this.resolveVideoMedia(creative, currentUser);
+        if (video) {
+          videoByCreativeId.set(creative.id, video);
+        }
       }
     }
 
@@ -543,13 +603,13 @@ export class MetaPublisherProvider
       }
 
       if (
-        !META_V1_SUPPORTED_CREATIVE_TYPES.includes(
-          creative.type as (typeof META_V1_SUPPORTED_CREATIVE_TYPES)[number],
+        !TIKTOK_V1_SUPPORTED_CREATIVE_TYPES.includes(
+          creative.type as (typeof TIKTOK_V1_SUPPORTED_CREATIVE_TYPES)[number],
         )
       ) {
         issues.push({
           code: 'UNSUPPORTED_CREATIVE_TYPE',
-          message: `V1 Meta publisher only supports IMAGE/TEXT/VIDEO creatives. Found ${creative.type}.`,
+          message: `V1 TikTok publisher supports IMAGE (legacy) and VIDEO. Found ${creative.type}.`,
           entityType: PublishEntityType.CREATIVE,
           entityId: creative.id,
           field: 'type',
@@ -567,12 +627,11 @@ export class MetaPublisherProvider
       }
 
       if (creative.type === CreativeType.IMAGE) {
-        const imageUrl = this.resolveImageUrl(creative);
-        if (!imageUrl) {
+        if (!imageUrlByCreativeId.get(creative.id)) {
           issues.push({
             code: 'MISSING_IMAGE',
             message:
-              'IMAGE creative requires a source image URL in metadata.sourceImageUrls or featuredImageUrl.',
+              'IMAGE creative requires a CreativeAsset or metadata.sourceImageUrls / featuredImageUrl.',
             entityType: PublishEntityType.CREATIVE,
             entityId: creative.id,
           });
@@ -590,13 +649,13 @@ export class MetaPublisherProvider
             entityId: creative.id,
           });
         } else if (
-          !META_V1_SUPPORTED_VIDEO_MIME_TYPES.includes(
-            video.mimeType as (typeof META_V1_SUPPORTED_VIDEO_MIME_TYPES)[number],
+          !TIKTOK_V1_SUPPORTED_VIDEO_MIME_TYPES.includes(
+            video.mimeType as (typeof TIKTOK_V1_SUPPORTED_VIDEO_MIME_TYPES)[number],
           )
         ) {
           issues.push({
             code: 'UNSUPPORTED_VIDEO_FORMAT',
-            message: `Unsupported video MIME type ${video.mimeType}. Supported: ${META_V1_SUPPORTED_VIDEO_MIME_TYPES.join(', ')}.`,
+            message: `Unsupported video MIME type ${video.mimeType}. Supported: ${TIKTOK_V1_SUPPORTED_VIDEO_MIME_TYPES.join(', ')}.`,
             entityType: PublishEntityType.CREATIVE,
             entityId: creative.id,
             field: 'mimeType',
@@ -617,33 +676,34 @@ export class MetaPublisherProvider
 
     return {
       campaign,
-      adAccountExternalId: adAccount.externalId,
+      advertiserId: adAccount.externalId,
       accessToken,
-      pageId,
+      identityId,
+      displayName,
       dryRun,
       adSets,
       ads,
       creativesById,
+      imageUrlByCreativeId,
       videoByCreativeId,
     };
   }
 
   private async publishCampaign(
-    context: MetaPublishContext,
-    metaObjective: string,
+    context: TikTokPublishContext,
+    objectiveType: string,
   ): Promise<string> {
     if (context.dryRun) {
-      return `meta_dry_campaign_${context.campaign.id}`;
+      return `tiktok_dry_campaign_${context.campaign.id}`;
     }
 
-    const created = await this.metaGraphClient.createCampaign(
-      context.adAccountExternalId,
+    const created = await this.tikTokApiClient.createCampaign(
       context.accessToken,
       {
-        name: context.campaign.name,
-        objective: metaObjective,
-        status: 'PAUSED',
-        special_ad_categories: [],
+        advertiser_id: context.advertiserId,
+        campaign_name: context.campaign.name,
+        objective_type: objectiveType,
+        operation_status: TIKTOK_OPERATION_STATUS_PAUSED,
       },
     );
 
@@ -651,198 +711,225 @@ export class MetaPublisherProvider
   }
 
   private async publishAdSet(
-    context: MetaPublishContext,
+    context: TikTokPublishContext,
     adSet: AdSetResponseDto,
     campaignExternalId: string,
+    objectiveType: string,
   ): Promise<string> {
     if (context.dryRun) {
-      return `meta_dry_adset_${adSet.id}`;
+      return `tiktok_dry_adset_${adSet.id}`;
     }
 
+    const locationIds = this.resolveLocationIds(adSet);
+    const budget = this.toMajorBudget(
+      adSet.dailyBudget ?? context.campaign.dailyBudget,
+    );
+
+    const scheduleStart = this.formatTikTokDateTime(new Date());
+    const { billingEvent, optimizationGoal } =
+      this.adGroupOptimizationFor(objectiveType);
+
+    const created = await this.tikTokApiClient.createAdGroup(
+      context.accessToken,
+      {
+        advertiser_id: context.advertiserId,
+        campaign_id: campaignExternalId,
+        adgroup_name: adSet.name,
+        promotion_type: 'WEBSITE',
+        placement_type: 'PLACEMENT_TYPE_AUTOMATIC',
+        location_ids: locationIds,
+        budget_mode: 'BUDGET_MODE_DAY',
+        budget,
+        schedule_type: 'SCHEDULE_FROM_NOW',
+        schedule_start_time: scheduleStart,
+        billing_event: billingEvent,
+        optimization_goal: optimizationGoal,
+        bid_type: 'BID_TYPE_NO_BID',
+        pacing: 'PACING_MODE_SMOOTH',
+        operation_status: TIKTOK_OPERATION_STATUS_PAUSED,
+      },
+    );
+
+    return created.id;
+  }
+
+  /**
+   * TikTok has no separate AdCreative entity like Meta.
+   * - IMAGE (legacy): upload image → image_id
+   * - VIDEO (primary): upload video → video_id
+   */
+  private async publishCreative(
+    context: TikTokPublishContext,
+    creative: CreativeResponseDto,
+  ): Promise<string> {
+    if (context.dryRun) {
+      if (creative.type === CreativeType.VIDEO) {
+        return `tiktok_dry_video_${creative.id}`;
+      }
+      return `tiktok_dry_creative_${creative.id}`;
+    }
+
+    if (creative.type === CreativeType.VIDEO) {
+      const video = context.videoByCreativeId.get(creative.id);
+      if (!video) {
+        throw new Error(`Missing video URL for creative ${creative.id}.`);
+      }
+
+      const uploaded = await this.tikTokApiClient.uploadVideoByUrl(
+        context.accessToken,
+        context.advertiserId,
+        video.url,
+        creative.name,
+      );
+
+      return uploaded.id;
+    }
+
+    // Temporary IMAGE compatibility — do not expand this path.
+    const imageUrl = context.imageUrlByCreativeId.get(creative.id);
+    if (!imageUrl) {
+      throw new Error(`Missing image URL for creative ${creative.id}.`);
+    }
+
+    const uploaded = await this.tikTokApiClient.uploadImageByUrl(
+      context.accessToken,
+      context.advertiserId,
+      imageUrl,
+      creative.name,
+    );
+
+    return uploaded.id;
+  }
+
+  private async publishAd(
+    context: TikTokPublishContext,
+    ad: AdResponseDto,
+    adSetExternalId: string,
+    creative: CreativeResponseDto,
+    mediaExternalId: string,
+  ): Promise<string> {
+    if (context.dryRun) {
+      return `tiktok_dry_ad_${ad.id}`;
+    }
+
+    const cta =
+      TIKTOK_V1_CTA_MAP[creative.callToAction ?? CallToAction.SHOP_NOW] ??
+      'SHOP_NOW';
+
+    const creativePayload: Record<string, unknown> = {
+      ad_name: ad.name,
+      ad_text: creative.primaryText,
+      landing_page_url: creative.landingPageUrl,
+      call_to_action: cta,
+      display_name: context.displayName || creative.headline,
+      operation_status: TIKTOK_OPERATION_STATUS_PAUSED,
+    };
+
+    if (creative.type === CreativeType.VIDEO) {
+      creativePayload.ad_format = 'SINGLE_VIDEO';
+      creativePayload.video_id = mediaExternalId;
+
+      const video = context.videoByCreativeId.get(creative.id);
+      if (video?.thumbnailUrl) {
+        // Optional cover when a thumbnail already exists (no generation).
+        const cover = await this.tikTokApiClient.uploadImageByUrl(
+          context.accessToken,
+          context.advertiserId,
+          video.thumbnailUrl,
+          `${creative.name}-cover`,
+        );
+        creativePayload.image_ids = [cover.id];
+      }
+    } else {
+      // Temporary legacy SINGLE_IMAGE compatibility.
+      creativePayload.ad_format = 'SINGLE_IMAGE';
+      creativePayload.image_ids = [mediaExternalId];
+    }
+
+    if (context.identityId) {
+      creativePayload.identity_type = 'CUSTOMIZED_USER';
+      creativePayload.identity_id = context.identityId;
+    }
+
+    const created = await this.tikTokApiClient.createAd(
+      context.accessToken,
+      {
+        advertiser_id: context.advertiserId,
+        adgroup_id: adSetExternalId,
+        creatives: [creativePayload],
+      },
+    );
+
+    return created.id;
+  }
+
+  private adGroupOptimizationFor(objectiveType: string): {
+    billingEvent: string;
+    optimizationGoal: string;
+  } {
+    switch (objectiveType) {
+      case 'REACH':
+        return { billingEvent: 'CPM', optimizationGoal: 'REACH' };
+      case 'ENGAGEMENT':
+        return { billingEvent: 'OCPM', optimizationGoal: 'ENGAGED_VIEW' };
+      case 'LEAD_GENERATION':
+        return { billingEvent: 'OCPM', optimizationGoal: 'LEAD_GENERATION' };
+      case 'CONVERSIONS':
+        return { billingEvent: 'OCPM', optimizationGoal: 'CONVERT' };
+      case 'TRAFFIC':
+      default:
+        return { billingEvent: 'CPC', optimizationGoal: 'CLICK' };
+    }
+  }
+
+  private resolveLocationIds(adSet: AdSetResponseDto): string[] {
     const targeting = (adSet.targeting ?? {}) as Record<string, unknown>;
     const countries = Array.isArray(targeting.countries)
       ? (targeting.countries as string[])
       : ['US'];
 
-    const dailyBudgetCents = this.toCents(
-      adSet.dailyBudget ?? context.campaign.dailyBudget,
-    );
-
-    const created = await this.metaGraphClient.createAdSet(
-      context.adAccountExternalId,
-      context.accessToken,
-      {
-        name: adSet.name,
-        campaign_id: campaignExternalId,
-        daily_budget: dailyBudgetCents,
-        billing_event: 'IMPRESSIONS',
-        optimization_goal: this.optimizationGoalFor(
-          context.campaign.objective,
-        ),
-        bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-        targeting: {
-          geo_locations: {
-            countries,
-          },
-        },
-        status: 'PAUSED',
-      },
-    );
-
-    return created.id;
-  }
-
-  private async publishCreative(
-    context: MetaPublishContext,
-    creative: CreativeResponseDto,
-  ): Promise<string> {
-    if (context.dryRun) {
-      if (creative.type === CreativeType.VIDEO) {
-        return `meta_dry_video_creative_${creative.id}`;
+    const locationIds: string[] = [];
+    for (const country of countries) {
+      const code = String(country).trim().toUpperCase();
+      const locationId = TIKTOK_V1_COUNTRY_LOCATION_IDS[code];
+      if (locationId) {
+        locationIds.push(locationId);
       }
-      return `meta_dry_creative_${creative.id}`;
     }
 
-    if (creative.type === CreativeType.VIDEO) {
-      return this.publishVideoCreative(context, creative);
-    }
-
-    // Existing IMAGE / TEXT flow — unchanged.
-    const imageUrl = this.resolveImageUrl(creative);
-    const ctaType =
-      META_V1_CTA_MAP[creative.callToAction ?? CallToAction.SHOP_NOW] ??
-      'SHOP_NOW';
-
-    const linkData: Record<string, unknown> = {
-      message: creative.primaryText,
-      name: creative.headline,
-      description: creative.description ?? undefined,
-      link: creative.landingPageUrl,
-      call_to_action: {
-        type: ctaType,
-        value: {
-          link: creative.landingPageUrl,
-        },
-      },
-    };
-
-    if (imageUrl) {
-      linkData.picture = imageUrl;
-    }
-
-    const created = await this.metaGraphClient.createAdCreative(
-      context.adAccountExternalId,
-      context.accessToken,
-      {
-        name: creative.name,
-        object_story_spec: {
-          page_id: context.pageId,
-          link_data: linkData,
-        },
-      },
-    );
-
-    return created.id;
+    return [...new Set(locationIds)];
   }
 
-  private async publishVideoCreative(
-    context: MetaPublishContext,
+  private async resolveImageUrl(
     creative: CreativeResponseDto,
-  ): Promise<string> {
-    const video = context.videoByCreativeId.get(creative.id);
-    if (!video) {
-      throw new Error(`Missing video media for creative ${creative.id}.`);
-    }
-
-    const uploaded = await this.metaGraphClient.uploadVideoByUrl(
-      context.adAccountExternalId,
-      context.accessToken,
-      video.url,
-      creative.name,
-    );
-
-    const ctaType =
-      META_V1_CTA_MAP[creative.callToAction ?? CallToAction.SHOP_NOW] ??
-      'SHOP_NOW';
-
-    const videoData: Record<string, unknown> = {
-      video_id: uploaded.id,
-      message: creative.primaryText,
-      title: creative.headline,
-      call_to_action: {
-        type: ctaType,
-        value: {
-          link: creative.landingPageUrl,
-        },
-      },
-    };
-
-    if (video.thumbnailUrl) {
-      videoData.image_url = video.thumbnailUrl;
-    }
-
-    const created = await this.metaGraphClient.createAdCreative(
-      context.adAccountExternalId,
-      context.accessToken,
+    currentUser: JwtPayload,
+  ): Promise<string | null> {
+    const assetsPage = await this.creativeAssetsService.findAll(
       {
-        name: creative.name,
-        object_story_spec: {
-          page_id: context.pageId,
-          video_data: videoData,
-        },
+        creativeId: creative.id,
+        assetType: CreativeAssetType.IMAGE,
+        page: 1,
+        limit: 10,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       },
+      currentUser,
     );
 
-    return created.id;
-  }
+    const primary =
+      assetsPage.data.find((asset) => asset.isPrimary) ?? assetsPage.data[0];
 
-  private async publishAd(
-    context: MetaPublishContext,
-    ad: AdResponseDto,
-    adSetExternalId: string,
-    creativeExternalId: string,
-  ): Promise<string> {
-    if (context.dryRun) {
-      return `meta_dry_ad_${ad.id}`;
+    if (primary?.url) {
+      return primary.url;
     }
 
-    const created = await this.metaGraphClient.createAd(
-      context.adAccountExternalId,
-      context.accessToken,
-      {
-        name: ad.name,
-        adset_id: adSetExternalId,
-        creative: {
-          creative_id: creativeExternalId,
-        },
-        status: 'PAUSED',
-      },
-    );
-
-    return created.id;
-  }
-
-  private optimizationGoalFor(objective: CampaignObjective): string {
-    switch (objective) {
-      case CampaignObjective.TRAFFIC:
-        return 'LINK_CLICKS';
-      case CampaignObjective.AWARENESS:
-        return 'REACH';
-      case CampaignObjective.ENGAGEMENT:
-        return 'POST_ENGAGEMENT';
-      case CampaignObjective.LEADS:
-        return 'LEAD_GENERATION';
-      case CampaignObjective.SALES:
-      default:
-        return 'OFFSITE_CONVERSIONS';
-    }
-  }
-
-  private resolveImageUrl(creative: CreativeResponseDto): string | null {
     const metadata = (creative.metadata ?? {}) as Record<string, unknown>;
     const sourceImageUrls = metadata.sourceImageUrls;
 
-    if (Array.isArray(sourceImageUrls) && typeof sourceImageUrls[0] === 'string') {
+    if (
+      Array.isArray(sourceImageUrls) &&
+      typeof sourceImageUrls[0] === 'string'
+    ) {
       return sourceImageUrls[0];
     }
 
@@ -853,9 +940,6 @@ export class MetaPublisherProvider
     return null;
   }
 
-  /**
-   * Resolve VIDEO media from Creative Assets + Storage, then metadata fallbacks.
-   */
   private async resolveVideoMedia(
     creative: CreativeResponseDto,
     currentUser: JwtPayload,
@@ -876,7 +960,10 @@ export class MetaPublisherProvider
       assetsPage.data.find((asset) => asset.isPrimary) ?? assetsPage.data[0];
 
     if (primary) {
-      const url = await this.resolveAssetReachableUrl(primary.url, primary.storageKey);
+      const url = await this.resolveAssetReachableUrl(
+        primary.url,
+        primary.storageKey,
+      );
       if (url) {
         return {
           url,
@@ -890,7 +977,10 @@ export class MetaPublisherProvider
     const sourceVideoUrls = metadata.sourceVideoUrls;
     let videoUrl: string | null = null;
 
-    if (Array.isArray(sourceVideoUrls) && typeof sourceVideoUrls[0] === 'string') {
+    if (
+      Array.isArray(sourceVideoUrls) &&
+      typeof sourceVideoUrls[0] === 'string'
+    ) {
       videoUrl = sourceVideoUrls[0];
     } else if (typeof metadata.videoUrl === 'string') {
       videoUrl = metadata.videoUrl;
@@ -931,7 +1021,7 @@ export class MetaPublisherProvider
         return publicUrl.trim();
       }
     } catch {
-      // fall through to signed URL
+      // fall through
     }
 
     try {
@@ -963,38 +1053,64 @@ export class MetaPublisherProvider
     return this.guessVideoMime(ext);
   }
 
-  private resolvePageId(
+  private resolveIdentityId(
     request: PublishRequest,
     adAccountMetadata: unknown,
   ): string | null {
-    const fromOptions = request.options?.pageId;
+    const fromOptions = request.options?.identityId;
     if (typeof fromOptions === 'string' && fromOptions.trim()) {
       return fromOptions.trim();
     }
 
     const metadata = (adAccountMetadata ?? {}) as Record<string, unknown>;
-    if (typeof metadata.pageId === 'string' && metadata.pageId.trim()) {
-      return metadata.pageId.trim();
+    if (typeof metadata.identityId === 'string' && metadata.identityId.trim()) {
+      return metadata.identityId.trim();
     }
 
     return null;
+  }
+
+  private resolveDisplayName(
+    request: PublishRequest,
+    adAccountMetadata: unknown,
+    fallback: string,
+  ): string {
+    const fromOptions = request.options?.displayName;
+    if (typeof fromOptions === 'string' && fromOptions.trim()) {
+      return fromOptions.trim();
+    }
+
+    const metadata = (adAccountMetadata ?? {}) as Record<string, unknown>;
+    if (
+      typeof metadata.displayName === 'string' &&
+      metadata.displayName.trim()
+    ) {
+      return metadata.displayName.trim();
+    }
+
+    return fallback;
   }
 
   private isDryRun(request: PublishRequest): boolean {
     return request.options?.dryRun === true;
   }
 
-  private toCents(budget: string | number | null | undefined): number {
+  private toMajorBudget(budget: string | number | null | undefined): number {
     if (budget === null || budget === undefined) {
-      return 500;
+      return 20;
     }
 
     const value = typeof budget === 'string' ? Number(budget) : budget;
     if (!Number.isFinite(value) || value <= 0) {
-      return 500;
+      return 20;
     }
 
-    return Math.round(value * 100);
+    return Math.round(value * 100) / 100;
+  }
+
+  private formatTikTokDateTime(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
   }
 
   private safeDecrypt(token: string): string {

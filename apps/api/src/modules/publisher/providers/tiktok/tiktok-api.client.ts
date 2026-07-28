@@ -46,6 +46,9 @@ export class TikTokApiClient {
   /**
    * Upload an image by public URL into the advertiser asset library.
    * Returns TikTok image_id used by ad creatives.
+   *
+   * NOTE: SINGLE_IMAGE creatives are a temporary compatibility layer.
+   * Prefer SINGLE_VIDEO; Carousel will replace image ads later.
    */
   async uploadImageByUrl(
     accessToken: string,
@@ -61,6 +64,27 @@ export class TikTokApiClient {
     });
 
     const id = this.extractId(raw.data, ['image_id', 'id']);
+    return { id, raw };
+  }
+
+  /**
+   * Upload a video by public URL into the advertiser asset library.
+   * Returns TikTok video_id used by SINGLE_VIDEO ads.
+   */
+  async uploadVideoByUrl(
+    accessToken: string,
+    advertiserId: string,
+    videoUrl: string,
+    fileName?: string,
+  ): Promise<TikTokApiCreateResult> {
+    const raw = await this.post('file/video/ad/upload/', accessToken, {
+      advertiser_id: advertiserId,
+      upload_type: 'UPLOAD_BY_URL',
+      video_url: videoUrl,
+      ...(fileName ? { file_name: fileName.slice(0, 100) } : {}),
+    });
+
+    const id = this.extractId(raw.data, ['video_id', 'id']);
     return { id, raw };
   }
 

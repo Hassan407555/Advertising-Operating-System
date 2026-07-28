@@ -14,7 +14,18 @@ export const META_V1_OBJECTIVE_MAP: Record<string, string> = {
   LEADS: 'OUTCOME_LEADS',
 };
 
-export const META_V1_SUPPORTED_CREATIVE_TYPES = ['IMAGE', 'TEXT'] as const;
+export const META_V1_SUPPORTED_CREATIVE_TYPES = [
+  'IMAGE',
+  'TEXT',
+  'VIDEO',
+] as const;
+
+/** MIME types accepted for Meta single-video upload (V1). */
+export const META_V1_SUPPORTED_VIDEO_MIME_TYPES = [
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+] as const;
 
 export const META_V1_CTA_MAP: Record<string, string> = {
   SHOP_NOW: 'SHOP_NOW',

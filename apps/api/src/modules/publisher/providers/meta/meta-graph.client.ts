@@ -66,6 +66,26 @@ export class MetaGraphClient {
     );
   }
 
+  /**
+   * Upload a video by publicly reachable file_url into the ad account library.
+   * Returns Meta video_id used by video_data creatives.
+   */
+  async uploadVideoByUrl(
+    adAccountExternalId: string,
+    accessToken: string,
+    fileUrl: string,
+    name?: string,
+  ): Promise<MetaGraphCreateResult> {
+    return this.post(
+      `${this.normalizeAdAccountId(adAccountExternalId)}/advideos`,
+      accessToken,
+      {
+        file_url: fileUrl,
+        ...(name ? { name: name.slice(0, 255), title: name.slice(0, 255) } : {}),
+      },
+    );
+  }
+
   private normalizeAdAccountId(externalId: string): string {
     return externalId.startsWith('act_') ? externalId : `act_${externalId}`;
   }
