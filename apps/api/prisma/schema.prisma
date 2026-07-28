@@ -34,12 +34,10 @@ model Organization {
   reports             Report[]
   reportSchedules     ReportSchedule[]
   shopifyProducts     ShopifyProduct[]
-<<<<<<< HEAD
-=======
   automationPipelines AutomationPipeline[]
   automationRuns      AutomationRun[]
   automationSteps     AutomationStep[]
->>>>>>> 248c59e (Complete Campaign Generator and Automation implementation)
+  publishJobs         PublishJob[]
 }
 
 model User {
@@ -1031,8 +1029,6 @@ model ReportSchedule {
   @@index([nextRunAt])
 }
 
-<<<<<<< HEAD
-=======
 // ============================================
 // AUTOMATION ENGINE
 // ============================================
@@ -1065,6 +1061,15 @@ enum AutomationStepStatus {
   COMPLETED
   FAILED
   SKIPPED
+}
+
+enum PublishJobStatus {
+  PENDING
+  VALIDATING
+  PUBLISHING
+  COMPLETED
+  PARTIAL
+  FAILED
 }
 
 model AutomationPipeline {
@@ -1145,7 +1150,33 @@ model AutomationStep {
   @@index([actionType])
 }
 
->>>>>>> 248c59e (Complete Campaign Generator and Automation implementation)
+model PublishJob {
+  id                String          @id @default(cuid())
+  organizationId    String
+  campaignId        String
+  adAccountId       String
+  platform          PlatformType
+  status            PublishJobStatus @default(PENDING)
+  dryRun            Boolean         @default(false)
+  requestedByUserId String?
+  errorMessage      String?         @db.VarChar(2000)
+  request           Json?
+  result            Json?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([campaignId])
+  @@index([platform])
+  @@index([status])
+  @@index([organizationId, campaignId])
+  @@index([organizationId, createdAt])
+}
+
 model ShopifyProduct {
   id String @id @default(cuid())
 

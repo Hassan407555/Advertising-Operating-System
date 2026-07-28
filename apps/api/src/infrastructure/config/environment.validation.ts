@@ -60,5 +60,9 @@ export function validateEnvironment(
     AUTH_RATE_TTL_MS: authRateTtl ?? 60_000,
     INVITATION_EXPIRATION_HOURS: invitationExpirationHours ?? 168,
     LOG_LEVEL: environment.LOG_LEVEL ?? 'info',
+    AI_PROVIDER: environment.AI_PROVIDER ?? 'GEMINI',
+    AI_TEMPERATURE: environment.AI_TEMPERATURE ?? 0.7,
+    AI_MAX_OUTPUT_TOKENS: environment.AI_MAX_OUTPUT_TOKENS ?? 2048,
+    GEMINI_MODEL: environment.GEMINI_MODEL ?? 'gemini-2.0-flash',
   };
 }
