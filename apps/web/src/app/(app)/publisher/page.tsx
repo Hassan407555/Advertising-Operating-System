@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { PublisherPageContent } from "@/features/publisher/components/publisher-page";
 
 export default function PublisherPage() {
-  return (
-    <PlaceholderPage
-      title="Publisher"
-      description="Publisher module implementation is intentionally deferred to a later phase."
-    />
-  );
+  return <PublisherPageContent />;
 }

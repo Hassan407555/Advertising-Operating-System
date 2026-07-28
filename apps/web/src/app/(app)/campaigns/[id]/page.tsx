@@ -1,16 +1,11 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { CampaignDetailsPage } from "@/features/campaigns/components/campaign-details-page";
 
 interface CampaignDetailsProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function CampaignDetailsPage({ params }: CampaignDetailsProps) {
+export default async function CampaignDetailsRoute({ params }: CampaignDetailsProps) {
   const { id } = await params;
 
-  return (
-    <PlaceholderPage
-      title={`Campaign Details Scaffold: ${id}`}
-      description="Campaign details implementation is deferred."
-    />
-  );
+  return <CampaignDetailsPage id={id} />;
 }

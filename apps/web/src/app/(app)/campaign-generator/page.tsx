@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { CampaignGeneratorPageContent } from "@/features/campaign-generator/components/campaign-generator-page";
 
 export default function CampaignGeneratorPage() {
-  return (
-    <PlaceholderPage
-      title="Campaign Generator"
-      description="Campaign Generator module implementation is intentionally deferred to a later phase."
-    />
-  );
+  return <CampaignGeneratorPageContent />;
 }
