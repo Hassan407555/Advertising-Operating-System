@@ -42,7 +42,7 @@ export interface AiSession {
     answers?: Record<string, string>;
     plannedSteps?: string[];
     generatedCampaign?: {
-      campaignType: "IMAGE" | "CAROUSEL" | "VIDEO";
+      campaignType: "IMAGE" | "CAROUSEL" | "VIDEO" | "NONE";
       payload: Record<string, unknown>;
       generatedAt: string;
       model: string;
@@ -70,9 +70,33 @@ export interface DraftCampaignIds {
   creativeId: string;
 }
 
+export interface GeneratedVideoPreview {
+  url: string;
+  storageKey: string;
+  storageProvider: string;
+  fileName: string;
+  originalFileName: string;
+  mimeType: string;
+  extension: string;
+  fileSize: number;
+  checksum?: string;
+  durationSeconds: number;
+  width: number;
+  height: number;
+  thumbnailUrl?: string | null;
+}
+
+export interface GenerateVideoPreviewResult {
+  previewUrl: string;
+  media: GeneratedVideoPreview;
+}
+
 export interface SaveAiSessionDraftPayload {
   payload: Record<string, unknown>;
+  /** VIDEO only — held in client state after generate-video; not on the AI session. */
+  generatedVideo?: GeneratedVideoPreview;
 }
+
 
 export interface CreateAiSessionPayload {
   storeId: string;

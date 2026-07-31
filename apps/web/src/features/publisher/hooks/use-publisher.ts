@@ -42,6 +42,8 @@ export function usePublishCampaignMutation() {
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGNS }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGN_DETAILS }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.DASHBOARD }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ANALYTICS }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.STORES }),
       ]);
     },
   });

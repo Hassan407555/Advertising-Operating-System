@@ -3,6 +3,7 @@ import {
   PublishStatus,
   PublisherPlatform,
 } from '../../enums/publisher.enums';
+import type { PublishDiagnostics } from '../../types/publish-diagnostics.types';
 
 /**
  * Domain models for the Publisher gateway.
@@ -72,6 +73,8 @@ export interface PublishResult {
   startedAt: string;
   completedAt: string;
   durationMs: number;
+  /** Structured stage + Meta Graph diagnostics for UI debugging. */
+  diagnostics?: PublishDiagnostics;
   raw?: unknown;
 }
 

@@ -51,9 +51,11 @@ export class MetaCampaignGeneratorService {
     session: AiSession,
     currentUser: JwtPayload,
   ): Promise<AiSession> {
-    if (session.status !== AiSessionStatus.READY_FOR_ANALYSIS) {
+    if (session.status !== AiSessionStatus.READY_FOR_ANALYSIS &&
+        session.status !== AiSessionStatus.REVIEWING &&
+        session.status !== AiSessionStatus.FAILED) {
       throw new BadRequestException(
-        `Campaign generation requires status READY_FOR_ANALYSIS (current: ${session.status}).`,
+        `Campaign generation requires status READY_FOR_ANALYSIS, REVIEWING, or FAILED (current: ${session.status}).`,
       );
     }
 
@@ -61,9 +63,14 @@ export class MetaCampaignGeneratorService {
       session.shopifyStoreId,
       currentUser,
     );
-    if (!store.advertisingReady) {
+    if (!store.capabilities.shopifyConnected) {
       throw new BadRequestException(
-        'Store must be advertising-ready before campaign generation.',
+        'Shopify must be connected before campaign generation.',
+      );
+    }
+    if (!store.capabilities.productsSynced) {
+      throw new BadRequestException(
+        'Products must be synced before campaign generation.',
       );
     }
 
@@ -94,10 +101,11 @@ export class MetaCampaignGeneratorService {
       await this.transitionStatus(session.id, AiSessionStatus.PLANNING);
       const inputs = await this.collectInputs(session, currentUser, context);
       const prompt = this.promptBuilder.build(inputs);
+      const temperature = inputs.isRegeneration ? 0.75 : 0.4;
 
       await this.transitionStatus(session.id, AiSessionStatus.BUILDING);
 
-      const geminiResult = await this.callGeminiWithTimeout(prompt);
+      const geminiResult = await this.callGeminiWithTimeout(prompt, temperature);
 
       const validated = validateGeneratedCampaign(
         campaignType,
@@ -212,6 +220,9 @@ export class MetaCampaignGeneratorService {
         id: product.id,
         title: product.title,
         description: product.description,
+        vendor: product.vendor,
+        productType: product.productType,
+        tags: product.tags ?? [],
         featuredImageUrl: product.featuredImageUrl,
         images: product.images.map((image) => ({
           url: image.url,
@@ -245,6 +256,7 @@ export class MetaCampaignGeneratorService {
       },
       interviewAnswers: { ...context.answers },
       campaignType,
+      isRegeneration: Boolean(context.generatedCampaign),
     };
   }
 
@@ -332,11 +344,14 @@ export class MetaCampaignGeneratorService {
     };
   }
 
-  private async callGeminiWithTimeout(prompt: {
-    systemPrompt: string;
-    userPrompt: string;
-    schemaHint: string;
-  }) {
+  private async callGeminiWithTimeout(
+    prompt: {
+      systemPrompt: string;
+      userPrompt: string;
+      schemaHint: string;
+    },
+    temperature = 0.4,
+  ) {
     try {
       return await Promise.race([
         this.aiService.generateJson({
@@ -344,7 +359,7 @@ export class MetaCampaignGeneratorService {
           prompt: prompt.userPrompt,
           schemaHint: prompt.schemaHint,
           maxOutputTokens: GENERATION_MAX_OUTPUT_TOKENS,
-          temperature: 0.4,
+          temperature,
         }),
         new Promise<never>((_, reject) => {
           setTimeout(() => {
@@ -374,11 +389,16 @@ export class MetaCampaignGeneratorService {
     answers: Record<string, string>,
   ): MetaCampaignAdType {
     const adType = String(answers.adType ?? '').toUpperCase();
-    if (adType === 'IMAGE' || adType === 'CAROUSEL' || adType === 'VIDEO') {
+    if (
+      adType === 'IMAGE' ||
+      adType === 'CAROUSEL' ||
+      adType === 'VIDEO' ||
+      adType === 'NONE'
+    ) {
       return adType;
     }
     throw new BadRequestException(
-      'Interview answers are missing a valid adType (IMAGE, CAROUSEL, or VIDEO).',
+      'Interview answers are missing a valid adType (IMAGE, CAROUSEL, VIDEO, or NONE).',
     );
   }
 

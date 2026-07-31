@@ -1,19 +1,36 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
   description?: string;
+  eyebrow?: string;
   actions?: ReactNode;
+  className?: string;
 }
 
-export function PageHeader({ title, description, actions }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  eyebrow,
+  actions,
+  className,
+}: PageHeaderProps) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="min-w-0 space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+    <header
+      className={cn(
+        "flex flex-wrap items-start justify-between gap-4 pb-1",
+        className,
+      )}
+    >
+      <div className="min-w-0 max-w-3xl space-y-2">
+        {eyebrow ? <p className="text-eyebrow">{eyebrow}</p> : null}
+        <h1 className="text-title">{title}</h1>
+        {description ? <p className="text-body-sm max-w-2xl">{description}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
-    </div>
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2 pt-0.5">{actions}</div>
+      ) : null}
+    </header>
   );
 }

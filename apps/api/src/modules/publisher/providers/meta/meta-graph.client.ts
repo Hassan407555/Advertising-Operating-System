@@ -1,6 +1,5 @@
 import {
   Injectable,
-  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 
@@ -8,10 +7,29 @@ import {
   META_GRAPH_API_BASE_URL,
   META_GRAPH_API_VERSION,
 } from './meta.constants';
+import {
+  MetaGraphApiException,
+  type MetaGraphErrorDetails,
+} from './meta-graph.error';
 
 export interface MetaGraphCreateResult {
   id: string;
   raw: unknown;
+}
+
+interface MetaGraphErrorBody {
+  message?: string;
+  code?: number;
+  error_subcode?: number;
+  type?: string;
+  fbtrace_id?: string;
+  error_user_title?: string;
+  error_user_msg?: string;
+}
+
+interface MetaGraphResponseBody {
+  id?: string;
+  error?: MetaGraphErrorBody;
 }
 
 @Injectable()
@@ -97,6 +115,17 @@ export class MetaGraphClient {
   ): Promise<MetaGraphCreateResult> {
     const url = `${META_GRAPH_API_BASE_URL}/${META_GRAPH_API_VERSION}/${path}`;
 
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      (/\/campaigns$/.test(path) || /\/adsets$/.test(path))
+    ) {
+      // access_token is attached separately below — never log it.
+      const label = /\/adsets$/.test(path) ? 'AdSet' : 'Campaign';
+      this.logger.log(
+        `${label} payload:\n${JSON.stringify(payload, null, 2)}`,
+      );
+    }
+
     const body = new URLSearchParams();
     body.set('access_token', accessToken);
 
@@ -119,16 +148,42 @@ export class MetaGraphClient {
       body,
     });
 
-    const raw = (await response.json()) as {
-      id?: string;
-      error?: { message?: string; code?: number };
-    };
+    let raw: MetaGraphResponseBody;
+    try {
+      raw = (await response.json()) as MetaGraphResponseBody;
+    } catch {
+      const details: MetaGraphErrorDetails = {
+        message: `Meta Graph API returned a non-JSON response for ${path}.`,
+        httpStatus: response.status,
+        path,
+      };
+      this.logger.error(
+        `Meta Graph API error on ${path}: httpStatus=${response.status} non_json_body`,
+      );
+      throw new MetaGraphApiException(details);
+    }
 
     if (!response.ok || raw.error || !raw.id) {
-      this.logger.error(`Meta Graph API error on ${path}: ${JSON.stringify(raw)}`);
-      throw new InternalServerErrorException(
-        raw.error?.message ?? `Meta Graph API request failed for ${path}.`,
+      const graphError = raw.error;
+      const details: MetaGraphErrorDetails = {
+        message:
+          graphError?.error_user_msg?.trim() ||
+          graphError?.message?.trim() ||
+          `Meta Graph API request failed for ${path}.`,
+        httpStatus: response.status,
+        code: graphError?.code,
+        errorSubcode: graphError?.error_subcode,
+        type: graphError?.type,
+        fbtraceId: graphError?.fbtrace_id,
+        path,
+        raw,
+      };
+
+      this.logger.error(
+        `Meta Graph API error on ${path}: httpStatus=${details.httpStatus} code=${details.code ?? 'n/a'} subcode=${details.errorSubcode ?? 'n/a'} fbtrace_id=${details.fbtraceId ?? 'n/a'} raw=${JSON.stringify(raw)}`,
       );
+
+      throw new MetaGraphApiException(details);
     }
 
     return {

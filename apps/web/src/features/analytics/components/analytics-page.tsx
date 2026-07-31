@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageEmpty } from "@/components/shared/states/page-empty";
 import { PageError } from "@/components/shared/states/page-error";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageLoading } from "@/components/shared/states/page-loading";
+import { SectionHeader } from "@/components/shared/section-header";
 import { RequireActiveStore } from "@/components/shared/stores/require-active-store";
 import { Card } from "@/components/ui/card";
 import { usePermission } from "@/hooks/use-permission";
@@ -26,10 +28,21 @@ import {
   useAnalyticsTimeSeriesQuery,
   useExportAnalyticsMutation,
 } from "@/features/analytics/hooks/use-analytics";
+import { useDashboardSummaryQuery } from "@/features/dashboard/hooks/use-dashboard-summary-query";
+import { useCampaignReadiness } from "@/features/campaign-readiness/hooks/use-campaign-readiness";
+import { useActiveStore } from "@/features/stores/hooks/use-active-store";
+import { ROUTES } from "@/constants/routes";
+
+const storeGateProps = {
+  emptyTitle: "No analytics",
+  emptyDescription: "Connect a store under Commerce to view campaign performance.",
+} as const;
 
 export function AnalyticsPageContent() {
   const canView = usePermission("view");
+  const { activeStore } = useActiveStore();
   const { filters, patchFilters } = useAnalyticsFiltersState();
+  const dashboardSummaryQuery = useDashboardSummaryQuery(canView);
 
   const query = {
     page: filters.page,
@@ -55,6 +68,12 @@ export function AnalyticsPageContent() {
   });
   const snapshotsQuery = useAnalyticsSnapshotsQuery(query);
   const exportMutation = useExportAnalyticsMutation();
+  const readiness = useCampaignReadiness({
+    store: activeStore,
+    hasCampaignGenerated: (dashboardSummaryQuery.data?.campaigns.total ?? 0) > 0,
+    campaign: null,
+    publishResult: null,
+  });
 
   const doExport = async (format: "csv" | "xlsx" | "pdf") => {
     try {
@@ -75,7 +94,7 @@ export function AnalyticsPageContent() {
 
   if (!canView) {
     return (
-      <RequireActiveStore>
+      <RequireActiveStore {...storeGateProps}>
         <PageEmpty title="Access restricted" description="Your role does not have analytics access." />
       </RequireActiveStore>
     );
@@ -83,7 +102,7 @@ export function AnalyticsPageContent() {
 
   if (dashboardQuery.isError || summaryQuery.isError || timeSeriesQuery.isError || breakdownQuery.isError || snapshotsQuery.isError) {
     return (
-      <RequireActiveStore>
+      <RequireActiveStore {...storeGateProps}>
         <PageError
           title="Unable to load analytics"
           message={getErrorMessage(
@@ -115,9 +134,10 @@ export function AnalyticsPageContent() {
     !summaryQuery.data;
 
   return (
-    <RequireActiveStore>
-      <div className="space-y-4">
+    <RequireActiveStore {...storeGateProps}>
+      <div className="page-stack animate-fade-in-up">
         <PageHeader
+          eyebrow="Performance"
           title="Analytics"
           description="Performance metrics for your Meta campaigns and store."
           actions={
@@ -160,10 +180,21 @@ export function AnalyticsPageContent() {
           timeSeriesQuery.data?.length ? (
             <AnalyticsTimeSeriesChart data={timeSeriesQuery.data} />
           ) : (
-            <PageEmpty
-              title="No time series data"
-              description="No performance data is available for the selected filters."
-            />
+            <>
+              <PageEmpty
+                title="No analytics."
+                description={
+                  readiness.flags.live
+                    ? "No time series data is available for the selected filters."
+                    : "No live campaigns yet. Publish a ready campaign to start analytics tracking."
+                }
+              />
+              {!readiness.flags.live ? (
+                <Link href={ROUTES.CAMPAIGNS}>
+                  <Button type="button">Open Campaign Details</Button>
+                </Link>
+              ) : null}
+            </>
           )
         ) : null}
 
@@ -178,7 +209,7 @@ export function AnalyticsPageContent() {
             </>
           ) : (
             <PageEmpty
-              title="No breakdown data"
+              title="No analytics."
               description="No breakdown rows are available for the selected filters."
             />
           )
@@ -186,7 +217,7 @@ export function AnalyticsPageContent() {
 
         {!isInitialLoading ? (
           <Card className="space-y-3">
-            <h3 className="text-lg font-semibold">Snapshots</h3>
+            <SectionHeader title="Snapshots" />
             <AnalyticsSnapshotsTable
               data={snapshotsQuery.data?.data ?? []}
               loading={snapshotsQuery.isPending}

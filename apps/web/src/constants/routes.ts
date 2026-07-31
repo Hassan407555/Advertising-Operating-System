@@ -6,6 +6,7 @@ export const ROUTES = {
   FORBIDDEN: "/forbidden",
   DASHBOARD: "/dashboard",
   PRODUCTS: "/products",
+  PRODUCT_DETAILS: (id: string) => `/products/${id}`,
   CAMPAIGNS: "/campaigns",
   CAMPAIGN_DETAILS: (id: string) => `/campaigns/${id}`,
   AI_SESSIONS: "/ai-sessions",

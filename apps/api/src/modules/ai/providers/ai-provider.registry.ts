@@ -9,6 +9,7 @@ import type { AiModuleConfig } from '../config/ai.config';
 import { AiProviderType } from '../constants/ai.constants';
 import type { AiProvider } from './interfaces/ai-provider.interface';
 import { GeminiProvider } from './gemini/gemini.provider';
+import { GroqProvider } from './groq/groq.provider';
 
 @Injectable()
 export class AiProviderRegistry implements OnModuleInit {
@@ -17,10 +18,12 @@ export class AiProviderRegistry implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly geminiProvider: GeminiProvider,
+    private readonly groqProvider: GroqProvider,
   ) {}
 
   onModuleInit(): void {
     this.register(this.geminiProvider);
+    this.register(this.groqProvider);
     // Future: this.register(this.openAiProvider);
     // Future: this.register(this.anthropicProvider);
   }

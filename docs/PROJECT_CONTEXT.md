@@ -221,8 +221,10 @@ The AI generates a complete Meta campaign as **structured JSON**.
 ### Media rules
 
 * Prefer Shopify product images and existing uploaded assets.
-* For video: generate script, storyboard, and shot list only.
-* Do **not** build AI image generation or AI video generation.
+* For VIDEO campaigns, Gemini still produces planning text (hook, script, CTA).
+* Version 1 supports automatic generation of simple product showcase videos for VIDEO campaigns. This is not cinematic AI video generation and does not include avatars, voice synthesis, storyboards, or scene planning.
+* Do **not** build AI image generation.
+* Do **not** build multi-provider AI video studios, queues, or cinematic pipelines.
 
 ---
 
@@ -375,7 +377,7 @@ Examples:
 
 * **Image Ad** — Country, Language, Budget, Goal
 * **Carousel Ad** — Number of cards, Highlight products?
-* **Video Ad** — Preferred duration, Style, Tone
+* **Video Ad** — Optional style preferences; V1 always produces a short product showcase video
 
 ## 10.7 Review Flow (Simple)
 
@@ -415,6 +417,7 @@ Settings
 * Run a guided, adaptive interview
 * Use Shopify product data, analytics, store info, and interview answers
 * Call Gemini to produce structured Meta campaign JSON
+* For VIDEO campaigns, automatically generate a simple product showcase MP4 from product images and campaign copy
 * Create draft campaigns in existing entities
 * Support Image, Carousel, and Video ad types only
 

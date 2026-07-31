@@ -25,7 +25,7 @@ export type PlatformType =
   | "AMAZON"
   | "SHOPIFY";
 
-export type AiCampaignType = "IMAGE" | "CAROUSEL" | "VIDEO";
+export type AiCampaignType = "IMAGE" | "CAROUSEL" | "VIDEO" | "NONE";
 
 export interface Campaign {
   id: string;

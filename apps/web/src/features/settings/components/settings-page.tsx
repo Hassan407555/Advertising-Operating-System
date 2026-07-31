@@ -8,6 +8,7 @@ import { PageEmpty } from "@/components/shared/states/page-empty";
 import { PageError } from "@/components/shared/states/page-error";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageLoading } from "@/components/shared/states/page-loading";
+import { SectionHeader } from "@/components/shared/section-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ROUTES } from "@/constants/routes";
 import { getCurrentUser } from "@/features/auth/api/auth.api";
@@ -78,8 +79,9 @@ export function SettingsPageContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="page-stack animate-fade-in-up">
       <PageHeader
+        eyebrow="Workspace"
         title={SETTINGS_COPY.title}
         description={SETTINGS_COPY.description}
         actions={
@@ -104,7 +106,7 @@ export function SettingsPageContent() {
       {profileQuery.data ? (
         <>
           <Card className="space-y-3">
-            <h2 className="text-lg font-semibold">{SETTINGS_COPY.accountTitle}</h2>
+            <SectionHeader title={SETTINGS_COPY.accountTitle} />
             <div className="grid gap-2 text-sm md:grid-cols-2">
               <p>
                 <span className="text-muted-foreground">Email:</span> {profileQuery.data.email}
@@ -126,7 +128,7 @@ export function SettingsPageContent() {
           </Card>
 
           <Card className="space-y-3">
-            <h2 className="text-lg font-semibold">{SETTINGS_COPY.profileTitle}</h2>
+            <SectionHeader title={SETTINGS_COPY.profileTitle} />
             <UserProfileForm
               profile={profileQuery.data}
               loading={updateProfileMutation.isPending}
@@ -149,10 +151,10 @@ export function SettingsPageContent() {
 
       {organizationQuery.data ? (
         <Card className="space-y-3">
-          <h2 className="text-lg font-semibold">{SETTINGS_COPY.organizationTitle}</h2>
-          <p className="text-sm text-muted-foreground">
-            Update the name and slug for your current organization.
-          </p>
+          <SectionHeader
+            title={SETTINGS_COPY.organizationTitle}
+            description="Update the name and slug for your current organization."
+          />
           <OrganizationSettingsForm
             defaultValues={{
               name: organizationQuery.data.name,

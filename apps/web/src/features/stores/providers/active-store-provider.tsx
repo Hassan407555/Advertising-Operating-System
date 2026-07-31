@@ -74,11 +74,16 @@ export function ActiveStoreProvider({ children }: PropsWithChildren) {
   const [activeStore, setActiveStoreState] = useState<Store | null>(null);
 
   useEffect(() => {
+    // During bootstrap tokens are not loaded yet — do not treat that as logout
+    // or the active-store cache is wiped on every full page refresh.
+    if (isBootstrapping) {
+      return;
+    }
     if (!isAuthenticated) {
       clearAllCachedActiveStoreIds();
       setActiveStoreState(null);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isBootstrapping]);
 
   useEffect(() => {
     setActiveStoreState(null);

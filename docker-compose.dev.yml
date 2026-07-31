@@ -1,1 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aos-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: aos
+      POSTGRES_PASSWORD: aos_dev_password
+      POSTGRES_DB: advertising_os
+    volumes:
+      - aos_postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aos -d advertising_os"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
+volumes:
+  aos_postgres_dev_data:

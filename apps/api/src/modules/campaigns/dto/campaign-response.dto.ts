@@ -204,7 +204,8 @@ export class CampaignResponseDto {
   source?: string | null;
 
   @ApiProperty({
-    description: 'AI campaign type (IMAGE | CAROUSEL | VIDEO) when from AI draft',
+    description:
+      'AI campaign type (IMAGE | CAROUSEL | VIDEO | NONE) when from AI draft',
     required: false,
     nullable: true,
     example: 'IMAGE',

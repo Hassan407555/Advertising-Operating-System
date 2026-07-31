@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { usePermission } from "@/hooks/use-permission";
 import { useSession } from "@/providers/session-provider";
-import { getErrorMessage } from "@/utils/errors";
+import { getErrorMessage, getPublishErrorMessage } from "@/utils/errors";
 import { PublisherForm } from "@/features/publisher/components/publisher-form";
 import { PublisherValidationResults } from "@/features/publisher/components/publisher-validation-results";
 import { PublisherResultSummary } from "@/features/publisher/components/publisher-result-summary";
@@ -19,7 +19,12 @@ import {
   useValidatePublishMutation,
 } from "@/features/publisher/hooks/use-publisher";
 import type { PublisherFormValues } from "@/features/publisher/schemas/publisher.schemas";
-import type { PublishCampaignPayload, PublishCampaignResponse, PublishValidationResponse } from "@/features/publisher/types/publisher.types";
+import type {
+  PublishCampaignPayload,
+  PublishCampaignResponse,
+  PublishValidationResponse,
+} from "@/features/publisher/types/publisher.types";
+import { getPublishFailureToastMessage } from "@/features/publisher/types/publisher.types";
 
 function toPayload(values: PublisherFormValues, organizationId: string): PublishCampaignPayload {
   return {
@@ -56,7 +61,7 @@ export function PublisherPageContent() {
       return getErrorMessage(validateMutation.error);
     }
     if (publishMutation.isError) {
-      return getErrorMessage(publishMutation.error);
+      return getPublishErrorMessage(publishMutation.error);
     }
     return undefined;
   }, [publishMutation.error, publishMutation.isError, validateMutation.error, validateMutation.isError]);
@@ -95,9 +100,15 @@ export function PublisherPageContent() {
       const payload = toPayload(lastFormValues, organization.id);
       const response = await publishMutation.mutateAsync(payload);
       setResult(response);
-      toast.success(`Publish finished with status: ${response.status}`);
+      if (response.success || response.status === "PUBLISHED") {
+        toast.success(`Publish finished with status: ${response.status}`);
+      } else if (response.status === "PARTIAL") {
+        toast.success("Publish finished with partial success. Review the result below.");
+      } else {
+        toast.error(getPublishFailureToastMessage(response));
+      }
     } catch (error) {
-      toast.error(getErrorMessage(error, "Publish failed."));
+      toast.error(getPublishErrorMessage(error, "Publish failed."));
     } finally {
       setIsPublishing(false);
     }

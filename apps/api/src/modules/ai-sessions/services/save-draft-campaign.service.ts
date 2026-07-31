@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AdAccountStatus,
   AdSetStatus,
   AdStatus,
   AiSession,
@@ -12,6 +13,9 @@ import {
   AuditAction,
   AuditEntity,
   CampaignStatus,
+  CreativeType,
+  Currency,
+  PlatformType,
   Prisma,
 } from '@prisma/client';
 
@@ -19,6 +23,8 @@ import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { AuditLogsService } from '../../audit-logs/services/audit-logs.service';
 import { StoresService } from '../../stores/services/stores.service';
+import { CreativeVideoService } from '../../video-generation/services/creative-video.service';
+import type { GeneratedVideoAsset } from '../../video-generation/interfaces/generated-video-asset.interface';
 import {
   SAVE_DRAFT_MANAGER,
   SAVE_DRAFT_PHASE,
@@ -36,6 +42,12 @@ import type {
   StoredGeneratedCampaign,
 } from '../types/generated-campaign.types';
 
+interface DraftCreativeFallback {
+  sourceImageUrls: string[];
+  featuredImageUrl: string | null;
+  landingPageUrl: string | null;
+}
+
 /**
  * Schema requires externalId on Campaign / AdSet / Ad (non-nullable).
  * Use a stable pending marker scoped to the AI session — not a fake Meta ID.
@@ -45,23 +57,29 @@ function pendingExternalId(sessionId: string, kind: 'campaign' | 'adset' | 'ad')
   return `pending:ai-session:${sessionId}:${kind}`;
 }
 
+/** Local draft sink when Meta Advertising Configuration is not yet completed. */
+const LOCAL_DRAFT_AD_ACCOUNT_EXTERNAL_ID = 'pending:local-draft';
+
 @Injectable()
 export class SaveDraftCampaignService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storesService: StoresService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly creativeVideoService: CreativeVideoService,
   ) {}
 
   /**
    * Phase 7 — Review & Save Draft.
    * Creates or updates Campaign → AdSet → Ad → Creative from reviewed payload.
    * Keeps session status REVIEWING; records draftCampaignIds on workflowContext.
+   * Meta Advertising Configuration is not required — only needed at Publish to Meta.
    */
   async saveDraft(
     session: AiSession,
     payloadRaw: unknown,
     currentUser: JwtPayload,
+    generatedVideo?: GeneratedVideoAsset | null,
   ): Promise<AiSession> {
     if (!isReadyForSaveDraft(session.status)) {
       throw new BadRequestException(
@@ -85,26 +103,19 @@ export class SaveDraftCampaignService {
       );
     }
 
-    const store = await this.storesService.getStore(
-      session.shopifyStoreId,
-      currentUser,
-    );
-    if (!store.advertisingReady) {
-      throw new BadRequestException(
-        'Store must be advertising-ready before saving a draft campaign.',
-      );
-    }
+    // Ensure store access; Meta readiness is not required for draft save.
+    await this.storesService.getStore(session.shopifyStoreId, currentUser);
 
     const adConfig = await this.storesService.getAdvertisingConfiguration(
       session.shopifyStoreId,
       currentUser,
     );
-    const adAccountId = adConfig?.adAccountId;
-    if (!adAccountId) {
-      throw new BadRequestException(
-        'Store advertising configuration is missing an ad account. Configure advertising before saving.',
-      );
-    }
+    const adAccountId =
+      adConfig?.adAccountId ??
+      (await this.ensureLocalDraftAdAccount(
+        session.organizationId,
+        session.shopifyStoreId,
+      ));
 
     const mapped = mapGeneratedCampaignToDraft({
       organizationId: session.organizationId,
@@ -115,11 +126,26 @@ export class SaveDraftCampaignService {
       campaignType,
       payload: validatedPayload,
     });
+    const creativeFallback = await this.resolveCreativeFallback(
+      session.organizationId,
+      session.shopifyStoreId,
+      session.productId,
+    );
+
+    const generatedMedia = generatedVideo ?? null;
+    if (campaignType === 'VIDEO' && generatedMedia?.url) {
+      mapped.creative.metadata = {
+        ...mapped.creative.metadata,
+        sourceVideoUrls: [generatedMedia.url],
+        videoUrl: generatedMedia.url,
+        videoMimeType: generatedMedia.mimeType,
+      };
+    }
 
     const existingIds = this.readDraftIds(context);
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const updatedSession = await this.prisma.$transaction(async (tx) => {
         const draftIds = existingIds
           ? await this.updateDraftEntities(
               tx,
@@ -127,12 +153,14 @@ export class SaveDraftCampaignService {
               existingIds,
               adAccountId,
               mapped,
+              creativeFallback,
             )
           : await this.createDraftEntities(
               tx,
               session,
               adAccountId,
               mapped,
+              creativeFallback,
             );
 
         const nextGenerated: StoredGeneratedCampaign = {
@@ -198,11 +226,25 @@ export class SaveDraftCampaignService {
           tx,
         );
 
-        return tx.aiSession.findUniqueOrThrow({
-          where: { id: updated.id },
-          include: { messages: { orderBy: { createdAt: 'asc' } } },
-        });
+        return {
+          session: await tx.aiSession.findUniqueOrThrow({
+            where: { id: updated.id },
+            include: { messages: { orderBy: { createdAt: 'asc' } } },
+          }),
+          draftIds,
+        };
       });
+
+      if (campaignType === 'VIDEO' && generatedMedia?.url) {
+        await this.creativeVideoService.linkVideoAssetToCreative({
+          creativeId: updatedSession.draftIds.creativeId,
+          adId: updatedSession.draftIds.adId,
+          media: generatedMedia,
+          currentUser,
+        });
+      }
+
+      return updatedSession.session;
     } catch (error) {
       if (
         error instanceof BadRequestException ||
@@ -214,12 +256,62 @@ export class SaveDraftCampaignService {
     }
   }
 
+  /**
+   * Campaign.adAccountId is required by schema. When Meta is not configured yet,
+   * attach drafts to a stable local pending AdAccount on the Shopify store connection.
+   */
+  private async ensureLocalDraftAdAccount(
+    organizationId: string,
+    shopifyStoreId: string,
+  ): Promise<string> {
+    const existing = await this.prisma.adAccount.findFirst({
+      where: {
+        organizationId,
+        platformConnectionId: shopifyStoreId,
+        externalId: LOCAL_DRAFT_AD_ACCOUNT_EXTERNAL_ID,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      return existing.id;
+    }
+
+    const created = await this.prisma.adAccount.create({
+      data: {
+        organizationId,
+        platformConnectionId: shopifyStoreId,
+        platform: PlatformType.META,
+        externalId: LOCAL_DRAFT_AD_ACCOUNT_EXTERNAL_ID,
+        accountName: 'Local draft (unpublished)',
+        currency: Currency.USD,
+        timezone: 'UTC',
+        status: AdAccountStatus.PENDING,
+        isActive: false,
+        metadata: {
+          source: 'ai-session-local-draft',
+          pendingPublish: true,
+        },
+      },
+      select: { id: true },
+    });
+
+    return created.id;
+  }
+
   private async createDraftEntities(
     tx: Prisma.TransactionClient,
     session: AiSession,
     adAccountId: string,
     mapped: ReturnType<typeof mapGeneratedCampaignToDraft>,
+    creativeFallback: DraftCreativeFallback,
   ): Promise<DraftCampaignIds> {
+    const creativePayload = this.applyCreativeFallback(
+      mapped.creative.metadata,
+      null,
+      this.fallbackForCreativeType(mapped.creative.type, creativeFallback),
+    );
+
     const creative = await tx.creative.create({
       data: {
         organizationId: session.organizationId,
@@ -229,7 +321,8 @@ export class SaveDraftCampaignService {
         primaryText: mapped.creative.primaryText,
         description: mapped.creative.description,
         callToAction: mapped.creative.callToAction,
-        metadata: asPrismaJson(mapped.creative.metadata),
+        landingPageUrl: creativePayload.landingPageUrl,
+        metadata: asPrismaJson(creativePayload.metadata),
       },
     });
 
@@ -288,6 +381,7 @@ export class SaveDraftCampaignService {
     ids: DraftCampaignIds,
     adAccountId: string,
     mapped: ReturnType<typeof mapGeneratedCampaignToDraft>,
+    creativeFallback: DraftCreativeFallback,
   ): Promise<DraftCampaignIds> {
     const campaign = await tx.campaign.findFirst({
       where: {
@@ -343,6 +437,15 @@ export class SaveDraftCampaignService {
       );
     }
 
+    const creativePayload = this.applyCreativeFallback(
+      mapped.creative.metadata,
+      creative.metadata,
+      this.fallbackForCreativeType(mapped.creative.type, {
+        ...creativeFallback,
+        landingPageUrl: creative.landingPageUrl ?? creativeFallback.landingPageUrl,
+      }),
+    );
+
     await tx.creative.update({
       where: { id: creative.id },
       data: {
@@ -352,7 +455,8 @@ export class SaveDraftCampaignService {
         primaryText: mapped.creative.primaryText,
         description: mapped.creative.description,
         callToAction: mapped.creative.callToAction,
-        metadata: asPrismaJson(mapped.creative.metadata),
+        landingPageUrl: creativePayload.landingPageUrl,
+        metadata: asPrismaJson(creativePayload.metadata),
       },
     });
 
@@ -418,5 +522,138 @@ export class SaveDraftCampaignService {
       return null;
     }
     return ids;
+  }
+
+  private async resolveCreativeFallback(
+    organizationId: string,
+    shopifyStoreId: string,
+    productId: string,
+  ): Promise<DraftCreativeFallback> {
+    const product = await this.prisma.shopifyProduct.findFirst({
+      where: {
+        id: productId,
+        organizationId,
+        platformConnectionId: shopifyStoreId,
+        deletedAt: null,
+      },
+      select: {
+        handle: true,
+        featuredImageUrl: true,
+        images: {
+          where: { url: { not: '' } },
+          select: { url: true },
+          orderBy: { displayOrder: 'asc' },
+        },
+      },
+    });
+
+    const store = await this.prisma.platformConnection.findFirst({
+      where: {
+        id: shopifyStoreId,
+        organizationId,
+        platform: PlatformType.SHOPIFY,
+        deletedAt: null,
+      },
+      select: {
+        accountId: true,
+        externalName: true,
+      },
+    });
+
+    const sourceImageUrls =
+      product?.images
+        .map((image) => image.url.trim())
+        .filter((url) => url.length > 0) ?? [];
+
+    const featuredImageUrl = product?.featuredImageUrl?.trim() ?? null;
+
+    return {
+      sourceImageUrls,
+      featuredImageUrl,
+      landingPageUrl: this.resolveShopifyLandingUrl(
+        store?.externalName ?? store?.accountId ?? null,
+        product?.handle ?? null,
+      ),
+    };
+  }
+
+  /**
+   * NONE drafts must not inherit product images — creative is attached later.
+   * Landing page is still useful for link-only / deferred creative publish.
+   */
+  private fallbackForCreativeType(
+    type: CreativeType,
+    fallback: DraftCreativeFallback,
+  ): DraftCreativeFallback {
+    if (type === CreativeType.NONE) {
+      return {
+        sourceImageUrls: [],
+        featuredImageUrl: null,
+        landingPageUrl: fallback.landingPageUrl,
+      };
+    }
+    return fallback;
+  }
+
+  private applyCreativeFallback(
+    mappedMetadataRaw: Record<string, unknown>,
+    existingMetadataRaw: Prisma.JsonValue | null,
+    fallback: DraftCreativeFallback,
+  ): { metadata: Record<string, unknown>; landingPageUrl: string | null } {
+    const metadata = {
+      ...this.asRecord(existingMetadataRaw),
+      ...mappedMetadataRaw,
+    } as Record<string, unknown>;
+
+    const hasSourceImageUrls =
+      Array.isArray(metadata.sourceImageUrls) &&
+      metadata.sourceImageUrls.length > 0;
+    if (!hasSourceImageUrls && fallback.sourceImageUrls.length > 0) {
+      metadata.sourceImageUrls = fallback.sourceImageUrls;
+    }
+
+    const hasFeaturedImageUrl =
+      typeof metadata.featuredImageUrl === 'string' &&
+      metadata.featuredImageUrl.trim().length > 0;
+    if (!hasFeaturedImageUrl && fallback.featuredImageUrl) {
+      metadata.featuredImageUrl = fallback.featuredImageUrl;
+    }
+
+    return {
+      metadata,
+      landingPageUrl: fallback.landingPageUrl,
+    };
+  }
+
+  private asRecord(value: Prisma.JsonValue | null): Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return {};
+    }
+    return value as Record<string, unknown>;
+  }
+
+  private resolveShopifyLandingUrl(
+    shopDomainRaw: string | null,
+    productHandleRaw: string | null,
+  ): string | null {
+    const productHandle = productHandleRaw?.trim();
+    if (!productHandle) {
+      return null;
+    }
+
+    const domainRaw = shopDomainRaw?.trim();
+    if (!domainRaw) {
+      return null;
+    }
+
+    const domain = domainRaw
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/+$/, '');
+
+    if (!domain) {
+      return null;
+    }
+
+    return `https://${domain}/products/${productHandle}`;
   }
 }

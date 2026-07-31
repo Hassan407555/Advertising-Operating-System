@@ -4,6 +4,7 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { AiModule } from '../ai/ai.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { StoresModule } from '../stores/stores.module';
+import { VideoGenerationModule } from '../video-generation/video-generation.module';
 import { AiSessionsController } from './controllers/ai-sessions.controller';
 import { ConversationManager } from './managers/conversation.manager';
 import { AiOrchestrator } from './orchestrator/ai.orchestrator';
@@ -17,6 +18,7 @@ import { SaveDraftCampaignService } from './services/save-draft-campaign.service
     PrismaModule,
     AiModule,
     AuditLogsModule,
+    VideoGenerationModule,
     forwardRef(() => StoresModule),
   ],
   controllers: [AiSessionsController],

@@ -79,186 +79,206 @@ export class ShopifyService {
       authorizationUrl,
     };
   }
-    /**
-   * Handles the Shopify OAuth callback.
+  /**
+   * Handles the Shopify OAuth callback and returns the frontend redirect URL.
    */
-async callback(
-  code: string,
-  shop: string,
-  state?: string,
-  hmac?: string,
-  queryParams?: Record<string, string | undefined>,
-): Promise<void> {
-  if (!shop || !code || !state) {
-    throw new BadRequestException(
-      'Missing Shopify OAuth parameters.',
-    );
-  }
+  async callback(
+    code: string,
+    shop: string,
+    state?: string,
+    hmac?: string,
+    queryParams?: Record<string, string | undefined>,
+  ): Promise<string> {
+    const webAppUrl = this.getWebAppUrl();
 
-  this.verifyShopifyCallbackHmac(hmac, queryParams);
+    try {
+      if (!shop || !code || !state) {
+        return this.buildFrontendRedirect(webAppUrl, {
+          shopify: 'error',
+          message: 'Missing Shopify OAuth parameters.',
+        });
+      }
 
-  const decodedState = this.verifyOAuthState(state);
-  const organizationId = decodedState.organizationId;
-  const userId = decodedState.userId;
+      this.verifyShopifyCallbackHmac(hmac, queryParams);
 
-  const accessToken =
-    await this.shopifyApi.exchangeAccessToken(
-      shop,
-      code,
-    );
+      const decodedState = this.verifyOAuthState(state);
+      const organizationId = decodedState.organizationId;
+      const userId = decodedState.userId;
 
-  const shopInfo =
-    await this.shopifyApi.getShop(
-      shop,
-      accessToken,
-    );
+      const accessToken =
+        await this.shopifyApi.exchangeAccessToken(
+          shop,
+          code,
+        );
 
-  const encryptedAccessToken =
-    this.encryptionService.encrypt(
-      accessToken,
-    );
+      const shopInfo =
+        await this.shopifyApi.getShop(
+          shop,
+          accessToken,
+        );
 
-  const connection =
-    await this.prisma.platformConnection.upsert({
-      where: {
-        organizationId_platform_accountId: {
-          organizationId,
-          platform: PlatformType.SHOPIFY,
-          accountId: shopInfo.id,
-        },
-      },
+      const encryptedAccessToken =
+        this.encryptionService.encrypt(
+          accessToken,
+        );
 
-      create: {
+      const connection =
+        await this.prisma.platformConnection.upsert({
+          where: {
+            organizationId_platform_accountId: {
+              organizationId,
+              platform: PlatformType.SHOPIFY,
+              accountId: shopInfo.id,
+            },
+          },
+
+          create: {
+            organizationId,
+            createdByUserId: userId,
+
+            platform:
+              PlatformType.SHOPIFY,
+
+            accountId:
+              shopInfo.id,
+
+            accountName:
+              shopInfo.name,
+
+            externalName:
+              shop,
+
+            status:
+              ConnectionStatus.ACTIVE,
+
+            syncStatus:
+              SyncStatus.SYNCED,
+
+            metadata: {
+              domain: shopInfo.domain,
+              email: shopInfo.email,
+            },
+          },
+
+          update: {
+            accountName:
+              shopInfo.name,
+
+            externalName:
+              shop,
+
+            status:
+              ConnectionStatus.ACTIVE,
+
+            deletedAt: null,
+
+            metadata: {
+              domain: shopInfo.domain,
+              email: shopInfo.email,
+            },
+
+            version: {
+              increment: 1,
+            },
+          },
+        });
+
+      const existingCredential =
+        await this.prisma.platformCredential.findFirst({
+          where: {
+            platformConnectionId:
+              connection.id,
+          },
+        });
+
+      if (!existingCredential) {
+        await this.prisma.platformCredential.create({
+          data: {
+            platformConnectionId:
+              connection.id,
+
+            accessToken:
+              encryptedAccessToken,
+
+            refreshToken: null,
+
+            expiresAt: null,
+
+            scopes:
+              SHOPIFY_SCOPES,
+
+            isActive: true,
+          },
+        });
+      } else {
+        await this.prisma.platformCredential.update({
+          where: {
+            id: existingCredential.id,
+          },
+
+          data: {
+            accessToken:
+              encryptedAccessToken,
+
+            scopes:
+              SHOPIFY_SCOPES,
+
+            isActive: true,
+
+            revokedAt: null,
+
+            revokedReason: null,
+
+            rotatedAt: new Date(),
+
+            version: {
+              increment: 1,
+            },
+          },
+        });
+      }
+
+      await this.auditLogsService.log({
         organizationId,
-        createdByUserId: userId,
 
-        platform:
-          PlatformType.SHOPIFY,
+        actorId:
+          userId,
 
-        accountId:
-          shopInfo.id,
+        action:
+          AuditAction.PLATFORM_CONNECTED,
 
-        accountName:
-          shopInfo.name,
+        entity:
+          AuditEntity.PLATFORM,
 
-        externalName:
-          shop,
-
-        status:
-          ConnectionStatus.ACTIVE,
-
-        syncStatus:
-          SyncStatus.SYNCED,
-
-        metadata: {
-          domain: shopInfo.domain,
-          email: shopInfo.email,
-        },
-      },
-
-      update: {
-		        accountName:
-          shopInfo.name,
-
-        externalName:
-          shop,
-
-        status:
-          ConnectionStatus.ACTIVE,
-
-        deletedAt: null,
-
-        metadata: {
-          domain: shopInfo.domain,
-          email: shopInfo.email,
-        },
-
-        version: {
-          increment: 1,
-        },
-      },
-    });
-
-  const existingCredential =
-    await this.prisma.platformCredential.findFirst({
-      where: {
-        platformConnectionId:
-          connection.id,
-      },
-    });
-
-  if (!existingCredential) {
-    await this.prisma.platformCredential.create({
-      data: {
-        platformConnectionId:
+        entityId:
           connection.id,
 
-        accessToken:
-          encryptedAccessToken,
+        metadata: {
+          platform:
+            PlatformType.SHOPIFY,
 
-        refreshToken: null,
+          shop,
 
-        expiresAt: null,
-
-        scopes:
-          SHOPIFY_SCOPES,
-
-        isActive: true,
-      },
-    });
-  } else {
-    await this.prisma.platformCredential.update({
-      where: {
-        id: existingCredential.id,
-      },
-
-      data: {
-        accessToken:
-          encryptedAccessToken,
-
-        scopes:
-          SHOPIFY_SCOPES,
-
-        isActive: true,
-
-        revokedAt: null,
-
-        revokedReason: null,
-
-        rotatedAt: new Date(),
-
-        version: {
-          increment: 1,
+          accountName:
+            connection.accountName,
         },
-      },
-    });
+      });
+
+      return this.buildFrontendRedirect(webAppUrl, {
+        shopify: 'connected',
+        connectionId: connection.id,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Shopify OAuth callback failed.';
+      return this.buildFrontendRedirect(webAppUrl, {
+        shopify: 'error',
+        message,
+      });
+    }
   }
-
-  await this.auditLogsService.log({
-    organizationId,
-
-    actorId:
-      userId,
-
-    action:
-      AuditAction.PLATFORM_CONNECTED,
-
-    entity:
-      AuditEntity.PLATFORM,
-
-    entityId:
-      connection.id,
-	    metadata: {
-      platform:
-        PlatformType.SHOPIFY,
-
-      shop,
-
-      accountName:
-        connection.accountName,
-    },
-  });
-}
 
     /**
    * Disconnects the connected Shopify store.
@@ -573,19 +593,27 @@ async callback(
       );
     }
 
+    const clientSecret = process.env.SHOPIFY_CLIENT_SECRET?.trim();
+    if (!clientSecret) {
+      throw new BadRequestException(
+        'Shopify client secret is not configured.',
+      );
+    }
+
+    // Shopify: remove hmac (and signature if present), sort remaining keys
+    // alphabetically, join as key=value with &, HMAC-SHA256 with client secret.
     const message = Object.keys(queryParams)
       .filter(
         (key) =>
           key !== 'hmac' &&
           key !== 'signature' &&
-          queryParams[key] !== undefined &&
-          queryParams[key] !== '',
+          queryParams[key] !== undefined,
       )
       .sort()
       .map((key) => `${key}=${queryParams[key]}`)
       .join('&');
 
-    const digest = createHmac('sha256', this.getOAuthStateSecret())
+    const digest = createHmac('sha256', clientSecret)
       .update(message)
       .digest('hex');
 
@@ -620,5 +648,35 @@ async callback(
     }
 
     return secret;
+  }
+
+  private getWebAppUrl(): string {
+    const explicit = process.env.WEB_APP_URL?.trim();
+    if (explicit) {
+      return explicit.replace(/\/$/, '');
+    }
+
+    const corsOrigin = process.env.CORS_ORIGIN?.trim();
+    if (corsOrigin && corsOrigin !== '*') {
+      const first = corsOrigin.split(',')[0]?.trim();
+      if (first) {
+        return first.replace(/\/$/, '');
+      }
+    }
+
+    return 'http://localhost:3000';
+  }
+
+  private buildFrontendRedirect(
+    webAppUrl: string,
+    query: Record<string, string | undefined>,
+  ): string {
+    const url = new URL('/shopify/connections', webAppUrl);
+    for (const [key, value] of Object.entries(query)) {
+      if (value) {
+        url.searchParams.set(key, value);
+      }
+    }
+    return url.toString();
   }
 }

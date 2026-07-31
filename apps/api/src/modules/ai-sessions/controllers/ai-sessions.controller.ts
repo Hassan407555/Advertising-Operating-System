@@ -110,6 +110,19 @@ export class AiSessionsController {
     return this.aiSessionsService.generateCampaign(id, currentUser);
   }
 
+  @Post(':id/generate-video')
+  @Roles('OWNER', 'ADMIN', 'MEMBER')
+  @ApiOperation({
+    summary:
+      'Generate a temporary product showcase video preview for a VIDEO campaign. Does not persist media on the AI session.',
+  })
+  generateVideo(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.aiSessionsService.generateVideoPreview(id, currentUser);
+  }
+
   @Post(':id/save-draft')
   @Roles('OWNER', 'ADMIN')
   @ApiOperation({

@@ -10,6 +10,7 @@ import type {
   GeneratedCampaignPayload,
   GeneratedCarouselCampaign,
   GeneratedImageCampaign,
+  GeneratedNoneCampaign,
   GeneratedVideoCampaign,
   MetaCampaignAdType,
 } from '../types/generated-campaign.types';
@@ -133,6 +134,27 @@ function mapVideoCreative(
   };
 }
 
+function mapNoneCreative(
+  payload: GeneratedNoneCampaign,
+  meta: Record<string, unknown>,
+): MappedDraftEntities['creative'] {
+  return {
+    name: `${payload.campaignName} Creative`,
+    type: CreativeType.NONE,
+    headline: payload.headline ?? null,
+    primaryText: payload.primaryText ?? null,
+    description: null,
+    callToAction: mapCallToAction(payload.cta),
+    metadata: {
+      ...meta,
+      requiresCreative: false,
+      creativeNotes: payload.creativeNotes ?? null,
+      existingCreativeId: payload.existingCreativeId ?? null,
+      existingPostId: payload.existingPostId ?? null,
+    },
+  };
+}
+
 /**
  * Maps reviewed generatedCampaign payload into Campaign / AdSet / Ad / Creative fields.
  * Budget is stored on Campaign only (not duplicated on AdSet).
@@ -148,6 +170,8 @@ export function mapGeneratedCampaignToDraft(
     creative = mapImageCreative(payload, meta);
   } else if (payload.campaignType === 'CAROUSEL') {
     creative = mapCarouselCreative(payload, meta);
+  } else if (payload.campaignType === 'NONE') {
+    creative = mapNoneCreative(payload, meta);
   } else {
     creative = mapVideoCreative(payload, meta);
   }
@@ -164,6 +188,9 @@ export function mapGeneratedCampaignToDraft(
         audience: payload.audience,
         objectiveText: payload.objective,
         ctaText: payload.cta,
+        ...(payload.campaignType === 'NONE'
+          ? { requiresCreative: false }
+          : {}),
       },
     },
     adSet: {
@@ -179,7 +206,12 @@ export function mapGeneratedCampaignToDraft(
     creative,
     ad: {
       name: `${payload.campaignName} Ad`,
-      metadata: { ...meta },
+      metadata: {
+        ...meta,
+        ...(payload.campaignType === 'NONE'
+          ? { requiresCreative: false }
+          : {}),
+      },
     },
   };
 }

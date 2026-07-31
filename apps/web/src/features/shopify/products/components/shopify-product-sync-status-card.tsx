@@ -1,6 +1,8 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { PageGrid } from "@/components/shared/layout/page-grid";
+import { SectionHeader } from "@/components/shared/section-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { ShopifyStoreSyncStatus } from "@/features/shopify/products/types/shopify-products.types";
 import { formatDateTime } from "@/utils/formatters";
@@ -11,32 +13,39 @@ interface ShopifyProductSyncStatusCardProps {
 
 export function ShopifyProductSyncStatusCard({ status }: ShopifyProductSyncStatusCardProps) {
   return (
-    <Card className="space-y-3">
-      <h2 className="text-lg font-semibold">Sync status</h2>
-      <div className="grid gap-2 text-sm md:grid-cols-2">
-        <p>
-          <span className="text-muted-foreground">Store:</span> {status.accountName}
-        </p>
-        <p>
-          <span className="text-muted-foreground">Shop:</span> {status.shop}
-        </p>
-        <p className="flex items-center gap-2">
-          <span className="text-muted-foreground">Connection:</span>
-          <StatusBadge status={status.status} />
-        </p>
-        <p className="flex items-center gap-2">
-          <span className="text-muted-foreground">Sync:</span>
-          <StatusBadge status={status.syncStatus} />
-        </p>
-        <p>
-          <span className="text-muted-foreground">Last synced:</span>{" "}
-          {status.lastSyncedAt ? formatDateTime(status.lastSyncedAt) : "N/A"}
-        </p>
-        <p>
-          <span className="text-muted-foreground">Last successful sync:</span>{" "}
-          {status.lastSuccessfulSyncAt ? formatDateTime(status.lastSuccessfulSyncAt) : "N/A"}
-        </p>
-      </div>
+    <Card variant="elevated" padding="lg" className="space-y-5">
+      <SectionHeader
+        title="Sync status"
+        description={`${status.accountName} · ${status.shop}`}
+      />
+      <PageGrid cols={2} gap="sm">
+        <div className="rounded-[var(--radius-xl)] bg-muted/30 px-4 py-3">
+          <p className="text-caption">Connection</p>
+          <div className="mt-2">
+            <StatusBadge status={status.status} />
+          </div>
+        </div>
+        <div className="rounded-[var(--radius-xl)] bg-muted/30 px-4 py-3">
+          <p className="text-caption">Sync</p>
+          <div className="mt-2">
+            <StatusBadge status={status.syncStatus} />
+          </div>
+        </div>
+        <div className="rounded-[var(--radius-xl)] bg-muted/30 px-4 py-3">
+          <p className="text-caption">Last synced</p>
+          <p className="mt-1 text-sm font-medium">
+            {status.lastSyncedAt ? formatDateTime(status.lastSyncedAt) : "Never"}
+          </p>
+        </div>
+        <div className="rounded-[var(--radius-xl)] bg-muted/30 px-4 py-3">
+          <p className="text-caption">Last successful sync</p>
+          <p className="mt-1 text-sm font-medium">
+            {status.lastSuccessfulSyncAt
+              ? formatDateTime(status.lastSuccessfulSyncAt)
+              : "Never"}
+          </p>
+        </div>
+      </PageGrid>
     </Card>
   );
 }

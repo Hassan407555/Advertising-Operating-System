@@ -408,6 +408,7 @@ enum CreativeType {
   AUDIO
   TEXT
   HTML5
+  NONE
 }
 
 enum SyncStatus {

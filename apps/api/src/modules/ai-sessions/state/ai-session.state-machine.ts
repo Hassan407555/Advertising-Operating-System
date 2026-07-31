@@ -43,6 +43,7 @@ const TRANSITIONS: Record<AiSessionStatus, AiSessionStatus[]> = {
   ],
   [AiSessionStatus.REVIEWING]: [
     AiSessionStatus.AWAITING_APPROVAL,
+    AiSessionStatus.ANALYZING,
     AiSessionStatus.FAILED,
     AiSessionStatus.CANCELLED,
   ],
@@ -52,7 +53,11 @@ const TRANSITIONS: Record<AiSessionStatus, AiSessionStatus[]> = {
     AiSessionStatus.CANCELLED,
   ],
   [AiSessionStatus.APPROVED]: [AiSessionStatus.ARCHIVED],
-  [AiSessionStatus.FAILED]: [AiSessionStatus.ARCHIVED],
+  [AiSessionStatus.FAILED]: [
+    AiSessionStatus.READY_FOR_ANALYSIS,
+    AiSessionStatus.ANALYZING,
+    AiSessionStatus.ARCHIVED,
+  ],
   [AiSessionStatus.CANCELLED]: [AiSessionStatus.ARCHIVED],
   [AiSessionStatus.ARCHIVED]: [],
 };
@@ -87,7 +92,11 @@ export function isTerminalAiSessionStatus(status: AiSessionStatus): boolean {
 
 /** Interview complete — ready for Gemini campaign generation (Phase 6). */
 export function isReadyForCampaignGeneration(status: AiSessionStatus): boolean {
-  return status === AiSessionStatus.READY_FOR_ANALYSIS;
+  return (
+    status === AiSessionStatus.READY_FOR_ANALYSIS ||
+    status === AiSessionStatus.REVIEWING ||
+    status === AiSessionStatus.FAILED
+  );
 }
 
 /** Phase 6 success — campaign JSON stored; Phase 7 review/save comes next. */

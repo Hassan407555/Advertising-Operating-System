@@ -43,19 +43,25 @@ import type {
   PublisherProvider,
 } from '../interfaces/publisher-provider.interface';
 import { PublisherRegistry } from '../publisher.registry';
+import type { PublishDiagnostics } from '../../types/publish-diagnostics.types';
 import {
   META_V1_CTA_MAP,
   META_V1_OBJECTIVE_MAP,
   META_V1_SUPPORTED_CREATIVE_TYPES,
   META_V1_SUPPORTED_VIDEO_MIME_TYPES,
 } from './meta.constants';
+import { PublisherValidationError } from '../../errors/publisher-validation.error';
 import { MetaGraphClient } from './meta-graph.client';
-
-interface ResolvedVideoMedia {
-  url: string;
-  mimeType: string;
-  thumbnailUrl: string | null;
-}
+import {
+  extractMetaGraphError,
+  formatMetaErrorMessage,
+} from './meta-graph.error';
+import { PublishStageTracker } from './publish-stage-tracker';
+import { MetaCreativePublishStrategyFactory } from './strategies/creative-publish.strategy.factory';
+import type {
+  MetaCreativePublishContext,
+  ResolvedVideoMedia,
+} from './strategies/creative-publish.strategy';
 
 interface MetaPublishContext {
   campaign: CampaignResponseDto;
@@ -68,6 +74,8 @@ interface MetaPublishContext {
   creativesById: Map<string, CreativeResponseDto>;
   /** creativeId → resolved VIDEO media (Creative Assets / Storage / metadata) */
   videoByCreativeId: Map<string, ResolvedVideoMedia>;
+  /** Stage timing + Meta error collector (diagnostics only). */
+  stageTracker: PublishStageTracker;
 }
 
 /**
@@ -75,6 +83,7 @@ interface MetaPublishContext {
  * - Standard campaign objectives (mapped to OUTCOME_*)
  * - Single-image (or text) ads
  * - Single-video ads (upload existing video asset)
+ * - NONE creatives (existing creative/post or link-only, no media upload)
  * - Existing AI-generated copy fields
  * - Existing campaign → ad set → ad → creative structure
  * - Publish only (campaigns created as PAUSED)
@@ -86,6 +95,7 @@ export class MetaPublisherProvider
   readonly platform = PublisherPlatform.META;
 
   private readonly logger = new Logger(MetaPublisherProvider.name);
+  private readonly creativeStrategies = new MetaCreativePublishStrategyFactory();
 
   constructor(
     private readonly registry: PublisherRegistry,
@@ -114,6 +124,9 @@ export class MetaPublisherProvider
     try {
       await this.buildContext(request, issues, dryRun);
     } catch (error) {
+      if (error instanceof PublisherValidationError) {
+        throw error;
+      }
       issues.push({
         code: 'META_CONTEXT_ERROR',
         message:
@@ -135,6 +148,7 @@ export class MetaPublisherProvider
     const dryRun = this.isDryRun(request);
     const issues: PublishValidationIssue[] = [];
     const entities: PublishEntityResult[] = [];
+    const stageTracker = new PublishStageTracker(MetaPublisherProvider.name);
     // Intentionally defer local persistence until the remote publish sequence
     // has fully completed, so failed runs do not leave partial local entity state.
     const pendingLocalWrites: Array<{
@@ -202,10 +216,27 @@ export class MetaPublisherProvider
     });
 
     try {
-      const context = await this.buildContext(request, issues, dryRun);
+      const context = await this.buildContext(
+        request,
+        issues,
+        dryRun,
+        stageTracker,
+      );
 
       if (issues.length > 0) {
-        await this.failJob(job.id, issues, startedAt);
+        const diagnostics = stageTracker.buildDiagnostics({
+          success: false,
+          fallbackMessage: issues.map((issue) => issue.message).join(' | '),
+        });
+        await this.failJob(
+          job.id,
+          issues,
+          startedAt,
+          diagnostics.errorMessage,
+          PublishJobStatus.FAILED,
+          entities,
+          diagnostics,
+        );
         return this.toResult({
           success: false,
           status: PublishStatus.FAILED,
@@ -213,6 +244,7 @@ export class MetaPublisherProvider
           entities,
           issues,
           startedAt,
+          diagnostics,
         });
       }
 
@@ -343,9 +375,20 @@ export class MetaPublisherProvider
         }
       }
 
-      await flushLocalWrites();
+      await stageTracker.run(
+        'publish_complete',
+        {
+          entityType: PublishEntityType.CAMPAIGN,
+          entityId: context.campaign.id,
+          message: 'Flushing local external IDs',
+        },
+        async () => {
+          await flushLocalWrites();
+        },
+      );
 
       const completedAt = new Date();
+      const diagnostics = stageTracker.buildDiagnostics({ success: true });
       const result = this.toResult({
         success: true,
         status: PublishStatus.PUBLISHED,
@@ -355,6 +398,7 @@ export class MetaPublisherProvider
         issues,
         startedAt,
         completedAt,
+        diagnostics,
         raw: { dryRun },
       });
 
@@ -369,14 +413,69 @@ export class MetaPublisherProvider
 
       return result;
     } catch (error) {
+      // Business validation errors must surface as PublisherValidationError,
+      // not as soft Graph diagnostics with raw Meta messaging.
+      if (error instanceof PublisherValidationError) {
+        throw error;
+      }
+
+      const metaError = extractMetaGraphError(error);
+      const diagnostics = stageTracker.buildDiagnostics({
+        success: false,
+        error,
+        fallbackMessage: 'Meta publish failed.',
+      });
       const message =
-        error instanceof Error ? error.message : 'Meta publish failed.';
-      this.logger.error(message);
+        diagnostics.errorMessage ??
+        (metaError
+          ? formatMetaErrorMessage(metaError)
+          : error instanceof Error
+            ? error.message
+            : 'Meta publish failed.');
+
+      this.logger.error(
+        `Meta publish failed: ${message}` +
+          (metaError
+            ? ` httpStatus=${metaError.httpStatus} code=${metaError.code ?? 'n/a'} fbtrace_id=${metaError.fbtraceId ?? 'n/a'} raw=${JSON.stringify(metaError.raw ?? null)}`
+            : ''),
+      );
 
       issues.push({
-        code: 'META_PUBLISH_FAILED',
+        code: diagnostics.errorCode ?? 'META_PUBLISH_FAILED',
         message,
+        entityType: diagnostics.stages.find((s) => s.status === 'failed')
+          ?.entityType,
+        entityId: diagnostics.stages.find((s) => s.status === 'failed')
+          ?.entityId,
+        field: diagnostics.stage,
       });
+
+      // Ensure diagnostics always carries the original Graph identity even when
+      // the failed stage list is empty (should not happen for Graph calls).
+      if (!diagnostics.errorMessage && message) {
+        diagnostics.errorMessage = message;
+      }
+      if (metaError) {
+        diagnostics.httpStatus = diagnostics.httpStatus ?? metaError.httpStatus;
+        diagnostics.graphErrorCode =
+          diagnostics.graphErrorCode ?? metaError.code;
+        diagnostics.graphErrorSubcode =
+          diagnostics.graphErrorSubcode ?? metaError.errorSubcode;
+        diagnostics.metaTraceId =
+          diagnostics.metaTraceId ?? metaError.fbtraceId;
+      }
+
+      this.logger.error(
+        `Meta publish soft-fail diagnostics=${JSON.stringify({
+          stage: diagnostics.stage,
+          errorCode: diagnostics.errorCode,
+          errorMessage: diagnostics.errorMessage,
+          httpStatus: diagnostics.httpStatus,
+          graphErrorCode: diagnostics.graphErrorCode,
+          metaTraceId: diagnostics.metaTraceId,
+          stageCount: diagnostics.stages.length,
+        })}`,
+      );
 
       const hasPublishedEntities = entities.some(
         (entity) => entity.status === PublishStatus.PUBLISHED,
@@ -397,6 +496,7 @@ export class MetaPublisherProvider
         message,
         terminalJobStatus,
         entities,
+        diagnostics,
       );
 
       return this.toResult({
@@ -406,6 +506,7 @@ export class MetaPublisherProvider
         entities,
         issues,
         startedAt,
+        diagnostics,
       });
     }
   }
@@ -414,6 +515,9 @@ export class MetaPublisherProvider
     request: PublishRequest,
     issues: PublishValidationIssue[],
     dryRun: boolean,
+    stageTracker: PublishStageTracker = new PublishStageTracker(
+      MetaPublisherProvider.name,
+    ),
   ): Promise<MetaPublishContext> {
     const currentUser = this.toSystemUser(request);
 
@@ -625,70 +729,36 @@ export class MetaPublisherProvider
       ) {
         issues.push({
           code: 'UNSUPPORTED_CREATIVE_TYPE',
-          message: `V1 Meta publisher only supports IMAGE/TEXT/VIDEO creatives. Found ${creative.type}.`,
+          message: `V1 Meta publisher only supports IMAGE/TEXT/VIDEO/NONE creatives. Found ${creative.type}.`,
           entityType: PublishEntityType.CREATIVE,
           entityId: creative.id,
           field: 'type',
         });
+        continue;
       }
 
-      if (!creative.headline?.trim() || !creative.primaryText?.trim()) {
+      const strategy = this.creativeStrategies.get(creative.type);
+      if (!strategy) {
         issues.push({
-          code: 'MISSING_AI_COPY',
-          message:
-            'Creative is missing headline or primaryText. Run AI Copy generation first.',
+          code: 'UNSUPPORTED_CREATIVE_TYPE',
+          message: `No publish strategy registered for creative type ${creative.type}.`,
           entityType: PublishEntityType.CREATIVE,
           entityId: creative.id,
+          field: 'type',
         });
+        continue;
       }
 
-      if (creative.type === CreativeType.IMAGE) {
-        const imageUrl = this.resolveImageUrl(creative);
-        if (!imageUrl) {
-          issues.push({
-            code: 'MISSING_IMAGE',
-            message:
-              'IMAGE creative requires a source image URL in metadata.sourceImageUrls or featuredImageUrl.',
-            entityType: PublishEntityType.CREATIVE,
-            entityId: creative.id,
-          });
-        }
-      }
+      const strategyContext = this.buildCreativeStrategyContext({
+        adAccountExternalId: adAccount.externalId,
+        accessToken,
+        pageId,
+        dryRun,
+        videoByCreativeId,
+        stageTracker,
+      });
 
-      if (creative.type === CreativeType.VIDEO) {
-        const video = videoByCreativeId.get(creative.id);
-        if (!video) {
-          issues.push({
-            code: 'MISSING_VIDEO',
-            message:
-              'VIDEO creative requires a CreativeAsset (VIDEO) or metadata.sourceVideoUrls / videoUrl with a reachable Storage URL.',
-            entityType: PublishEntityType.CREATIVE,
-            entityId: creative.id,
-          });
-        } else if (
-          !META_V1_SUPPORTED_VIDEO_MIME_TYPES.includes(
-            video.mimeType as (typeof META_V1_SUPPORTED_VIDEO_MIME_TYPES)[number],
-          )
-        ) {
-          issues.push({
-            code: 'UNSUPPORTED_VIDEO_FORMAT',
-            message: `Unsupported video MIME type ${video.mimeType}. Supported: ${META_V1_SUPPORTED_VIDEO_MIME_TYPES.join(', ')}.`,
-            entityType: PublishEntityType.CREATIVE,
-            entityId: creative.id,
-            field: 'mimeType',
-          });
-        }
-      }
-
-      if (!creative.landingPageUrl) {
-        issues.push({
-          code: 'MISSING_LANDING_URL',
-          message: 'Creative is missing landingPageUrl.',
-          entityType: PublishEntityType.CREATIVE,
-          entityId: creative.id,
-          field: 'landingPageUrl',
-        });
-      }
+      issues.push(...strategy.validate(creative, strategyContext, ad.id));
     }
 
     return {
@@ -701,6 +771,7 @@ export class MetaPublisherProvider
       ads,
       creativesById,
       videoByCreativeId,
+      stageTracker,
     };
   }
 
@@ -708,22 +779,124 @@ export class MetaPublisherProvider
     context: MetaPublishContext,
     metaObjective: string,
   ): Promise<string> {
-    if (context.dryRun) {
-      return `meta_dry_campaign_${context.campaign.id}`;
-    }
-
-    const created = await this.metaGraphClient.createCampaign(
-      context.adAccountExternalId,
-      context.accessToken,
+    return context.stageTracker.run(
+      'campaign',
       {
-        name: context.campaign.name,
-        objective: metaObjective,
-        status: 'PAUSED',
-        special_ad_categories: [],
+        entityType: PublishEntityType.CAMPAIGN,
+        entityId: context.campaign.id,
+      },
+      async () => {
+        if (context.dryRun) {
+          return `meta_dry_campaign_${context.campaign.id}`;
+        }
+
+        const payload = this.buildMetaCampaignCreatePayload(
+          context,
+          metaObjective,
+        );
+
+        const created = await this.metaGraphClient.createCampaign(
+          context.adAccountExternalId,
+          context.accessToken,
+          payload,
+        );
+
+        return created.id;
       },
     );
+  }
 
-    return created.id;
+  /**
+   * Build Meta campaign create payload.
+   *
+   * Budget ownership must stay aligned with publishAdSet:
+   * - Ad set budget mode → daily_budget is set on each ad set
+   *   (adSet.dailyBudget ?? campaign.dailyBudget); campaign create must NOT
+   *   send campaign budget, and must set is_adset_budget_sharing_enabled.
+   * - Campaign budget (CBO) mode → daily_budget / lifetime_budget on the
+   *   campaign; Meta does not require is_adset_budget_sharing_enabled.
+   */
+  private buildMetaCampaignCreatePayload(
+    context: MetaPublishContext,
+    metaObjective: string,
+  ): Record<string, unknown> {
+    const payload: Record<string, unknown> = {
+      name: context.campaign.name,
+      objective: metaObjective,
+      status: 'PAUSED',
+      special_ad_categories: [],
+    };
+
+    const budgetMode = this.resolveMetaBudgetMode(context);
+
+    if (budgetMode === 'campaign') {
+      const dailyBudgetCents = this.toCentsOrNull(
+        context.campaign.dailyBudget,
+      );
+      const lifetimeBudgetCents = this.toCentsOrNull(
+        context.campaign.lifetimeBudget,
+      );
+
+      if (dailyBudgetCents != null) {
+        payload.daily_budget = dailyBudgetCents;
+      } else if (lifetimeBudgetCents != null) {
+        payload.lifetime_budget = lifetimeBudgetCents;
+      }
+    } else {
+      // Required by Meta when not using campaign budget (ad set budgets).
+      // Keep ad set budget sharing optimization off unless our model enables it.
+      payload.is_adset_budget_sharing_enabled = false;
+    }
+
+    return payload;
+  }
+
+  /**
+   * Decide Meta budget ownership from our campaign/ad-set model.
+   * Must match where publishAdSet places daily_budget.
+   */
+  private resolveMetaBudgetMode(
+    context: MetaPublishContext,
+  ): 'campaign' | 'ad_set' {
+    // publishAdSet always sends daily_budget on each ad set using
+    // adSet.dailyBudget ?? campaign.dailyBudget. That is Meta ad-set budget
+    // mode (CBO off), even when the only configured amount lives on the
+    // campaign row as a fallback.
+    //
+    // Return 'campaign' only if/when publishCampaign starts sending
+    // daily_budget or lifetime_budget on the campaign and publishAdSet stops
+    // sending ad-set budgets.
+    const publishesBudgetOnAdSets = context.adSets.length > 0;
+    if (publishesBudgetOnAdSets) {
+      return 'ad_set';
+    }
+
+    const campaignHasBudget =
+      this.hasPositiveBudget(context.campaign.dailyBudget) ||
+      this.hasPositiveBudget(context.campaign.lifetimeBudget);
+
+    return campaignHasBudget ? 'campaign' : 'ad_set';
+  }
+
+  private hasPositiveBudget(
+    budget: string | number | null | undefined,
+  ): boolean {
+    if (budget === null || budget === undefined) {
+      return false;
+    }
+
+    const value = typeof budget === 'string' ? Number(budget) : budget;
+    return Number.isFinite(value) && value > 0;
+  }
+
+  private toCentsOrNull(
+    budget: string | number | null | undefined,
+  ): number | null {
+    if (!this.hasPositiveBudget(budget)) {
+      return null;
+    }
+
+    return this.toCents(budget);
   }
 
   private async publishAdSet(
@@ -731,145 +904,93 @@ export class MetaPublisherProvider
     adSet: AdSetResponseDto,
     campaignExternalId: string,
   ): Promise<string> {
-    if (context.dryRun) {
-      return `meta_dry_adset_${adSet.id}`;
-    }
-
-    const targeting = (adSet.targeting ?? {}) as Record<string, unknown>;
-    const countries = Array.isArray(targeting.countries)
-      ? (targeting.countries as string[])
-      : ['US'];
-
-    const dailyBudgetCents = this.toCents(
-      adSet.dailyBudget ?? context.campaign.dailyBudget,
-    );
-
-    const created = await this.metaGraphClient.createAdSet(
-      context.adAccountExternalId,
-      context.accessToken,
+    return context.stageTracker.run(
+      'ad_set',
       {
-        name: adSet.name,
-        campaign_id: campaignExternalId,
-        daily_budget: dailyBudgetCents,
-        billing_event: 'IMPRESSIONS',
-        optimization_goal: this.optimizationGoalFor(
-          context.campaign.objective,
-        ),
-        bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-        targeting: {
-          geo_locations: {
-            countries,
+        entityType: PublishEntityType.AD_SET,
+        entityId: adSet.id,
+      },
+      async () => {
+        if (context.dryRun) {
+          return `meta_dry_adset_${adSet.id}`;
+        }
+
+        const targeting = (adSet.targeting ?? {}) as Record<string, unknown>;
+        const countries = Array.isArray(targeting.countries)
+          ? (targeting.countries as string[])
+          : ['US'];
+
+        const dailyBudgetCents = this.toCents(
+          adSet.dailyBudget ?? context.campaign.dailyBudget,
+        );
+
+        const created = await this.metaGraphClient.createAdSet(
+          context.adAccountExternalId,
+          context.accessToken,
+          {
+            name: adSet.name,
+            campaign_id: campaignExternalId,
+            daily_budget: dailyBudgetCents,
+            billing_event: 'IMPRESSIONS',
+            optimization_goal: this.optimizationGoalFor(
+              context.campaign.objective,
+            ),
+            bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+            targeting: {
+              geo_locations: {
+                countries,
+              },
+            },
+            status: 'PAUSED',
           },
-        },
-        status: 'PAUSED',
+        );
+
+        return created.id;
       },
     );
-
-    return created.id;
   }
 
   private async publishCreative(
     context: MetaPublishContext,
     creative: CreativeResponseDto,
   ): Promise<string> {
-    if (context.dryRun) {
-      if (creative.type === CreativeType.VIDEO) {
-        return `meta_dry_video_creative_${creative.id}`;
-      }
-      return `meta_dry_creative_${creative.id}`;
+    const strategy = this.creativeStrategies.get(creative.type);
+    if (!strategy) {
+      throw new Error(
+        `No Meta publish strategy for creative type ${creative.type}.`,
+      );
     }
 
-    if (creative.type === CreativeType.VIDEO) {
-      return this.publishVideoCreative(context, creative);
-    }
-
-    // Existing IMAGE / TEXT flow — unchanged.
-    const imageUrl = this.resolveImageUrl(creative);
-    const ctaType =
-      META_V1_CTA_MAP[creative.callToAction ?? CallToAction.SHOP_NOW] ??
-      'SHOP_NOW';
-
-    const linkData: Record<string, unknown> = {
-      message: creative.primaryText,
-      name: creative.headline,
-      description: creative.description ?? undefined,
-      link: creative.landingPageUrl,
-      call_to_action: {
-        type: ctaType,
-        value: {
-          link: creative.landingPageUrl,
-        },
-      },
-    };
-
-    if (imageUrl) {
-      linkData.picture = imageUrl;
-    }
-
-    const created = await this.metaGraphClient.createAdCreative(
-      context.adAccountExternalId,
-      context.accessToken,
-      {
-        name: creative.name,
-        object_story_spec: {
-          page_id: context.pageId,
-          link_data: linkData,
-        },
-      },
+    return strategy.publish(
+      creative,
+      this.buildCreativeStrategyContext(context),
     );
-
-    return created.id;
   }
 
-  private async publishVideoCreative(
-    context: MetaPublishContext,
-    creative: CreativeResponseDto,
-  ): Promise<string> {
-    const video = context.videoByCreativeId.get(creative.id);
-    if (!video) {
-      throw new Error(`Missing video media for creative ${creative.id}.`);
-    }
-
-    const uploaded = await this.metaGraphClient.uploadVideoByUrl(
-      context.adAccountExternalId,
-      context.accessToken,
-      video.url,
-      creative.name,
-    );
-
-    const ctaType =
-      META_V1_CTA_MAP[creative.callToAction ?? CallToAction.SHOP_NOW] ??
-      'SHOP_NOW';
-
-    const videoData: Record<string, unknown> = {
-      video_id: uploaded.id,
-      message: creative.primaryText,
-      title: creative.headline,
-      call_to_action: {
-        type: ctaType,
-        value: {
-          link: creative.landingPageUrl,
-        },
-      },
+  private buildCreativeStrategyContext(
+    context: Pick<
+      MetaPublishContext,
+      | 'adAccountExternalId'
+      | 'accessToken'
+      | 'pageId'
+      | 'dryRun'
+      | 'videoByCreativeId'
+      | 'stageTracker'
+    >,
+  ): MetaCreativePublishContext {
+    return {
+      adAccountExternalId: context.adAccountExternalId,
+      accessToken: context.accessToken,
+      pageId: context.pageId,
+      dryRun: context.dryRun,
+      videoByCreativeId: context.videoByCreativeId,
+      stageTracker: context.stageTracker,
+      metaGraphClient: this.metaGraphClient,
+      resolveImageUrl: (creative) => this.resolveImageUrl(creative),
+      ctaMap: META_V1_CTA_MAP,
+      defaultCta: CallToAction.SHOP_NOW,
+      supportedVideoMimeTypes: META_V1_SUPPORTED_VIDEO_MIME_TYPES,
     };
-
-    if (video.thumbnailUrl) {
-      videoData.image_url = video.thumbnailUrl;
-    }
-
-    const created = await this.metaGraphClient.createAdCreative(
-      context.adAccountExternalId,
-      context.accessToken,
-      {
-        name: creative.name,
-        object_story_spec: {
-          page_id: context.pageId,
-          video_data: videoData,
-        },
-      },
-    );
-
-    return created.id;
   }
 
   private async publishAd(
@@ -878,24 +999,31 @@ export class MetaPublisherProvider
     adSetExternalId: string,
     creativeExternalId: string,
   ): Promise<string> {
-    if (context.dryRun) {
-      return `meta_dry_ad_${ad.id}`;
-    }
-
-    const created = await this.metaGraphClient.createAd(
-      context.adAccountExternalId,
-      context.accessToken,
+    return context.stageTracker.run(
+      'ad',
       {
-        name: ad.name,
-        adset_id: adSetExternalId,
-        creative: {
-          creative_id: creativeExternalId,
-        },
-        status: 'PAUSED',
+        entityType: PublishEntityType.AD,
+        entityId: ad.id,
+      },
+      async () => {
+        if (context.dryRun) {
+          return `meta_dry_ad_${ad.id}`;
+        }
+
+        const created = await this.metaGraphClient.createAd(
+          context.adAccountExternalId,
+          context.accessToken,
+          {
+            name: ad.name,
+            adset_id: adSetExternalId,
+            creative: { creative_id: creativeExternalId },
+            status: 'PAUSED',
+          },
+        );
+
+        return created.id;
       },
     );
-
-    return created.id;
   }
 
   private optimizationGoalFor(objective: CampaignObjective): string {
@@ -1097,6 +1225,7 @@ export class MetaPublisherProvider
     errorMessage?: string,
     status: PublishJobStatus = PublishJobStatus.FAILED,
     entities?: PublishEntityResult[],
+    diagnostics?: PublishDiagnostics,
   ): Promise<void> {
     await this.prisma.publishJob.update({
       where: { id: jobId },
@@ -1108,6 +1237,7 @@ export class MetaPublisherProvider
         result: {
           issues,
           entities: entities ?? [],
+          diagnostics: diagnostics ?? null,
         } as unknown as Prisma.InputJsonValue,
         completedAt: new Date(),
         startedAt,
@@ -1124,6 +1254,7 @@ export class MetaPublisherProvider
     issues: PublishValidationIssue[];
     startedAt: Date;
     completedAt?: Date;
+    diagnostics?: PublishDiagnostics;
     raw?: unknown;
   }): PublishResult {
     const completedAt = params.completedAt ?? new Date();
@@ -1139,6 +1270,7 @@ export class MetaPublisherProvider
       startedAt: params.startedAt.toISOString(),
       completedAt: completedAt.toISOString(),
       durationMs: completedAt.getTime() - params.startedAt.getTime(),
+      diagnostics: params.diagnostics,
       raw: params.raw,
     };
   }

@@ -13,8 +13,7 @@ export const PUBLISHER_ROADMAP_PLATFORMS: PublisherPlatform[] = [
   PublisherPlatform.LINKEDIN,
 ];
 
-/** Platforms enabled for v1 product scope (Meta + TikTok). */
+/** Platforms enabled for v1 product scope (Meta only). */
 export const PUBLISHER_V1_PLATFORMS: PublisherPlatform[] = [
   PublisherPlatform.META,
-  PublisherPlatform.TIKTOK,
 ];

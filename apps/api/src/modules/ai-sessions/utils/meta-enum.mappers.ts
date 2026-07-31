@@ -1,22 +1,50 @@
+import { BadRequestException, Logger } from '@nestjs/common';
 import {
   CallToAction,
   CampaignObjective,
   Currency,
 } from '@prisma/client';
 
+const logger = new Logger('MetaEnumMappers');
+
 const OBJECTIVE_ALIASES: Record<string, CampaignObjective> = {
+  // Awareness (+ common typos / AI variants)
   AWARENESS: CampaignObjective.AWARENESS,
   BRAND_AWARENESS: CampaignObjective.AWARENESS,
+  BRANDAWARENESS: CampaignObjective.AWARENESS,
+  AWARNESS: CampaignObjective.AWARENESS,
+  AWARENES: CampaignObjective.AWARENESS,
+  BRANDAWARNESS: CampaignObjective.AWARENESS,
+
+  // Traffic
   TRAFFIC: CampaignObjective.TRAFFIC,
   LINK_CLICKS: CampaignObjective.TRAFFIC,
+  VISITS: CampaignObjective.TRAFFIC,
+  WEBSITE_TRAFFIC: CampaignObjective.TRAFFIC,
+
+  // Engagement (+ common typo)
   ENGAGEMENT: CampaignObjective.ENGAGEMENT,
+  ENGAGEMENTS: CampaignObjective.ENGAGEMENT,
+  ENGAGE: CampaignObjective.ENGAGEMENT,
   POST_ENGAGEMENT: CampaignObjective.ENGAGEMENT,
+  POST_ENGAGMENT: CampaignObjective.ENGAGEMENT,
+
+  // Leads
   LEADS: CampaignObjective.LEADS,
+  LEAD: CampaignObjective.LEADS,
   LEAD_GENERATION: CampaignObjective.LEADS,
+
+  // Sales
   SALES: CampaignObjective.SALES,
+  SALE: CampaignObjective.SALES,
   CONVERSIONS: CampaignObjective.SALES,
   CONVERSION: CampaignObjective.SALES,
   PURCHASE: CampaignObjective.SALES,
+  PURCHASES: CampaignObjective.SALES,
+  SELL: CampaignObjective.SALES,
+  SELLING: CampaignObjective.SALES,
+
+  // Remaining Prisma objectives / Meta-style aliases
   CATALOG_SALES: CampaignObjective.CATALOG_SALES,
   APP_PROMOTION: CampaignObjective.APP_PROMOTION,
   APP_INSTALLS: CampaignObjective.APP_PROMOTION,
@@ -55,16 +83,26 @@ const CTA_ALIASES: Record<string, CallToAction> = {
   WATCH_MORE: CallToAction.WATCH_MORE,
 };
 
+/**
+ * Normalize free-text enum keys:
+ * trim → uppercase → punctuation/spaces → underscores → collapse underscores.
+ */
 function normalizeKey(value: string): string {
   return value
     .trim()
     .toUpperCase()
-    .replace(/[\s-]+/g, '_');
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
 }
 
-/** Maps free-text objective to Prisma CampaignObjective. Defaults to SALES. */
+/**
+ * Maps free-text objective to Prisma CampaignObjective.
+ * Throws BadRequestException for unrecognized values (does not default to SALES).
+ */
 export function mapObjective(value: string): CampaignObjective {
   const key = normalizeKey(value);
+
   if (OBJECTIVE_ALIASES[key]) {
     return OBJECTIVE_ALIASES[key];
   }
@@ -72,7 +110,12 @@ export function mapObjective(value: string): CampaignObjective {
   const match = (Object.values(CampaignObjective) as string[]).find(
     (item) => item === key,
   );
-  return (match as CampaignObjective | undefined) ?? CampaignObjective.SALES;
+  if (match) {
+    return match as CampaignObjective;
+  }
+
+  logger.warn(`Unknown campaign objective: "${value}"`);
+  throw new BadRequestException(`Unknown campaign objective: "${value}"`);
 }
 
 /** Maps free-text CTA to Prisma CallToAction. Defaults to LEARN_MORE. */

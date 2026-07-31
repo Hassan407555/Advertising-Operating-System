@@ -12,6 +12,7 @@ import {
   AiSessionSource,
   AiSessionStatus,
   Prisma,
+  ShopifyProductStatus,
 } from '@prisma/client';
 
 import { PaginatedResponseDto } from '../../../common/dto/pagination.dto';
@@ -27,13 +28,17 @@ import {
   CONVERSATION_MANAGER,
   CONVERSATION_PROMPT_VERSION,
 } from '../constants/ai-session.constants';
+import { CreativeVideoService } from '../../video-generation/services/creative-video.service';
+import { VideoGenerationService } from '../../video-generation/services/video-generation.service';
 import {
   AdvanceAiSessionDto,
   CreateAiSessionDto,
+  GenerateVideoPreviewResponseDto,
   ListAiSessionsQueryDto,
   AiSessionResponseDto,
   SaveAiSessionDraftDto,
 } from '../dto/ai-session.dto';
+import type { AiSessionWorkflowContext } from '../managers/ai-session-manager.interface';
 import { AiSessionMapper } from '../mappers/ai-session.mapper';
 import { AiOrchestrator } from '../orchestrator/ai.orchestrator';
 import {
@@ -42,6 +47,7 @@ import {
   isReadyForSaveDraft,
   isTerminalAiSessionStatus,
 } from '../state/ai-session.state-machine';
+import type { GeneratedVideoCampaign } from '../types/generated-campaign.types';
 import { MetaCampaignGeneratorService } from './meta-campaign-generator.service';
 import { SaveDraftCampaignService } from './save-draft-campaign.service';
 
@@ -55,6 +61,8 @@ export class AiSessionsService {
     private readonly orchestrator: AiOrchestrator,
     private readonly metaCampaignGenerator: MetaCampaignGeneratorService,
     private readonly saveDraftCampaign: SaveDraftCampaignService,
+    private readonly videoGenerationService: VideoGenerationService,
+    private readonly creativeVideoService: CreativeVideoService,
   ) {}
 
   async create(
@@ -62,9 +70,15 @@ export class AiSessionsService {
     currentUser: JwtPayload,
   ): Promise<AiSessionResponseDto> {
     const store = await this.storesService.getStore(dto.storeId, currentUser);
-    if (!store.advertisingReady) {
+    const generationReasons = [
+      !store.capabilities.shopifyConnected
+        ? 'Shopify is not connected'
+        : null,
+      !store.capabilities.productsSynced ? 'Products are not synced' : null,
+    ].filter((reason): reason is string => Boolean(reason));
+    if (generationReasons.length > 0) {
       throw new BadRequestException(
-        'Store must be advertising-ready before starting an AI session.',
+        `Store must have Shopify connected and products synced before starting an AI session. ${generationReasons.join('; ')}.`,
       );
     }
 
@@ -80,6 +94,12 @@ export class AiSessionsService {
     if (!product) {
       throw new NotFoundException(
         'Product was not found for this store and organization.',
+      );
+    }
+
+    if (product.status !== ShopifyProductStatus.ACTIVE) {
+      throw new BadRequestException(
+        'Only ACTIVE products can be advertised.',
       );
     }
 
@@ -353,7 +373,7 @@ export class AiSessionsService {
 
     if (!isReadyForCampaignGeneration(session.status)) {
       throw new BadRequestException(
-        `Campaign generation requires status READY_FOR_ANALYSIS (current: ${session.status}).`,
+        `Campaign generation requires status READY_FOR_ANALYSIS, REVIEWING, or FAILED (current: ${session.status}).`,
       );
     }
 
@@ -398,6 +418,94 @@ export class AiSessionsService {
   }
 
   /**
+   * VIDEO only — generate a temporary product showcase MP4 preview.
+   * Uploads to Storage and returns preview metadata to the client.
+   * Does NOT write media onto the AI session workflowContext.
+   */
+  async generateVideoPreview(
+    id: string,
+    currentUser: JwtPayload,
+  ): Promise<GenerateVideoPreviewResponseDto> {
+    const session = await this.requireSession(id, currentUser, false);
+
+    if (session.status !== AiSessionStatus.REVIEWING) {
+      throw new BadRequestException(
+        `Video generation requires status REVIEWING (current: ${session.status}).`,
+      );
+    }
+
+    const context = session.workflowContext as unknown as AiSessionWorkflowContext;
+    const generated = context.generatedCampaign;
+    if (!generated || generated.campaignType !== 'VIDEO') {
+      throw new BadRequestException(
+        'Video generation requires a generated VIDEO campaign. Generate the campaign first.',
+      );
+    }
+
+    const videoPayload = generated.payload as GeneratedVideoCampaign;
+
+    const product = await this.prisma.shopifyProduct.findFirst({
+      where: {
+        id: session.productId,
+        organizationId: currentUser.organizationId,
+        platformConnectionId: session.shopifyStoreId,
+        deletedAt: null,
+      },
+      include: {
+        images: { orderBy: { displayOrder: 'asc' } },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(
+        'Product was not found for this store and organization.',
+      );
+    }
+
+    const imageUrls = [
+      ...(product.featuredImageUrl ? [product.featuredImageUrl] : []),
+      ...product.images.map((image) => image.url),
+    ]
+      .map((url) => url.trim())
+      .filter((url) => url.length > 0);
+
+    const uniqueUrls = [...new Set(imageUrls)];
+
+    const result = await this.videoGenerationService.generate({
+      imageUrls: uniqueUrls,
+      productTitle: product.title,
+      headline: videoPayload.hook,
+      cta: videoPayload.cta,
+      description: product.description,
+    });
+
+    const media = await this.creativeVideoService.persistGeneratedVideo({
+      organizationId: session.organizationId,
+      result,
+      fileName: `${videoPayload.campaignName.replace(/[^\w\-]+/g, '-').slice(0, 48) || 'product'}-ad.mp4`,
+    });
+
+    return {
+      previewUrl: media.url,
+      media: {
+        url: media.url,
+        storageKey: media.storageKey,
+        storageProvider: media.storageProvider,
+        fileName: media.fileName,
+        originalFileName: media.originalFileName,
+        mimeType: media.mimeType,
+        extension: media.extension,
+        fileSize: media.fileSize,
+        checksum: media.checksum,
+        durationSeconds: media.durationSeconds,
+        width: media.width,
+        height: media.height,
+        thumbnailUrl: media.thumbnailUrl ?? null,
+      },
+    };
+  }
+
+  /**
    * Phase 7 — Review & Save Draft.
    * Creates/updates Campaign → AdSet → Ad → Creative from reviewed payload.
    * Session remains REVIEWING; draftCampaignIds marks draft persistence.
@@ -420,6 +528,7 @@ export class AiSessionsService {
         session,
         dto.payload,
         currentUser,
+        dto.generatedVideo,
       );
 
       await this.auditLogsService.log({

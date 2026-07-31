@@ -6,6 +6,8 @@ import {
   DEFAULT_AI_PROVIDER,
   DEFAULT_AI_TEMPERATURE,
   DEFAULT_GEMINI_MODEL,
+  DEFAULT_GROQ_API_BASE_URL,
+  DEFAULT_GROQ_MODEL,
 } from '../constants/ai.constants';
 
 export interface AiModuleConfig {
@@ -14,6 +16,11 @@ export interface AiModuleConfig {
   temperature: number;
   maxOutputTokens: number;
   gemini: {
+    apiKey?: string;
+    model: string;
+    apiBaseUrl: string;
+  };
+  groq: {
     apiKey?: string;
     model: string;
     apiBaseUrl: string;
@@ -67,6 +74,12 @@ export const aiConfig = registerAs(
       apiBaseUrl:
         process.env.GEMINI_API_BASE_URL ??
         'https://generativelanguage.googleapis.com/v1beta',
+    },
+    groq: {
+      apiKey: process.env.GROQ_API_KEY,
+      model: process.env.GROQ_MODEL ?? DEFAULT_GROQ_MODEL,
+      apiBaseUrl:
+        process.env.GROQ_API_BASE_URL ?? DEFAULT_GROQ_API_BASE_URL,
     },
   }),
 );

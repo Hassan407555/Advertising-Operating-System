@@ -21,6 +21,9 @@ function isTechnicalMessage(message: string) {
   if (/^Internal server error$/i.test(normalized)) {
     return true;
   }
+  if (/^Network Error$/i.test(normalized)) {
+    return true;
+  }
   if (/Exception|Prisma|ECONNREFUSED|ETIMEDOUT|stack|at\s+\w+\s+\(/i.test(normalized)) {
     return true;
   }
@@ -47,4 +50,32 @@ export function getErrorMessage(error: unknown, fallback = "Something went wrong
   }
 
   return fallback;
+}
+
+/** Prefer publisher diagnostics / validation issues when the API returns them. */
+export function getPublishErrorMessage(
+  error: unknown,
+  fallback = "Publish failed.",
+) {
+  if (error instanceof AppError) {
+    // Prefer business validation titles over raw diagnostics / Graph text.
+    if (error.title?.trim() && error.validationCode) {
+      return `${error.title.trim()}: ${error.message}`;
+    }
+
+    const diagnosticMessage = error.diagnostics?.errorMessage?.trim();
+    if (diagnosticMessage) {
+      const stage = error.diagnostics?.stage;
+      return stage ? `${stage}: ${diagnosticMessage}` : diagnosticMessage;
+    }
+
+    const firstIssueMessage = error.issues?.find(
+      (issue) => typeof issue?.message === "string" && issue.message.trim(),
+    )?.message?.trim();
+    if (firstIssueMessage) {
+      return firstIssueMessage;
+    }
+  }
+
+  return getErrorMessage(error, fallback);
 }

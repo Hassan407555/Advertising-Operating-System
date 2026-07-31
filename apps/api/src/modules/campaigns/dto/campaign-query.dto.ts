@@ -114,12 +114,12 @@ export class CampaignQueryDto {
 
   @ApiPropertyOptional({
     description:
-      'Filter by AI campaign type (IMAGE | CAROUSEL | VIDEO) via draft metadata',
-    enum: ['IMAGE', 'CAROUSEL', 'VIDEO'],
+      'Filter by AI campaign type (IMAGE | CAROUSEL | VIDEO | NONE) via draft metadata',
+    enum: ['IMAGE', 'CAROUSEL', 'VIDEO', 'NONE'],
   })
   @IsOptional()
-  @IsIn(['IMAGE', 'CAROUSEL', 'VIDEO'])
-  campaignType?: 'IMAGE' | 'CAROUSEL' | 'VIDEO';
+  @IsIn(['IMAGE', 'CAROUSEL', 'VIDEO', 'NONE'])
+  campaignType?: 'IMAGE' | 'CAROUSEL' | 'VIDEO' | 'NONE';
 
   @ApiPropertyOptional({
     enum: CAMPAIGN_SORT_FIELDS,

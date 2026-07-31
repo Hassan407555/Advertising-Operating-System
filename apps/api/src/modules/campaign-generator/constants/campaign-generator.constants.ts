@@ -68,4 +68,5 @@ export const CREATIVE_ASPECT_RATIOS: Record<
   [CreativeType.AUDIO]: [],
   [CreativeType.TEXT]: [],
   [CreativeType.HTML5]: ['1:1', '9:16'],
+  [CreativeType.NONE]: [],
 };

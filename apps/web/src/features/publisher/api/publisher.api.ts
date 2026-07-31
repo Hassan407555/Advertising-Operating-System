@@ -19,5 +19,19 @@ export async function validatePublish(payload: PublishCampaignPayload) {
 
 export async function publishCampaign(payload: PublishCampaignPayload) {
   const response = await apiClient.post("/publisher/publish", payload);
-  return unwrapEnvelope<PublishCampaignResponse>(response.data);
+  const result = unwrapEnvelope<PublishCampaignResponse>(response.data);
+
+  if (process.env.NODE_ENV !== "production") {
+    console.info("[publishCampaign] unwrapped result", {
+      success: result?.success,
+      status: result?.status,
+      hasDiagnostics: Boolean(result?.diagnostics),
+      diagnosticsStage: result?.diagnostics?.stage,
+      errorCode: result?.diagnostics?.errorCode,
+      errorMessage: result?.diagnostics?.errorMessage,
+      issueCodes: result?.issues?.map((issue) => issue.code),
+    });
+  }
+
+  return result;
 }

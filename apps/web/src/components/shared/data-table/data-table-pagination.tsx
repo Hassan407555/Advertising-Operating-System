@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 interface DataTablePaginationProps {
   page: number;
   limit: number;
@@ -14,27 +16,32 @@ export function DataTablePagination({
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="flex items-center justify-between py-3 text-sm">
-      <span className="text-muted-foreground">
+    <div className="flex items-center justify-between gap-3 py-3 text-sm">
+      <span className="text-body-sm">
         Page {page} of {totalPages}
+        {total > 0 ? (
+          <span className="text-muted-foreground"> · {total} total</span>
+        ) : null}
       </span>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          className="rounded-md border border-border px-3 py-1 disabled:opacity-50"
+      <div className="inline-cluster">
+        <Button
+          variant="outline"
+          size="sm"
           disabled={page <= 1}
+          aria-label="Previous page"
           onClick={() => onPageChange(page - 1)}
         >
           Previous
-        </button>
-        <button
-          type="button"
-          className="rounded-md border border-border px-3 py-1 disabled:opacity-50"
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           disabled={page >= totalPages}
+          aria-label="Next page"
           onClick={() => onPageChange(page + 1)}
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   );

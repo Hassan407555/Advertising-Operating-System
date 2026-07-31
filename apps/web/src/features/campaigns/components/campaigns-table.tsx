@@ -198,8 +198,8 @@ export function CampaignsTable({
   if (!loading && data.length === 0) {
     return (
       <PageEmpty
-        title="No draft campaigns yet"
-        description="Generate your first AI campaign from a product to see it here."
+        title="No campaigns."
+        description="Generate a campaign from Products to see drafts and history here."
         action={
           showGenerateCta ? (
             <Link href={ROUTES.PRODUCTS}>

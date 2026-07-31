@@ -12,6 +12,8 @@ import { CORRELATION_ID_HEADER, getCorrelationId } from '../correlation-id';
 
 interface ExceptionResponse {
   message?: string | string[];
+  statusCode?: number;
+  error?: string;
 }
 
 @Catch()
@@ -40,6 +42,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     const correlationId = getCorrelationId(request);
+    const details = this.getExceptionDetails(exception);
 
     response.setHeader(CORRELATION_ID_HEADER, correlationId);
 
@@ -50,6 +53,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path: request.originalUrl,
       message: this.getMessage(exception, status),
       correlationId,
+      ...details,
     });
   }
 
@@ -70,5 +74,35 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const message = (exceptionResponse as ExceptionResponse).message;
 
     return message ?? HttpStatus[statusCode] ?? 'Request failed';
+  }
+
+  /**
+   * Preserve extra fields from object HttpException responses
+   * (e.g. PublisherService validation: platform + issues).
+   */
+  private getExceptionDetails(
+    exception: unknown,
+  ): Record<string, unknown> {
+    if (!(exception instanceof HttpException)) {
+      return {};
+    }
+
+    const exceptionResponse = exception.getResponse();
+    if (
+      typeof exceptionResponse !== 'object' ||
+      exceptionResponse === null ||
+      Array.isArray(exceptionResponse)
+    ) {
+      return {};
+    }
+
+    const {
+      message: _message,
+      statusCode: _statusCode,
+      error: _error,
+      ...details
+    } = exceptionResponse as ExceptionResponse & Record<string, unknown>;
+
+    return details;
   }
 }

@@ -54,6 +54,7 @@ export class DashboardService {
   ) {}
 
   async getSummary(currentUser: JwtPayload): Promise<DashboardSummaryDto> {
+    // Isolate each section so one dependency failure cannot 500 the shell.
     const [
       organization,
       campaigns,
@@ -67,17 +68,61 @@ export class DashboardService {
       platforms,
       recent,
     ] = await Promise.all([
-      this.getOrganizationSummary(currentUser),
-      this.getCampaignSummary(currentUser),
-      this.getAdvertisingSummary(currentUser),
-      this.getAutomationSummary(),
-      this.getSynchronizationSummary(),
-      this.getAnalyticsSummary(currentUser),
-      this.getAssetsSummary(currentUser),
-      this.getShopifySummary(currentUser),
-      this.getAiSessionsSummary(currentUser),
-      this.getPlatformsSummary(currentUser),
-      this.getRecentActivity(currentUser),
+      this.resolveSection(
+        'organization',
+        () => this.buildOrganizationSummary(currentUser),
+        this.emptyOrganizationSummary(currentUser),
+      ),
+      this.resolveSection(
+        'campaigns',
+        () => this.buildCampaignSummary(currentUser),
+        this.emptyCampaignSummary(),
+      ),
+      this.resolveSection(
+        'advertising',
+        () => this.buildAdvertisingSummary(currentUser),
+        this.emptyAdvertisingSummary(),
+      ),
+      this.resolveSection(
+        'automation',
+        () => this.getAutomationSummary(),
+        this.emptyAutomationSummary(),
+      ),
+      this.resolveSection(
+        'synchronization',
+        () => this.getSynchronizationSummary(),
+        this.emptySynchronizationSummary(),
+      ),
+      this.resolveSection(
+        'analytics',
+        () => this.buildAnalyticsSummary(currentUser),
+        this.emptyAnalyticsSummary(),
+      ),
+      this.resolveSection(
+        'assets',
+        () => this.getAssetsSummary(currentUser),
+        this.emptyAssetsSummary(),
+      ),
+      this.resolveSection(
+        'shopify',
+        () => this.getShopifySummary(currentUser),
+        this.emptyShopifySummary(),
+      ),
+      this.resolveSection(
+        'aiSessions',
+        () => this.getAiSessionsSummary(currentUser),
+        this.emptyAiSessionsSummary(),
+      ),
+      this.resolveSection(
+        'platforms',
+        () => this.buildPlatformsSummary(currentUser),
+        this.emptyPlatformsSummary(),
+      ),
+      this.resolveSection(
+        'recent',
+        () => this.buildRecentActivity(currentUser),
+        this.emptyRecentActivity(),
+      ),
     ]);
 
     return {
@@ -96,6 +141,59 @@ export class DashboardService {
   }
 
   async getAnalyticsSummary(
+    currentUser: JwtPayload,
+  ): Promise<AnalyticsSummaryDto> {
+    return this.resolveSection(
+      'analytics',
+      () => this.buildAnalyticsSummary(currentUser),
+      this.emptyAnalyticsSummary(),
+    );
+  }
+
+  async getCampaignSummary(
+    currentUser: JwtPayload,
+  ): Promise<CampaignSummaryDto> {
+    return this.resolveSection(
+      'campaigns',
+      () => this.buildCampaignSummary(currentUser),
+      this.emptyCampaignSummary(),
+    );
+  }
+
+  async getAdvertisingSummary(
+    currentUser: JwtPayload,
+  ): Promise<AdvertisingSummaryDto> {
+    return this.resolveSection(
+      'advertising',
+      () => this.buildAdvertisingSummary(currentUser),
+      this.emptyAdvertisingSummary(),
+    );
+  }
+
+  async getAutomationSummary(): Promise<AutomationSummaryDto> {
+    // Legacy automation module is unwired — keep DTO shape for clients.
+    return this.emptyAutomationSummary();
+  }
+
+  async getPlatformsSummary(
+    currentUser: JwtPayload,
+  ): Promise<PlatformsSummaryDto> {
+    return this.resolveSection(
+      'platforms',
+      () => this.buildPlatformsSummary(currentUser),
+      this.emptyPlatformsSummary(),
+    );
+  }
+
+  async getRecentActivity(currentUser: JwtPayload): Promise<RecentActivityDto> {
+    return this.resolveSection(
+      'recent',
+      () => this.buildRecentActivity(currentUser),
+      this.emptyRecentActivity(),
+    );
+  }
+
+  private async buildAnalyticsSummary(
     currentUser: JwtPayload,
   ): Promise<AnalyticsSummaryDto> {
     const query = Object.assign(new AnalyticsQueryDto(), {
@@ -117,7 +215,7 @@ export class DashboardService {
     };
   }
 
-  async getCampaignSummary(
+  private async buildCampaignSummary(
     currentUser: JwtPayload,
   ): Promise<CampaignSummaryDto> {
     const orgId = currentUser.organizationId;
@@ -150,7 +248,7 @@ export class DashboardService {
     };
   }
 
-  async getAdvertisingSummary(
+  private async buildAdvertisingSummary(
     currentUser: JwtPayload,
   ): Promise<AdvertisingSummaryDto> {
     const metaCampaigns = await this.countCampaigns(
@@ -162,17 +260,7 @@ export class DashboardService {
     return { metaCampaigns };
   }
 
-  async getAutomationSummary(): Promise<AutomationSummaryDto> {
-    // Legacy automation module is unwired — keep DTO shape for clients.
-    return {
-      totalWorkflowRuns: 0,
-      running: 0,
-      completed: 0,
-      failed: 0,
-    };
-  }
-
-  async getPlatformsSummary(
+  private async buildPlatformsSummary(
     currentUser: JwtPayload,
   ): Promise<PlatformsSummaryDto> {
     const connections = await this.platformConnectionsService.findAll(
@@ -189,7 +277,9 @@ export class DashboardService {
     return { meta };
   }
 
-  async getRecentActivity(currentUser: JwtPayload): Promise<RecentActivityDto> {
+  private async buildRecentActivity(
+    currentUser: JwtPayload,
+  ): Promise<RecentActivityDto> {
     const orgId = currentUser.organizationId;
 
     const [campaignsPage, recentAiSessions, recentStores] = await Promise.all([
@@ -248,9 +338,9 @@ export class DashboardService {
         status: session.status,
         currentPhase: session.currentPhase,
         productId: session.productId,
-        productTitle: session.product.title ?? null,
+        productTitle: session.product?.title ?? null,
         shopifyStoreId: session.shopifyStoreId,
-        storeName: session.shopifyStore.accountName ?? null,
+        storeName: session.shopifyStore?.accountName ?? null,
         lastActivityAt: this.toIsoRequired(session.lastActivityAt),
       })),
       stores: recentStores.map((store) => ({
@@ -266,7 +356,7 @@ export class DashboardService {
     };
   }
 
-  private async getOrganizationSummary(
+  private async buildOrganizationSummary(
     currentUser: JwtPayload,
   ): Promise<OrganizationSummaryDto> {
     const [org, connections, totalOrganizations] = await Promise.all([
@@ -299,10 +389,120 @@ export class DashboardService {
 
   private async getSynchronizationSummary(): Promise<SynchronizationSummaryDto> {
     // Legacy synchronization module is unwired — keep DTO shape for clients.
+    return this.emptySynchronizationSummary();
+  }
+
+  private async resolveSection<T>(
+    label: string,
+    operation: () => Promise<T>,
+    fallback: T,
+  ): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      this.logger.warn(
+        `Dashboard section "${label}" failed; returning fallback: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return fallback;
+    }
+  }
+
+  private emptyOrganizationSummary(
+    currentUser: JwtPayload,
+  ): OrganizationSummaryDto {
+    return {
+      totalOrganizations: 0,
+      activeOrganizationId: currentUser.organizationId,
+      activeOrganizationName: '',
+      connectedPlatforms: [],
+    };
+  }
+
+  private emptyCampaignSummary(): CampaignSummaryDto {
+    return {
+      total: 0,
+      draft: 0,
+      published: 0,
+      active: 0,
+      paused: 0,
+      archived: 0,
+    };
+  }
+
+  private emptyAdvertisingSummary(): AdvertisingSummaryDto {
+    return { metaCampaigns: 0 };
+  }
+
+  private emptyAutomationSummary(): AutomationSummaryDto {
+    return {
+      totalWorkflowRuns: 0,
+      running: 0,
+      completed: 0,
+      failed: 0,
+    };
+  }
+
+  private emptySynchronizationSummary(): SynchronizationSummaryDto {
     return {
       lastSynchronization: null,
       campaignsSynced: 0,
       failedSyncs: 0,
+    };
+  }
+
+  private emptyAnalyticsSummary(): AnalyticsSummaryDto {
+    return {
+      spend: 0,
+      revenue: 0,
+      impressions: 0,
+      clicks: 0,
+      ctr: null,
+      cpc: null,
+      cpm: null,
+      conversions: 0,
+      roas: null,
+    };
+  }
+
+  private emptyAssetsSummary(): AssetsSummaryDto {
+    return { images: 0, videos: 0, totalAssets: 0 };
+  }
+
+  private emptyShopifySummary(): ShopifySummaryDto {
+    return {
+      products: 0,
+      collections: 0,
+      storeConnected: false,
+      connectedStores: 0,
+    };
+  }
+
+  private emptyAiSessionsSummary(): AiSessionsSummaryDto {
+    return { total: 0 };
+  }
+
+  private emptyPlatformsSummary(): PlatformsSummaryDto {
+    return {
+      meta: {
+        connected: false,
+        tokenStatus: 'MISSING',
+        connectionStatus: null,
+        accountName: null,
+        lastSyncedAt: null,
+      },
+    };
+  }
+
+  private emptyRecentActivity(): RecentActivityDto {
+    return {
+      campaigns: [],
+      aiSessions: [],
+      stores: [],
+      automationRuns: [],
+      publishJobs: [],
+      synchronizations: [],
     };
   }
 

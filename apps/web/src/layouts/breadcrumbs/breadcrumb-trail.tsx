@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
+import { cn } from "@/lib/utils";
 
 const SEGMENT_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   products: "Products",
-  campaigns: "Campaign History",
+  campaigns: "Campaigns",
   "ai-sessions": "AI Sessions",
   analytics: "Analytics",
   advertising: "Advertising",
@@ -29,7 +31,12 @@ function labelForSegment(segment: string, index: number, segments: string[]) {
   }
 
   const parent = segments[index - 1];
-  if (parent === "campaigns" || parent === "ai-sessions" || parent === "analytics") {
+  if (
+    parent === "campaigns" ||
+    parent === "ai-sessions" ||
+    parent === "analytics" ||
+    parent === "products"
+  ) {
     return "Details";
   }
 
@@ -45,20 +52,33 @@ export function BreadcrumbTrail() {
 
   if (segments.length === 0) {
     return (
-      <nav className="border-b border-border px-4 py-3 text-sm" aria-label="Breadcrumb">
-        <ol className="flex flex-wrap items-center gap-1 text-muted-foreground">
-          <li className="text-foreground">Dashboard</li>
+      <nav
+        className="border-b border-border/50 px-[var(--page-gutter-x)] py-2.5"
+        aria-label="Breadcrumb"
+      >
+        <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+          <li className="font-medium text-foreground">Dashboard</li>
         </ol>
       </nav>
     );
   }
 
   return (
-    <nav className="border-b border-border px-4 py-3 text-sm" aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-1 text-muted-foreground">
+    <nav
+      className="border-b border-border/50 px-[var(--page-gutter-x)] py-2.5"
+      aria-label="Breadcrumb"
+    >
+      <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
         <li>
-          <Link href={ROUTES.DASHBOARD} className="hover:text-foreground underline-offset-4 hover:underline">
-            App
+          <Link
+            href={ROUTES.DASHBOARD}
+            className={cn(
+              "rounded-sm transition-colors duration-[var(--duration-fast)]",
+              "hover:text-foreground",
+              "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+            )}
+          >
+            Home
           </Link>
         </li>
         {segments.map((segment, index) => {
@@ -68,13 +88,20 @@ export function BreadcrumbTrail() {
 
           return (
             <li key={href} className="flex items-center gap-1">
-              <span aria-hidden>/</span>
+              <ChevronRight className="size-3.5 shrink-0 opacity-50" aria-hidden />
               {isLast ? (
-                <span className="text-foreground" aria-current="page">
+                <span className="font-medium text-foreground" aria-current="page">
                   {label}
                 </span>
               ) : (
-                <Link href={href} className="hover:text-foreground underline-offset-4 hover:underline">
+                <Link
+                  href={href}
+                  className={cn(
+                    "rounded-sm transition-colors duration-[var(--duration-fast)]",
+                    "hover:text-foreground",
+                    "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                  )}
+                >
                   {label}
                 </Link>
               )}

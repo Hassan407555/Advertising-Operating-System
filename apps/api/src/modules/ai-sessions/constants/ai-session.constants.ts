@@ -2,7 +2,7 @@ export const AI_SESSION_WORKFLOW_VERSION = 'ai-session.v1';
 export const AI_SESSION_DEFINITION_ID = 'advertise-product';
 export const CONVERSATION_MANAGER = 'conversationManager';
 export const CONVERSATION_PROMPT_VERSION = 'conversation.v1';
-export const META_CAMPAIGN_GENERATOR_PROMPT_VERSION = 'meta-campaign-generator.v1';
+export const META_CAMPAIGN_GENERATOR_PROMPT_VERSION = 'meta-campaign-generator.v2';
 export const SAVE_DRAFT_MANAGER = 'saveDraftCampaign';
 export const SAVE_DRAFT_PHASE = 'DRAFT_SAVED';
 
@@ -41,7 +41,12 @@ export const BASE_INTERVIEW_STEPS: InterviewStepDefinition[] = [
   { key: 'language', prompt: 'What language should the ads use?', required: true },
   { key: 'dailyBudget', prompt: 'What daily budget should we use? (number)', required: true },
   { key: 'objective', prompt: 'What is the campaign objective? (e.g. CONVERSIONS, TRAFFIC, AWARENESS)', required: true },
-  { key: 'adType', prompt: 'Which ad type? IMAGE, CAROUSEL, or VIDEO', required: true },
+  {
+    key: 'adType',
+    prompt:
+      'What type of ad would you like to create?\n\n• IMAGE\n• VIDEO\n• CAROUSEL\n• NONE',
+    required: true,
+  },
 ];
 
 export const CAROUSEL_STEPS: InterviewStepDefinition[] = [

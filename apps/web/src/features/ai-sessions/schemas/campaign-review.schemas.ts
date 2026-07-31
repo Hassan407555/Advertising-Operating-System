@@ -42,22 +42,38 @@ export const videoReviewSchema = z.object({
   shotList: z.array(z.string().trim().min(1)).min(1, "Shot list is required"),
 });
 
+export const noneReviewSchema = z.object({
+  campaignType: z.literal("NONE"),
+  ...sharedSchema,
+  requiresCreative: z.literal(false),
+  creativeNotes: z.string().trim().optional(),
+  existingCreativeId: z.string().trim().optional(),
+  existingPostId: z.string().trim().optional(),
+  headline: z.string().trim().optional(),
+  primaryText: z.string().trim().optional(),
+});
+
 export const campaignReviewSchema = z.discriminatedUnion("campaignType", [
   imageReviewSchema,
   carouselReviewSchema,
   videoReviewSchema,
+  noneReviewSchema,
 ]);
 
 export type CampaignReviewFormValues = z.infer<typeof campaignReviewSchema>;
 export type ImageReviewFormValues = z.infer<typeof imageReviewSchema>;
 export type CarouselReviewFormValues = z.infer<typeof carouselReviewSchema>;
 export type VideoReviewFormValues = z.infer<typeof videoReviewSchema>;
+export type NoneReviewFormValues = z.infer<typeof noneReviewSchema>;
 
 export function parseCampaignReviewPayload(
-  campaignType: "IMAGE" | "CAROUSEL" | "VIDEO",
+  campaignType: "IMAGE" | "CAROUSEL" | "VIDEO" | "NONE",
   payload: Record<string, unknown>,
 ): CampaignReviewFormValues {
-  const withType = { ...payload, campaignType };
+  const withType =
+    campaignType === "NONE"
+      ? { ...payload, campaignType, requiresCreative: false as const }
+      : { ...payload, campaignType };
   const parsed = campaignReviewSchema.safeParse(withType);
   if (!parsed.success) {
     const message = parsed.error.issues[0]?.message ?? "Invalid campaign payload";

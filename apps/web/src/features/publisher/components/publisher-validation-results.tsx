@@ -1,10 +1,27 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import type { PublishValidationResponse } from "@/features/publisher/types/publisher.types";
+import type {
+  PublishValidationIssue,
+  PublishValidationResponse,
+} from "@/features/publisher/types/publisher.types";
 
 interface PublisherValidationResultsProps {
   validation: PublishValidationResponse;
+}
+
+function IssueCard({ issue }: { issue: PublishValidationIssue }) {
+  return (
+    <li className="rounded-md border border-border p-3">
+      <div className="font-medium">{issue.code}</div>
+      <div className="text-muted-foreground whitespace-pre-line">{issue.message}</div>
+      <div className="mt-1 text-xs text-muted-foreground">
+        {issue.entityType ? `Entity: ${issue.entityType}` : "Entity: N/A"}{" "}
+        {issue.entityId ? `• ID: ${issue.entityId}` : ""}{" "}
+        {issue.field ? `• Field: ${issue.field}` : ""}
+      </div>
+    </li>
+  );
 }
 
 export function PublisherValidationResults({ validation }: PublisherValidationResultsProps) {
@@ -19,15 +36,7 @@ export function PublisherValidationResults({ validation }: PublisherValidationRe
       ) : (
         <ul className="space-y-2 text-sm">
           {validation.issues.map((issue, index) => (
-            <li key={`${issue.code}-${index}`} className="rounded-md border border-border p-3">
-              <div className="font-medium">{issue.code}</div>
-              <div className="text-muted-foreground">{issue.message}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {issue.entityType ? `Entity: ${issue.entityType}` : "Entity: N/A"}{" "}
-                {issue.entityId ? `• ID: ${issue.entityId}` : ""}{" "}
-                {issue.field ? `• Field: ${issue.field}` : ""}
-              </div>
-            </li>
+            <IssueCard key={`${issue.code}-${index}`} issue={issue} />
           ))}
         </ul>
       )}

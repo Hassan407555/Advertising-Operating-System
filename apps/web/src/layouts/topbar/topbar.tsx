@@ -2,7 +2,7 @@
 
 import { useMemo, type Dispatch, type SetStateAction } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Menu, ChevronDown } from "lucide-react";
+import { Menu, ChevronDown, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { getCurrentUser } from "@/features/auth/api/auth.api";
 import { useLogoutMutation, useSwitchOrganizationMutation } from "@/features/auth/hooks/use-auth-mutations";
 import { StoreSwitcher } from "@/features/stores/components/store-switcher";
 import { useSession } from "@/providers/session-provider";
+import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/utils/errors";
 
 interface TopBarProps {
@@ -68,17 +69,24 @@ export function TopBar({ setSidebarOpen }: TopBarProps) {
   };
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border px-4">
+    <header
+      className={cn(
+        "flex h-[var(--topbar-height)] items-center justify-between",
+        "border-b border-border/50 bg-background/80 px-[var(--page-gutter-x)] backdrop-blur-sm",
+      )}
+    >
       <div className="flex items-center gap-2">
-        <button
+        <Button
           type="button"
-          className="rounded-md p-2 hover:bg-muted md:hidden"
+          variant="ghost"
+          size="icon-sm"
+          className="md:hidden"
           aria-label="Open sidebar"
           onClick={() => setSidebarOpen(true)}
         >
           <Menu className="size-4" />
-        </button>
-        <div className="text-sm text-muted-foreground">AI Meta Ads Studio</div>
+        </Button>
+        <div className="hidden text-sm text-muted-foreground md:block">AI Meta Ads Studio</div>
       </div>
 
       <div className="flex items-center gap-2">
@@ -88,7 +96,13 @@ export function TopBar({ setSidebarOpen }: TopBarProps) {
           <label className="flex items-center gap-2 text-sm">
             <span className="sr-only">Select organization</span>
             <select
-              className="rounded-md border border-border bg-transparent px-2 py-1 text-sm"
+              className={cn(
+                "h-8 rounded-[var(--radius-md)] border border-border/60 bg-input/40",
+                "px-2 text-sm text-foreground shadow-[var(--shadow-xs)]",
+                "transition-surface outline-none",
+                "hover:border-border focus-visible:border-primary/50 focus-visible:shadow-[var(--shadow-focus)]",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+              )}
               value={organization?.id ?? ""}
               onChange={(event) => onSwitchOrganization(event.target.value)}
               disabled={switchOrgMutation.isPending}
@@ -104,12 +118,31 @@ export function TopBar({ setSidebarOpen }: TopBarProps) {
         ) : null}
 
         <details className="relative">
-          <summary className="flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-muted">
-            {userDisplay.name}
-            <ChevronDown className="size-4" aria-hidden />
+          <summary
+            className={cn(
+              "flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-[var(--radius-md)]",
+              "px-2.5 text-sm text-foreground transition-colors duration-[var(--duration-fast)]",
+              "hover:bg-muted/70",
+              "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+            )}
+          >
+            <span className="max-w-[10rem] truncate">{userDisplay.name}</span>
+            <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />
           </summary>
-          <div className="absolute right-0 mt-2 w-44 rounded-md border border-border bg-card p-2 shadow-lg">
-            <Button type="button" variant="secondary" className="w-full justify-start" onClick={onLogout}>
+          <div
+            className={cn(
+              "absolute right-0 z-40 mt-2 w-48 rounded-[var(--radius-lg)]",
+              "bg-popover p-1.5 shadow-[var(--shadow-elevated)] animate-fade-in-scale",
+            )}
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2"
+              onClick={onLogout}
+            >
+              <LogOut className="size-3.5" aria-hidden />
               Logout
             </Button>
           </div>

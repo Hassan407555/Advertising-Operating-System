@@ -15,6 +15,7 @@ export const CREATIVE_TYPE_OPTIONS: GeneratorCreativeType[] = [
   "AUDIO",
   "TEXT",
   "HTML5",
+  "NONE",
 ];
 
 export const CURRENCY_OPTIONS = [

@@ -9,6 +9,8 @@ import { FormActions } from "@/components/shared/forms/form-actions";
 import { FormErrorBanner } from "@/components/shared/forms/form-error-banner";
 import { FormFieldText } from "@/components/shared/forms/form-field-text";
 import { PageEmpty } from "@/components/shared/states/page-empty";
+import { PageHeader } from "@/components/shared/page-header";
+import { SectionHeader } from "@/components/shared/section-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
@@ -72,23 +74,26 @@ export function OrganizationPageContent() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Organization Administration</h1>
-        <p className="text-sm text-muted-foreground">Manage your current organization profile and switch active organization.</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Link href={ROUTES.MEMBERS}>
-            <Button type="button" variant="secondary">
-              Members
-            </Button>
-          </Link>
-          <Link href={ROUTES.INVITATIONS}>
-            <Button type="button" variant="secondary">
-              Invitations
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <div className="page-stack animate-fade-in-up">
+      <PageHeader
+        eyebrow="Workspace"
+        title="Organization"
+        description="Manage your current organization profile and switch active organization."
+        actions={
+          <>
+            <Link href={ROUTES.MEMBERS}>
+              <Button type="button" variant="secondary">
+                Members
+              </Button>
+            </Link>
+            <Link href={ROUTES.INVITATIONS}>
+              <Button type="button" variant="secondary">
+                Invitations
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {organizationQuery.isError ? (
         <Card>
@@ -102,7 +107,7 @@ export function OrganizationPageContent() {
 
       {organizationQuery.data ? (
         <Card className="space-y-3">
-          <h2 className="text-lg font-semibold">Current Organization</h2>
+          <SectionHeader title="Current Organization" />
           <div className="grid gap-2 text-sm md:grid-cols-2">
             <p><span className="text-muted-foreground">ID:</span> {organizationQuery.data.id}</p>
             <p><span className="text-muted-foreground">Name:</span> {organizationQuery.data.name}</p>
@@ -115,7 +120,7 @@ export function OrganizationPageContent() {
       ) : null}
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-semibold">Update Current Organization</h2>
+        <SectionHeader title="Update Current Organization" />
         <form
           className="space-y-3"
           onSubmit={form.handleSubmit(async (values) => {
@@ -169,7 +174,7 @@ export function OrganizationPageContent() {
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-semibold">Switch Organization</h2>
+        <SectionHeader title="Switch Organization" />
         {organizations.length === 0 ? (
           <p className="text-sm text-muted-foreground">No organizations available in current session.</p>
         ) : (

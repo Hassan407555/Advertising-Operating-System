@@ -8,6 +8,7 @@ import { PromptBuilder } from './prompts/prompt.builder';
 import { PromptRegistry } from './prompts/prompt.registry';
 import { AiProviderRegistry } from './providers/ai-provider.registry';
 import { GeminiProvider } from './providers/gemini/gemini.provider';
+import { GroqProvider } from './providers/groq/groq.provider';
 import { AiService } from './services/ai.service';
 
 @Module({
@@ -20,6 +21,7 @@ import { AiService } from './services/ai.service';
     PromptRegistry,
     AiProviderRegistry,
     GeminiProvider,
+    GroqProvider,
   ],
   exports: [AiService, PromptRegistry, PromptBuilder],
 })

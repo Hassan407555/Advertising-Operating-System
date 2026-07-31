@@ -4,6 +4,7 @@ import type {
   GeneratedCampaignPayload,
   GeneratedCarouselCampaign,
   GeneratedImageCampaign,
+  GeneratedNoneCampaign,
   GeneratedVideoCampaign,
   MetaCampaignAdType,
 } from '../types/generated-campaign.types';
@@ -15,6 +16,14 @@ function requireString(value: unknown, field: string): string {
     );
   }
   return value.trim();
+}
+
+function optionalString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 function requireStringArray(value: unknown, field: string, min = 1): string[] {
@@ -161,6 +170,34 @@ function validateVideoCampaign(
   };
 }
 
+function validateNoneCampaign(
+  raw: Record<string, unknown>,
+): GeneratedNoneCampaign {
+  const shared = requireSharedFields(raw);
+
+  // Accept missing/true and coerce to false — NONE never requires uploaded media.
+  if (raw.requiresCreative === true) {
+    throw new BadRequestException(
+      'Invalid campaign JSON: NONE campaigns must set requiresCreative to false.',
+    );
+  }
+
+  return {
+    campaignType: 'NONE',
+    ...shared,
+    requiresCreative: false,
+    creativeNotes: optionalString(raw.creativeNotes),
+    existingCreativeId: optionalString(
+      raw.existingCreativeId ?? raw.creative_id,
+    ),
+    existingPostId: optionalString(
+      raw.existingPostId ?? raw.existing_post_id ?? raw.object_story_id,
+    ),
+    headline: optionalString(raw.headline),
+    primaryText: optionalString(raw.primaryText),
+  };
+}
+
 /**
  * Validates Gemini JSON against the expected campaign type.
  * Throws BadRequestException on any invalid/partial payload.
@@ -178,6 +215,8 @@ export function validateGeneratedCampaign(
       return validateCarouselCampaign(record);
     case 'VIDEO':
       return validateVideoCampaign(record);
+    case 'NONE':
+      return validateNoneCampaign(record);
     default:
       throw new BadRequestException(
         `Unsupported campaign type for validation: ${String(campaignType)}`,
@@ -211,6 +250,22 @@ export function schemaHintForCampaignType(campaignType: MetaCampaignAdType): str
   "cardOrder": number[],
   "cta": string,
   "creativeStrategy": string
+}`;
+  }
+
+  if (campaignType === 'NONE') {
+    return `{
+  "campaignName": string,
+  "objective": string,
+  "audience": string,
+  "budget": { "dailyBudget": number, "currency"?: string },
+  "cta": string,
+  "requiresCreative": false,
+  "creativeNotes"?: string,
+  "existingCreativeId"?: string,
+  "existingPostId"?: string,
+  "headline"?: string,
+  "primaryText"?: string
 }`;
   }
 

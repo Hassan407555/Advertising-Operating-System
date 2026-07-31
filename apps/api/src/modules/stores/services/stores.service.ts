@@ -17,6 +17,7 @@ import { ACTIVE_AI_SESSION_STATUSES } from '../../ai-sessions/constants/ai-sessi
 import {
   ListStoreProductsQueryDto,
   StoreAdvertisingConfigurationResponseDto,
+  StoreProductDetailResponseDto,
   StoreProductResponseDto,
   StoreProductsListResponseDto,
   StoreSummaryResponseDto,
@@ -24,8 +25,10 @@ import {
 } from '../dto/store.dto';
 import {
   computeStoreHealth,
-  getAdvertisingBlockingReasons,
+  getGenerationBlockingReasons,
+  getMetaPublishBlockingReasons,
   isAdvertisingReady,
+  isGenerationReady,
   type StoreCapabilityInput,
 } from '../utils/store-readiness.util';
 
@@ -44,7 +47,9 @@ function emptyToNull(value?: string | null): string | null | undefined {
 export class StoresService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listStores(currentUser: JwtPayload): Promise<StoreSummaryResponseDto[]> {
+  async listStores(
+    currentUser: JwtPayload,
+  ): Promise<StoreSummaryResponseDto[]> {
     const connections = await this.prisma.platformConnection.findMany({
       where: {
         organizationId: currentUser.organizationId,
@@ -68,48 +73,62 @@ export class StoresService {
         connections
           .map(
             (connection) =>
-              connection.shopifyAdvertisingConfiguration?.metaPlatformConnectionId,
+              connection.shopifyAdvertisingConfiguration
+                ?.metaPlatformConnectionId,
           )
           .filter((id): id is string => Boolean(id)),
       ),
     ];
 
-    const [productCounts, activeMetaConnections] = await Promise.all([
-      this.prisma.shopifyProduct.groupBy({
-        by: ['platformConnectionId'],
-        where: {
-          organizationId: currentUser.organizationId,
-          platformConnectionId: { in: storeIds },
-          deletedAt: null,
-        },
-        _count: { _all: true },
-      }),
-      metaConnectionIds.length > 0
-        ? this.prisma.platformConnection.findMany({
-            where: {
-              id: { in: metaConnectionIds },
-              organizationId: currentUser.organizationId,
-              platform: PlatformType.META,
-              deletedAt: null,
-              status: ConnectionStatus.ACTIVE,
-            },
-            select: { id: true },
-          })
-        : Promise.resolve([]),
-    ]);
+    const [productCounts, activeMetaConnections, orgMetaConnections] =
+      await Promise.all([
+        this.prisma.shopifyProduct.groupBy({
+          by: ['platformConnectionId'],
+          where: {
+            organizationId: currentUser.organizationId,
+            platformConnectionId: { in: storeIds },
+            deletedAt: null,
+          },
+          _count: { _all: true },
+        }),
+        metaConnectionIds.length > 0
+          ? this.prisma.platformConnection.findMany({
+              where: {
+                id: { in: metaConnectionIds },
+                organizationId: currentUser.organizationId,
+                platform: PlatformType.META,
+                deletedAt: null,
+                status: ConnectionStatus.ACTIVE,
+              },
+              select: { id: true },
+            })
+          : Promise.resolve([] as Array<{ id: string }>),
+        this.prisma.platformConnection.findMany({
+          where: {
+            organizationId: currentUser.organizationId,
+            platform: PlatformType.META,
+            deletedAt: null,
+            status: ConnectionStatus.ACTIVE,
+          },
+          select: { id: true },
+          take: 1,
+        }),
+      ]);
 
     const productCountByStoreId = new Map(
       productCounts.map((row) => [row.platformConnectionId, row._count._all]),
     );
-    const activeMetaIds = new Set(
+    const activeMetaIds = new Set<string>(
       activeMetaConnections.map((connection) => connection.id),
     );
+    const hasOrgMetaConnection = orgMetaConnections.length > 0;
 
     return connections.map((connection) =>
       this.toStoreSummaryFromCaches(
         connection,
         productCountByStoreId.get(connection.id) ?? 0,
         activeMetaIds,
+        hasOrgMetaConnection,
       ),
     );
   }
@@ -160,7 +179,9 @@ export class StoresService {
         },
       });
       if (!metaConnection) {
-        throw new BadRequestException('Meta connection was not found for this organization.');
+        throw new BadRequestException(
+          'Meta connection was not found for this organization.',
+        );
       }
     }
 
@@ -174,7 +195,9 @@ export class StoresService {
         },
       });
       if (!adAccount) {
-        throw new BadRequestException('Ad account was not found for this organization.');
+        throw new BadRequestException(
+          'Ad account was not found for this organization.',
+        );
       }
     }
 
@@ -213,21 +236,11 @@ export class StoresService {
     currentUser: JwtPayload,
   ): Promise<StoreProductsListResponseDto> {
     const store = await this.getStore(storeId, currentUser);
-    const blockingReasons = getAdvertisingBlockingReasons({
-      shopifyConnected: store.capabilities.shopifyConnected,
-      metaConnected: store.capabilities.metaConnected,
-      productsSynced: store.capabilities.productsSynced,
-      productCount: store.capabilities.productCount,
-      lastSyncAt: store.capabilities.lastSyncAt,
-      adAccountSelected: store.capabilities.adAccountSelected,
-      facebookPageSelected: store.capabilities.facebookPageSelected,
-      instagramSelected: store.capabilities.instagramSelected,
-      pixelSelected: store.capabilities.pixelSelected,
-      catalogSelected: store.capabilities.catalogSelected,
-    });
+    const capabilityInput = this.toCapabilityInput(store.capabilities);
+    const blockingReasons = getGenerationBlockingReasons(capabilityInput);
 
     const advertisingEligibility = {
-      eligible: store.advertisingReady,
+      eligible: isGenerationReady(capabilityInput),
       reasons: blockingReasons,
     };
 
@@ -285,25 +298,13 @@ export class StoresService {
       }
     }
 
-    const data: StoreProductResponseDto[] = products.map((product) => ({
-      id: product.id,
-      externalId: product.externalId,
-      title: product.title,
-      handle: product.handle,
-      vendor: product.vendor,
-      productType: product.productType,
-      description: product.description,
-      status: product.status,
-      tags: product.tags,
-      featuredImageUrl: product.featuredImageUrl,
-      lastSyncedAt: product.lastSyncedAt,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-      canAdvertise:
-        advertisingEligibility.eligible &&
-        product.status === ShopifyProductStatus.ACTIVE,
-      activeSessionId: activeSessionByProduct.get(product.id) ?? null,
-    }));
+    const data: StoreProductResponseDto[] = products.map((product) =>
+      this.toProductListItem(
+        product,
+        advertisingEligibility.eligible,
+        activeSessionByProduct.get(product.id) ?? null,
+      ),
+    );
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -319,6 +320,206 @@ export class StoresService {
       },
       advertisingEligibility,
     };
+  }
+
+  async getProduct(
+    storeId: string,
+    productId: string,
+    currentUser: JwtPayload,
+  ): Promise<StoreProductDetailResponseDto> {
+    const store = await this.getStore(storeId, currentUser);
+    const generationEligible = isGenerationReady(
+      this.toCapabilityInput(store.capabilities),
+    );
+
+    const product = await this.prisma.shopifyProduct.findFirst({
+      where: {
+        id: productId,
+        organizationId: currentUser.organizationId,
+        platformConnectionId: storeId,
+        deletedAt: null,
+      },
+      include: {
+        variants: { orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }] },
+        images: { orderBy: { displayOrder: 'asc' } },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(
+        'Product was not found for this store and organization.',
+      );
+    }
+
+    const activeSession = await this.prisma.aiSession.findFirst({
+      where: {
+        organizationId: currentUser.organizationId,
+        shopifyStoreId: storeId,
+        productId: product.id,
+        status: {
+          in: [...ACTIVE_AI_SESSION_STATUSES] as AiSessionStatus[],
+        },
+      },
+      select: { id: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const primaryVariant =
+      product.variants.find((variant) => variant.isDefault) ??
+      product.variants[0] ??
+      null;
+
+    const inventoryValues = product.variants
+      .map((variant) => variant.inventoryQuantity)
+      .filter(
+        (value): value is number => value !== null && value !== undefined,
+      );
+    const inventory =
+      inventoryValues.length > 0
+        ? inventoryValues.reduce((sum, value) => sum + value, 0)
+        : null;
+
+    return {
+      ...this.toProductListItem(
+        product,
+        generationEligible,
+        activeSession?.id ?? null,
+      ),
+      price: primaryVariant?.price?.toString() ?? null,
+      compareAtPrice: primaryVariant?.compareAtPrice?.toString() ?? null,
+      inventory,
+      variants: product.variants.map((variant) => ({
+        id: variant.id,
+        externalId: variant.externalId,
+        title: variant.title,
+        sku: variant.sku,
+        barcode: variant.barcode,
+        price: variant.price?.toString() ?? null,
+        compareAtPrice: variant.compareAtPrice?.toString() ?? null,
+        inventoryQuantity: variant.inventoryQuantity,
+        option1: variant.option1,
+        option2: variant.option2,
+        option3: variant.option3,
+        isDefault: variant.isDefault,
+      })),
+      images: product.images.map((image) => ({
+        id: image.id,
+        url: image.url,
+        alt: image.alt,
+        width: image.width,
+        height: image.height,
+        displayOrder: image.displayOrder,
+      })),
+      collections: this.extractCollections(product.metadata),
+    };
+  }
+
+  private toProductListItem(
+    product: {
+      id: string;
+      externalId: string;
+      title: string;
+      handle: string;
+      vendor: string | null;
+      productType: string | null;
+      description: string | null;
+      status: ShopifyProductStatus | string;
+      tags: string[];
+      featuredImageUrl: string | null;
+      lastSyncedAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    advertisingEligible: boolean,
+    activeSessionId: string | null,
+  ): StoreProductResponseDto {
+    return {
+      id: product.id,
+      externalId: product.externalId,
+      title: product.title,
+      handle: product.handle,
+      vendor: product.vendor,
+      brand: product.vendor,
+      productType: product.productType,
+      description: product.description,
+      status: product.status,
+      tags: product.tags,
+      featuredImageUrl: product.featuredImageUrl,
+      lastSyncedAt: product.lastSyncedAt,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      canAdvertise:
+        advertisingEligible && product.status === ShopifyProductStatus.ACTIVE,
+      activeSessionId,
+    };
+  }
+
+  /**
+   * Throws when the store cannot publish drafts into Meta Ads Manager.
+   * Used only by the Publish to Meta pipeline — never by AI generation.
+   */
+  async assertMetaPublishReady(
+    storeId: string,
+    currentUser: JwtPayload,
+  ): Promise<void> {
+    const store = await this.getStore(storeId, currentUser);
+    const reasons = getMetaPublishBlockingReasons(
+      this.toCapabilityInput(store.capabilities),
+    );
+    if (reasons.length > 0) {
+      throw new BadRequestException(
+        `Complete Advertising Configuration before publishing to Meta. ${reasons.join('; ')}.`,
+      );
+    }
+  }
+
+  private toCapabilityInput(
+    capabilities:
+      StoreCapabilityInput | StoreSummaryResponseDto['capabilities'],
+  ): StoreCapabilityInput {
+    return {
+      shopifyConnected: capabilities.shopifyConnected,
+      metaConnected: capabilities.metaConnected,
+      productsSynced: capabilities.productsSynced,
+      productCount: capabilities.productCount,
+      lastSyncAt: capabilities.lastSyncAt,
+      adAccountSelected: capabilities.adAccountSelected,
+      businessManagerSelected:
+        'businessManagerSelected' in capabilities
+          ? Boolean(capabilities.businessManagerSelected)
+          : false,
+      facebookPageSelected: capabilities.facebookPageSelected,
+      instagramSelected: capabilities.instagramSelected,
+      pixelSelected: capabilities.pixelSelected,
+      catalogSelected: capabilities.catalogSelected,
+    };
+  }
+
+  private extractCollections(metadata: Prisma.JsonValue | null): string[] {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return [];
+    }
+
+    const record = metadata as Record<string, unknown>;
+    const raw =
+      record.collections ?? record.collectionTitles ?? record.collection_titles;
+
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+
+    return raw
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item.trim();
+        }
+        if (item && typeof item === 'object' && 'title' in item) {
+          const title = (item as { title?: unknown }).title;
+          return typeof title === 'string' ? title.trim() : '';
+        }
+        return '';
+      })
+      .filter(Boolean);
   }
 
   private async requireShopifyStore(storeId: string, currentUser: JwtPayload) {
@@ -389,10 +590,21 @@ export class StoresService {
       }
     }
 
+    const orgMetaConnection = await this.prisma.platformConnection.findFirst({
+      where: {
+        organizationId: connection.organizationId,
+        platform: PlatformType.META,
+        deletedAt: null,
+        status: ConnectionStatus.ACTIVE,
+      },
+      select: { id: true },
+    });
+
     return this.toStoreSummaryFromCaches(
       connection,
       productCount,
       activeMetaIds,
+      Boolean(orgMetaConnection),
     );
   }
 
@@ -420,26 +632,32 @@ export class StoresService {
     },
     productCount: number,
     activeMetaIds: Set<string>,
+    hasOrgMetaConnection = false,
   ): StoreSummaryResponseDto {
     const config = connection.shopifyAdvertisingConfiguration;
-    let metaConnected = Boolean(
-      config?.metaPlatformConnectionId || config?.metaBusinessId,
-    );
 
-    if (config?.metaPlatformConnectionId) {
+    let metaConnected = hasOrgMetaConnection;
+
+    if (!metaConnected && config?.metaPlatformConnectionId) {
       metaConnected = activeMetaIds.has(config.metaPlatformConnectionId);
+    }
+
+    if (!metaConnected && config?.metaBusinessId) {
+      metaConnected = true;
     }
 
     const capabilities: StoreCapabilityInput = {
       shopifyConnected: connection.status === ConnectionStatus.ACTIVE,
       metaConnected,
-      productsSynced: productCount > 0 || Boolean(connection.lastSuccessfulSyncAt),
+      productsSynced:
+        productCount > 0 || Boolean(connection.lastSuccessfulSyncAt),
       productCount,
       lastSyncAt:
         connection.lastSuccessfulSyncAt?.toISOString() ??
         connection.lastSyncedAt?.toISOString() ??
         null,
       adAccountSelected: Boolean(config?.adAccountId),
+      businessManagerSelected: Boolean(config?.metaBusinessId),
       facebookPageSelected: Boolean(config?.facebookPageId),
       instagramSelected: Boolean(config?.instagramAccountId),
       pixelSelected: Boolean(config?.pixelId),
@@ -454,7 +672,8 @@ export class StoresService {
       status: connection.status,
       syncStatus: connection.syncStatus,
       lastSyncedAt: connection.lastSyncedAt?.toISOString() ?? null,
-      lastSuccessfulSyncAt: connection.lastSuccessfulSyncAt?.toISOString() ?? null,
+      lastSuccessfulSyncAt:
+        connection.lastSuccessfulSyncAt?.toISOString() ?? null,
       createdAt: connection.createdAt.toISOString(),
       updatedAt: connection.updatedAt.toISOString(),
       capabilities: {
@@ -464,6 +683,7 @@ export class StoresService {
         productCount: capabilities.productCount,
         lastSyncAt: capabilities.lastSyncAt,
         adAccountSelected: capabilities.adAccountSelected,
+        businessManagerSelected: Boolean(capabilities.businessManagerSelected),
         facebookPageSelected: capabilities.facebookPageSelected,
         instagramSelected: capabilities.instagramSelected,
         pixelSelected: capabilities.pixelSelected,

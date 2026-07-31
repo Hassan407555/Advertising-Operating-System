@@ -3,6 +3,7 @@ import { unwrapEnvelope } from "@/lib/api/response";
 import type { AiSession } from "@/features/ai-sessions/types/ai-session.types";
 import type {
   StartAdvertisingEntryPayload,
+  StoreProductDetail,
   StoreProductsListQuery,
   StoreProductsListResponse,
 } from "@/features/products/types/product.types";
@@ -15,6 +16,14 @@ export async function listStoreProducts(
     params: query,
   });
   return unwrapEnvelope<StoreProductsListResponse>(response.data);
+}
+
+export async function getStoreProduct(
+  storeId: string,
+  productId: string,
+): Promise<StoreProductDetail> {
+  const response = await apiClient.get(`/stores/${storeId}/products/${productId}`);
+  return unwrapEnvelope<StoreProductDetail>(response.data);
 }
 
 /**

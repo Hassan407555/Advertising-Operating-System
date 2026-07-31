@@ -1,6 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 
-type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "outline";
+type BadgeVariant =
+  | "default"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  | "outline"
+  | "ai"
+  | "shopify";
 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: "Draft",
@@ -25,6 +33,10 @@ const STATUS_LABELS: Record<string, string> = {
   NOT_READY: "Not ready",
   CONNECTED: "Connected",
   DISCONNECTED: "Disconnected",
+  SYNCING: "Syncing",
+  SYNCED: "Synced",
+  IN_PROGRESS: "In progress",
+  PENDING: "Pending",
   MISSING: "Missing",
   EXPIRED: "Expired",
   REVOKED: "Revoked",
@@ -39,11 +51,11 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
   DELETED: "danger",
   CREATED: "info",
   AWAITING_INPUT: "warning",
-  INTERVIEWING: "info",
-  READY_FOR_ANALYSIS: "info",
-  ANALYZING: "info",
-  PLANNING: "info",
-  BUILDING: "info",
+  INTERVIEWING: "ai",
+  READY_FOR_ANALYSIS: "ai",
+  ANALYZING: "ai",
+  PLANNING: "ai",
+  BUILDING: "ai",
   REVIEWING: "warning",
   AWAITING_APPROVAL: "warning",
   APPROVED: "success",
@@ -52,8 +64,12 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
   HEALTHY: "success",
   NEEDS_ATTENTION: "warning",
   NOT_READY: "danger",
-  CONNECTED: "success",
+  CONNECTED: "shopify",
   DISCONNECTED: "outline",
+  SYNCING: "warning",
+  SYNCED: "success",
+  IN_PROGRESS: "warning",
+  PENDING: "warning",
   MISSING: "danger",
   EXPIRED: "danger",
   REVOKED: "danger",

@@ -25,7 +25,7 @@ export class PublisherMapper {
   }
 
   toPublishResponse(result: PublishResult): PublishCampaignResponseDto {
-    return {
+    const response: PublishCampaignResponseDto = {
       success: result.success,
       platform: result.platform,
       status: result.status,
@@ -36,7 +36,10 @@ export class PublisherMapper {
       startedAt: result.startedAt,
       completedAt: result.completedAt,
       durationMs: result.durationMs,
+      diagnostics: result.diagnostics,
     };
+
+    return response;
   }
 
   toPlatformsResponse(

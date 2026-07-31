@@ -1,0 +1,140 @@
+{
+  "startedAt": "2026-07-31T08:26:29.690Z",
+  "authorizeUrl": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+  "navigations": [
+    {
+      "at": "2026-07-31T08:26:24.812Z",
+      "url": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb748-1917-7a83-8a59-11c975b6a98e%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=en_GB&pl_dbl=0&is_business_login=1"
+    }
+  ],
+  "documentAndXhrNetwork": [
+    {
+      "phase": "request",
+      "at": "2026-07-31T08:26:23.947Z",
+      "method": "GET",
+      "url": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+      "resourceType": "document",
+      "redirectedFrom": null
+    },
+    {
+      "phase": "request",
+      "at": "2026-07-31T08:26:24.388Z",
+      "method": "GET",
+      "url": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb748-1917-7a83-8a59-11c975b6a98e%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=en_GB&pl_dbl=0&is_business_login=1",
+      "resourceType": "document",
+      "redirectedFrom": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code"
+    },
+    {
+      "phase": "response",
+      "at": "2026-07-31T08:26:24.384Z",
+      "url": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+      "status": 302,
+      "statusText": "Found",
+      "location": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb748-1917-7a83-8a59-11c975b6a98e%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=en_GB&pl_dbl=0&is_business_login=1",
+      "contentType": "text/html; charset=\"utf-8\"",
+      "redirectedFrom": null,
+      "requestUrl": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+      "redirectClass": true
+    },
+    {
+      "phase": "response",
+      "at": "2026-07-31T08:26:24.733Z",
+      "url": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb748-1917-7a83-8a59-11c975b6a98e%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=en_GB&pl_dbl=0&is_business_login=1",
+      "status": 200,
+      "statusText": "OK",
+      "location": null,
+      "contentType": "text/html; charset=\"utf-8\"",
+      "redirectedFrom": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+      "requestUrl": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb748-1917-7a83-8a59-11c975b6a98e%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=en_GB&pl_dbl=0&is_business_login=1",
+      "bodyHasDomainError": false,
+      "bodyMentionsDialogClose": false,
+      "title": "Facebook"
+    },
+    {
+      "phase": "request",
+      "at": "2026-07-31T08:26:27.061Z",
+      "method": "POST",
+      "url": "https://www.facebook.com/ajax/bz?__a=1&__aaid=0&__ccg=GOOD&__comet_req=15&__hs=20665.HYP%3Acomet_loggedout_pkg.2.1...0&__hsi=7668605622601797520&__req=1&__rev=1044221688&__s=8taa7b%3A710ww4%3Ao3druk&__spin_b=trunk&__spin_r=1044221688&__spin_t=1785486383&__user=0&dpr=1&jazoest=22407&locale=en_GB&lsd=AdSIF9LzqgVT6rY5qLs-nQjwmzE&ph=C2",
+      "resourceType": "xhr",
+      "redirectedFrom": null
+    },
+    {
+      "phase": "request",
+      "at": "2026-07-31T08:26:27.062Z",
+      "method": "GET",
+      "url": "https://www.instagram.com/accounts/xuserid/",
+      "resourceType": "xhr",
+      "redirectedFrom": null
+    },
+    {
+      "phase": "request",
+      "at": "2026-07-31T08:26:27.198Z",
+      "method": "POST",
+      "url": "https://www.facebook.com/ajax/bz?__a=1&__aaid=0&__ccg=GOOD&__comet_req=15&__hs=20665.HYP%3Acomet_loggedout_pkg.2.1...0&__hsi=7668605622601797520&__req=2&__rev=1044221688&__s=8taa7b%3A710ww4%3Ao3druk&__spin_b=trunk&__spin_r=1044221688&__spin_t=1785486383&__user=0&dpr=1&jazoest=22407&locale=en_GB&lsd=AdSIF9LzqgVT6rY5qLs-nQjwmzE&ph=C2&qpl_active_flow_ids=516759801",
+      "resourceType": "xhr",
+      "redirectedFrom": null
+    },
+    {
+      "phase": "response",
+      "at": "2026-07-31T08:26:27.255Z",
+      "url": "https://www.facebook.com/ajax/bz?__a=1&__aaid=0&__ccg=GOOD&__comet_req=15&__hs=20665.HYP%3Acomet_loggedout_pkg.2.1...0&__hsi=7668605622601797520&__req=1&__rev=1044221688&__s=8taa7b%3A710ww4%3Ao3druk&__spin_b=trunk&__spin_r=1044221688&__spin_t=1785486383&__user=0&dpr=1&jazoest=22407&locale=en_GB&lsd=AdSIF9LzqgVT6rY5qLs-nQjwmzE&ph=C2",
+      "status": 200,
+      "statusText": "",
+      "location": null,
+      "contentType": "application/x-javascript; charset=utf-8",
+      "redirectedFrom": null,
+      "requestUrl": "https://www.facebook.com/ajax/bz?__a=1&__aaid=0&__ccg=GOOD&__comet_req=15&__hs=20665.HYP%3Acomet_loggedout_pkg.2.1...0&__hsi=7668605622601797520&__req=1&__rev=1044221688&__s=8taa7b%3A710ww4%3Ao3druk&__spin_b=trunk&__spin_r=1044221688&__spin_t=1785486383&__user=0&dpr=1&jazoest=22407&locale=en_GB&lsd=AdSIF9LzqgVT6rY5qLs-nQjwmzE&ph=C2"
+    },
+    {
+      "phase": "response",
+      "at": "2026-07-31T08:26:27.402Z",
+      "url": "https://www.facebook.com/ajax/bz?__a=1&__aaid=0&__ccg=GOOD&__comet_req=15&__hs=20665.HYP%3Acomet_loggedout_pkg.2.1...0&__hsi=7668605622601797520&__req=2&__rev=1044221688&__s=8taa7b%3A710ww4%3Ao3druk&__spin_b=trunk&__spin_r=1044221688&__spin_t=1785486383&__user=0&dpr=1&jazoest=22407&locale=en_GB&lsd=AdSIF9LzqgVT6rY5qLs-nQjwmzE&ph=C2&qpl_active_flow_ids=516759801",
+      "status": 200,
+      "statusText": "",
+      "location": null,
+      "contentType": "application/x-javascript; charset=utf-8",
+      "redirectedFrom": null,
+      "requestUrl": "https://www.facebook.com/ajax/bz?__a=1&__aaid=0&__ccg=GOOD&__comet_req=15&__hs=20665.HYP%3Acomet_loggedout_pkg.2.1...0&__hsi=7668605622601797520&__req=2&__rev=1044221688&__s=8taa7b%3A710ww4%3Ao3druk&__spin_b=trunk&__spin_r=1044221688&__spin_t=1785486383&__user=0&dpr=1&jazoest=22407&locale=en_GB&lsd=AdSIF9LzqgVT6rY5qLs-nQjwmzE&ph=C2&qpl_active_flow_ids=516759801"
+    },
+    {
+      "phase": "response",
+      "at": "2026-07-31T08:26:27.415Z",
+      "url": "https://www.instagram.com/accounts/xuserid/",
+      "status": 200,
+      "statusText": "",
+      "location": null,
+      "contentType": "text/javascript; charset=utf-8",
+      "redirectedFrom": null,
+      "requestUrl": "https://www.instagram.com/accounts/xuserid/"
+    },
+    {
+      "phase": "request",
+      "at": "2026-07-31T08:26:29.635Z",
+      "method": "POST",
+      "url": "https://www.facebook.com/ajax/bz?__a=1&__aaid=0&__ccg=GOOD&__comet_req=15&__hs=20665.HYP%3Acomet_loggedout_pkg.2.1...0&__hsi=7668605622601797520&__req=3&__rev=1044221688&__s=8taa7b%3A710ww4%3Ao3druk&__spin_b=trunk&__spin_r=1044221688&__spin_t=1785486383&__user=0&dpr=1&jazoest=22407&locale=en_GB&lsd=AdSIF9LzqgVT6rY5qLs-nQjwmzE&ph=C2&qpl_active_flow_ids=516759801",
+      "resourceType": "xhr",
+      "redirectedFrom": null
+    }
+  ],
+  "pageContentSignals": {
+    "finalUrl": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb748-1917-7a83-8a59-11c975b6a98e%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=en_GB&pl_dbl=0&is_business_login=1",
+    "title": "Facebook",
+    "bodyHasDomainError": false,
+    "bodyMentionsDialogClose": false,
+    "finalStatus": 200
+  },
+  "redirectResponses": [
+    {
+      "phase": "response",
+      "at": "2026-07-31T08:26:24.384Z",
+      "url": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+      "status": 302,
+      "statusText": "Found",
+      "location": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb748-1917-7a83-8a59-11c975b6a98e%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=en_GB&pl_dbl=0&is_business_login=1",
+      "contentType": "text/html; charset=\"utf-8\"",
+      "redirectedFrom": null,
+      "requestUrl": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+      "redirectClass": true
+    }
+  ]
+}

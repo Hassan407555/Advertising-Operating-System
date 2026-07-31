@@ -57,11 +57,12 @@ export default function RegisterPage() {
   });
 
   return (
-    <Card>
-      <h1 className="text-xl font-semibold">Register</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Create your organization and owner account.</p>
+    <Card variant="elevated" padding="lg" className="animate-fade-in-up">
+      <p className="text-eyebrow">AI Meta Ads Studio</p>
+      <h1 className="mt-2 text-title">Create account</h1>
+      <p className="mt-2 text-body-sm">Create your organization and owner account.</p>
 
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+      <form className="mt-6 space-y-4" method="post" onSubmit={onSubmit}>
         <FormFieldText
           label="Organization Name"
           name="organizationName"
@@ -95,9 +96,9 @@ export default function RegisterPage() {
         </FormActions>
       </form>
 
-      <p className="mt-4 text-xs text-muted-foreground">
+      <p className="mt-5 text-caption">
         Already have an account?{" "}
-        <Link className="text-primary underline-offset-2 hover:underline" href={ROUTES.LOGIN}>
+        <Link className="font-medium text-primary underline-offset-2 hover:underline" href={ROUTES.LOGIN}>
           Login
         </Link>
       </p>

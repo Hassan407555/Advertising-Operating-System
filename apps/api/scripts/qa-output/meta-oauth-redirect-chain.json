@@ -1,0 +1,69 @@
+{
+  "startedAt": "2026-07-31T08:23:29.803Z",
+  "authorizeUrl": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+  "chain": [
+    {
+      "hop": 0,
+      "requestUrl": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code",
+      "status": 302,
+      "location": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb745-6d6f-7ae0-926e-9708221c00e4%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=ur_PK&pl_dbl=0&is_business_login=1",
+      "contentType": "text/html; charset=\"utf-8\"",
+      "locationAbsolute": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb745-6d6f-7ae0-926e-9708221c00e4%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=ur_PK&pl_dbl=0&is_business_login=1",
+      "locationParams": {
+        "skip_api_login": "1",
+        "api_key": "1010824391724055",
+        "kid_directed_site": "0",
+        "app_id": "1010824391724055",
+        "signed_next": "1",
+        "next": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code&ret=login&fbapp_pres=0&logger_id=019fb745-6d6f-7ae0-926e-9708221c00e4&tp=unspecified",
+        "cancel_url": "https://localhost:3001/api/meta/callback?error=access_denied&error_code=200&error_description=Permissions+error&error_reason=user_denied&state=diagstate#_=_",
+        "display": "page",
+        "locale": "ur_PK",
+        "pl_dbl": "0",
+        "is_business_login": "1"
+      },
+      "decoded_next": {
+        "href": "https://www.facebook.com/v23.0/dialog/oauth?client_id=1010824391724055&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback&state=diagstate&scope=ads_management%2Cads_read%2Cbusiness_management%2Cpages_show_list%2Cpages_read_engagement&response_type=code&ret=login&fbapp_pres=0&logger_id=019fb745-6d6f-7ae0-926e-9708221c00e4&tp=unspecified",
+        "origin": "https://www.facebook.com",
+        "pathname": "/v23.0/dialog/oauth",
+        "params": {
+          "client_id": "1010824391724055",
+          "redirect_uri": "http://localhost:3001/api/meta/callback",
+          "state": "diagstate",
+          "scope": "ads_management,ads_read,business_management,pages_show_list,pages_read_engagement",
+          "response_type": "code",
+          "ret": "login",
+          "fbapp_pres": "0",
+          "logger_id": "019fb745-6d6f-7ae0-926e-9708221c00e4",
+          "tp": "unspecified"
+        }
+      },
+      "nested_redirect_uri": "http://localhost:3001/api/meta/callback",
+      "decoded_cancel_url": {
+        "href": "https://localhost:3001/api/meta/callback?error=access_denied&error_code=200&error_description=Permissions+error&error_reason=user_denied&state=diagstate#_=_",
+        "origin": "https://localhost:3001",
+        "pathname": "/api/meta/callback",
+        "params": {
+          "error": "access_denied",
+          "error_code": "200",
+          "error_description": "Permissions error",
+          "error_reason": "user_denied",
+          "state": "diagstate"
+        }
+      },
+      "bodyLen": 0,
+      "bodyHasDomainError": false
+    },
+    {
+      "hop": 1,
+      "requestUrl": "https://www.facebook.com/login.php?skip_api_login=1&api_key=1010824391724055&kid_directed_site=0&app_id=1010824391724055&signed_next=1&next=https%3A%2F%2Fwww.facebook.com%2Fv23.0%2Fdialog%2Foauth%3Fclient_id%3D1010824391724055%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A3001%252Fapi%252Fmeta%252Fcallback%26state%3Ddiagstate%26scope%3Dads_management%252Cads_read%252Cbusiness_management%252Cpages_show_list%252Cpages_read_engagement%26response_type%3Dcode%26ret%3Dlogin%26fbapp_pres%3D0%26logger_id%3D019fb745-6d6f-7ae0-926e-9708221c00e4%26tp%3Dunspecified&cancel_url=https%3A%2F%2Flocalhost%3A3001%2Fapi%2Fmeta%2Fcallback%3Ferror%3Daccess_denied%26error_code%3D200%26error_description%3DPermissions%2Berror%26error_reason%3Duser_denied%26state%3Ddiagstate%23_%3D_&display=page&locale=ur_PK&pl_dbl=0&is_business_login=1",
+      "status": 400,
+      "location": null,
+      "contentType": "text/html; charset=\"utf-8\"",
+      "bodyHasDomainError": false,
+      "bodyMentionsDialogClose": false,
+      "title": "Error",
+      "bodySnippet": "<!DOCTYPE html><html lang=\"en\" id=\"facebook\"><head><title>Error</title><meta charset=\"utf-8\" /><meta http-equiv=\"Cache-Control\" content=\"no-cache\" /><meta name=\"robots\" content=\"noindex,nofollow\" /><style nonce=\"n41zMhgN\">html, body { color: #333; font-family: 'Lucida Grande', 'Tahoma', 'Verdana', 'Arial', sans-serif; margin: 0; padding: 0; text-align: center;} #header { height: 30px; padding-bott"
+    }
+  ]
+}

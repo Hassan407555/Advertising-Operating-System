@@ -1,0 +1,299 @@
+﻿Γùç injected env (0) from .env // tip: Γùê secrets for agents [www.dotenvx.com]
+{
+  "org": "cms72gsxe0002i0y82wzmykjc",
+  "connectionId": "cms75pbfh0001i0qkzfhhnzj3",
+  "metaUserId": "1429590742315093",
+  "metaUserName": "Hassan Khalid",
+  "tokenPreview": "EAAOXVuTΓÇªyEJ4 (len=191)",
+  "scopesStored": [
+    "ads_management",
+    "ads_read",
+    "business_management",
+    "pages_show_list",
+    "pages_read_engagement"
+  ],
+  "expiresAt": "2026-09-28T06:52:34.978Z",
+  "graphVersion": "v23.0",
+  "counts": {
+    "businesses": 1,
+    "adAccounts": 2,
+    "pages": 1,
+    "instagramAccounts": 0,
+    "pixels": 0,
+    "catalogs": 0
+  },
+  "endpoints": {
+    "businesses": {
+      "graphUrl": "https://graph.facebook.com/v23.0/me/businesses?access_token=[REDACTED]&fields=id%2Cname&limit=100",
+      "httpStatus": 200,
+      "count": 1,
+      "body": {
+        "data": [
+          {
+            "id": "2619552645106894",
+            "name": "XYZ"
+          }
+        ],
+        "paging": {
+          "cursors": {
+            "before": "QVFIU0hwOURqdHdoTmItNldoNUY4Mml0amwyWFpzMmpEdFF5eEoxbkFZARFd3TzgtVlB6N3VDVXU0c28tblQ2MmtWRlhzWjJwbHUyNU5oSjQ5bDIyWHFSb1pR",
+            "after": "QVFIU0hwOURqdHdoTmItNldoNUY4Mml0amwyWFpzMmpEdFF5eEoxbkFZARFd3TzgtVlB6N3VDVXU0c28tblQ2MmtWRlhzWjJwbHUyNU5oSjQ5bDIyWHFSb1pR"
+          }
+        }
+      }
+    },
+    "adAccounts": {
+      "graphUrl": "https://graph.facebook.com/v23.0/me/adaccounts?access_token=[REDACTED]&fields=id%2Caccount_id%2Cname%2Ccurrency%2Ctimezone_name%2Caccount_status&limit=100",
+      "httpStatus": 200,
+      "count": 2,
+      "body": {
+        "data": [
+          {
+            "id": "act_1040414350281858",
+            "account_id": "1040414350281858",
+            "name": "Hassan Khalid",
+            "currency": "PKR",
+            "timezone_name": "Asia/Karachi",
+            "account_status": 1
+          },
+          {
+            "id": "act_1671144393943029",
+            "account_id": "1671144393943029",
+            "name": "Advertising OS Test",
+            "currency": "USD",
+            "timezone_name": "America/Los_Angeles",
+            "account_status": 1
+          }
+        ],
+        "paging": {
+          "cursors": {
+            "before": "MjM4NTU4ODU0MTMxNTA0ODgZD",
+            "after": "MTIwMjUyMDg2NjE5NDkwNzg1"
+          }
+        }
+      }
+    },
+    "pages": {
+      "graphUrl": "https://graph.facebook.com/v23.0/me/accounts?access_token=[REDACTED]&fields=id%2Cname%2Ccategory&limit=100",
+      "httpStatus": 200,
+      "count": 1,
+      "body": {
+        "data": [
+          {
+            "id": "1289842767536995",
+            "name": "Lumina Skin",
+            "category": "Skincare service"
+          }
+        ],
+        "paging": {
+          "cursors": {
+            "before": "QVFIU2VYcExYMXRrWHN2Q1lWS2ZAVSFRwdEtfNDczcTVaT3dpbGxOT3U2WkltT2lKTHRkM0RNYzhpYjdyNU16OGlpUHBIQ25aNTI2OFBobkdZAdjVyR3hWdkNB",
+            "after": "QVFIU2VYcExYMXRrWHN2Q1lWS2ZAVSFRwdEtfNDczcTVaT3dpbGxOT3U2WkltT2lKTHRkM0RNYzhpYjdyNU16OGlpUHBIQ25aNTI2OFBobkdZAdjVyR3hWdkNB"
+          }
+        }
+      }
+    },
+    "instagramAccounts": {
+      "note": "Derived from pages; see perPage for raw Graph responses",
+      "count": 0,
+      "perPage": [
+        {
+          "pageId": "1289842767536995",
+          "pageName": "Lumina Skin",
+          "instagram_business_account": {
+            "graphPath": "1289842767536995",
+            "graphUrl": "https://graph.facebook.com/v23.0/1289842767536995?access_token=[REDACTED]&fields=instagram_business_account%7Bid%2Cusername%2Cname%7D",
+            "httpStatus": 200,
+            "body": {
+              "id": "1289842767536995"
+            },
+            "fetchError": null
+          },
+          "instagram_accounts": {
+            "graphPath": "1289842767536995/instagram_accounts",
+            "graphUrl": "https://graph.facebook.com/v23.0/1289842767536995/instagram_accounts?access_token=[REDACTED]&fields=id%2Cusername%2Cname&limit=50",
+            "httpStatus": 400,
+            "count": null,
+            "body": {
+              "error": {
+                "message": "(#190) This method must be called with a Page Access Token",
+                "type": "OAuthException",
+                "code": 190,
+                "fbtrace_id": "AxmZ2ryfnjV4XLc5DiUVLkB"
+              }
+            },
+            "fetchError": null
+          }
+        }
+      ],
+      "aggregated": []
+    },
+    "pixels": {
+      "note": "From me/adaccounts ΓåÆ {act}/adspixels (+ business edges if any)",
+      "count": 0,
+      "perAdAccount": [
+        {
+          "adAccountId": "act_1040414350281858",
+          "graphPath": "act_1040414350281858/adspixels",
+          "graphUrl": "https://graph.facebook.com/v23.0/act_1040414350281858/adspixels?access_token=[REDACTED]&fields=id%2Cname&limit=100",
+          "httpStatus": 200,
+          "count": 0,
+          "body": {
+            "data": []
+          },
+          "fetchError": null
+        },
+        {
+          "adAccountId": "act_1671144393943029",
+          "graphPath": "act_1671144393943029/adspixels",
+          "graphUrl": "https://graph.facebook.com/v23.0/act_1671144393943029/adspixels?access_token=[REDACTED]&fields=id%2Cname&limit=100",
+          "httpStatus": 200,
+          "count": 0,
+          "body": {
+            "data": []
+          },
+          "fetchError": null
+        }
+      ],
+      "businessPixels": [
+        {
+          "businessId": "2619552645106894",
+          "owned": {
+            "graphPath": "2619552645106894/owned_pixels",
+            "graphUrl": "https://graph.facebook.com/v23.0/2619552645106894/owned_pixels?access_token=[REDACTED]&fields=id%2Cname&limit=100",
+            "httpStatus": 200,
+            "count": 0,
+            "body": {
+              "data": []
+            },
+            "fetchError": null
+          },
+          "client": {
+            "graphPath": "2619552645106894/client_pixels",
+            "graphUrl": "https://graph.facebook.com/v23.0/2619552645106894/client_pixels?access_token=[REDACTED]&fields=id%2Cname&limit=100",
+            "httpStatus": 200,
+            "count": 0,
+            "body": {
+              "data": []
+            },
+            "fetchError": null
+          }
+        }
+      ],
+      "aggregated": []
+    },
+    "catalogs": {
+      "note": "From me/businesses ΓåÆ owned/client_product_catalogs",
+      "count": 0,
+      "perBusiness": [
+        {
+          "businessId": "2619552645106894",
+          "businessName": "XYZ",
+          "owned": {
+            "graphPath": "2619552645106894/owned_product_catalogs",
+            "graphUrl": "https://graph.facebook.com/v23.0/2619552645106894/owned_product_catalogs?access_token=[REDACTED]&fields=id%2Cname&limit=100",
+            "httpStatus": 200,
+            "count": 0,
+            "body": {
+              "data": []
+            },
+            "fetchError": null
+          },
+          "client": {
+            "graphPath": "2619552645106894/client_product_catalogs",
+            "graphUrl": "https://graph.facebook.com/v23.0/2619552645106894/client_product_catalogs?access_token=[REDACTED]&fields=id%2Cname&limit=100",
+            "httpStatus": 200,
+            "count": 0,
+            "body": {
+              "data": []
+            },
+            "fetchError": null
+          }
+        }
+      ],
+      "aggregated": []
+    }
+  },
+  "me": {
+    "graphPath": "me",
+    "graphUrl": "https://graph.facebook.com/v23.0/me?access_token=[REDACTED]&fields=id%2Cname",
+    "httpStatus": 200,
+    "body": {
+      "id": "1429590742315093",
+      "name": "Hassan Khalid"
+    },
+    "fetchError": null
+  },
+  "permissions": {
+    "graphPath": "me/permissions",
+    "graphUrl": "https://graph.facebook.com/v23.0/me/permissions?access_token=[REDACTED]",
+    "httpStatus": 200,
+    "count": 6,
+    "body": {
+      "data": [
+        {
+          "permission": "pages_show_list",
+          "status": "granted"
+        },
+        {
+          "permission": "ads_management",
+          "status": "granted"
+        },
+        {
+          "permission": "ads_read",
+          "status": "granted"
+        },
+        {
+          "permission": "business_management",
+          "status": "granted"
+        },
+        {
+          "permission": "pages_read_engagement",
+          "status": "granted"
+        },
+        {
+          "permission": "public_profile",
+          "status": "granted"
+        }
+      ]
+    },
+    "fetchError": null
+  },
+  "businessAdAccounts": [
+    {
+      "businessId": "2619552645106894",
+      "owned": {
+        "graphPath": "2619552645106894/owned_ad_accounts",
+        "graphUrl": "https://graph.facebook.com/v23.0/2619552645106894/owned_ad_accounts?access_token=[REDACTED]&fields=id%2Caccount_id%2Cname&limit=100",
+        "httpStatus": 200,
+        "count": 1,
+        "body": {
+          "data": [
+            {
+              "id": "act_1671144393943029",
+              "account_id": "1671144393943029",
+              "name": "Advertising OS Test"
+            }
+          ],
+          "paging": {
+            "cursors": {
+              "before": "QVFIU2F4ZAlktVGFQZAnpYd1NXNTEzajFuVkgzQlZAHSDloN0IxQVhkWWpBZAUhEUnlBc1ZAXNVhySVVJdmFBOVRpMmYyQVB1MUVzRVZASdG9zTWhVckQ2M2x2VVRB",
+              "after": "QVFIU2F4ZAlktVGFQZAnpYd1NXNTEzajFuVkgzQlZAHSDloN0IxQVhkWWpBZAUhEUnlBc1ZAXNVhySVVJdmFBOVRpMmYyQVB1MUVzRVZASdG9zTWhVckQ2M2x2VVRB"
+            }
+          }
+        },
+        "fetchError": null
+      },
+      "client": {
+        "graphPath": "2619552645106894/client_ad_accounts",
+        "graphUrl": "https://graph.facebook.com/v23.0/2619552645106894/client_ad_accounts?access_token=[REDACTED]&fields=id%2Caccount_id%2Cname&limit=100",
+        "httpStatus": 200,
+        "count": 0,
+        "body": {
+          "data": []
+        },
+        "fetchError": null
+      }
+    }
+  ]
+}

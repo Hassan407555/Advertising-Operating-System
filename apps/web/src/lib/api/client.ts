@@ -60,6 +60,21 @@ apiClient.interceptors.request.use((config) => {
     nextConfig.headers.Authorization = `Bearer ${tokens.accessToken}`;
   }
 
+  if (
+    process.env.NODE_ENV !== "production" &&
+    typeof nextConfig.url === "string" &&
+    nextConfig.url.includes("/publisher/publish")
+  ) {
+    const finalUrl = apiClient.getUri(nextConfig);
+    console.info("[apiClient][publish] runtime diagnostics", {
+      envBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+      axiosBaseURL: apiClient.defaults.baseURL,
+      requestBaseURL: nextConfig.baseURL,
+      requestUrl: nextConfig.url,
+      finalUrl,
+    });
+  }
+
   return nextConfig;
 });
 

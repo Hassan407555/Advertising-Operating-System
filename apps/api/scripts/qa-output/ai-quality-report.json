@@ -1,0 +1,869 @@
+{
+  "generatedAt": "2026-07-30T10:14:03.870Z",
+  "providerExpected": "GROQ",
+  "productCount": 5,
+  "crossProductUnique": true,
+  "allPass": true,
+  "version1Bar": "Valid JSON, relevant product+interview grounding, no crashes, meaningful regen diversity, editable/saveable draft",
+  "results": [
+    {
+      "productId": "cms7btk34000pi0cg20spo3lp",
+      "title": "[AI-QA] Aurora SoftShell Jacket",
+      "steps": {
+        "entry": "PASS",
+        "interview": "PASS",
+        "generate": "PASS",
+        "regenerate_1": "PASS",
+        "regenerate_2": "PASS",
+        "regeneration_diversity": "PASS",
+        "save_draft": "PASS",
+        "reload": "PASS",
+        "draft_persistence": "PASS",
+        "db_records": "PASS"
+      },
+      "issues": [],
+      "snapshots": [
+        {
+          "version": 1,
+          "campaignName": "Aurora SoftShell Jacket Campaign",
+          "primaryText": "Get the Aurora SoftShell Jacket, perfect for cool evening runs and windy trail days, with a packable hood and reflective seams for increased visibility.",
+          "headlines": [
+            "Windproof SoftShell Jacket for Outdoor Adventures",
+            "Stay Protected and Comfortable with Aurora SoftShell"
+          ],
+          "description": "Designed for outdoor enthusiasts, the Aurora SoftShell Jacket offers a unique blend of windproof protection, breathability, and comfort. With two zippered hand pockets and one chest pocket, you'll have ample storage for your essentials.",
+          "cta": "SHOP_NOW",
+          "audience": "Outdoor enthusiasts in the United States, particularly those interested in running and trail activities",
+          "creativeBrief": "Hook: Imagine running or hiking without worrying about the wind or cold. Pain Points: Wind and cold can be significant barriers to enjoying outdoor activities. Benefits: The Aurora SoftShell Jacket provides windproof protection, breathability, and comfort, making it ideal for outdoor enthusiasts. Offer: Get the Aurora SoftShell Jacket and take your outdoor adventures to the next level. Tone of Voice: Friendly, adventurous, and encouraging, with a focus on highlighting the benefits of the product.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "currency": "USD",
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 2,
+          "campaignName": "Unlock Endless Trails with Aurora SoftShell Jacket",
+          "primaryText": "Get ready to take on the trails with our packable and reflective Aurora SoftShell Jacket. Perfect for cool evening runs and windy days.",
+          "headlines": [
+            "Explore Further with Aurora SoftShell Jacket",
+            "Windproof and Breathable for Endless Adventures"
+          ],
+          "description": "Stay protected from the elements without compromising on comfort or style. Our jacket features two zippered hand pockets and one chest pocket for all your essentials.",
+          "cta": "SHOP_NOW",
+          "audience": "Active adults in the United States who enjoy outdoor activities such as running and hiking",
+          "creativeBrief": "Hook: Imagine being able to tackle any trail without worrying about the weather. Pain Points: Wind, cold, and lack of storage can ruin an outdoor adventure. Benefits: Our Aurora SoftShell Jacket offers windproof and breathable protection, along with ample storage for your gear. Offer: Get the Aurora SoftShell Jacket and unlock endless trails. Tone of Voice: Inspiring and adventurous, with a focus on empowering outdoor enthusiasts to push their limits.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "currency": "USD",
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 3,
+          "campaignName": "Aurora SoftShell Jacket for Active Lifestyles",
+          "primaryText": "Get ready to take on the elements with our windproof and breathable Aurora SoftShell Jacket, designed for active individuals like you",
+          "headlines": [
+            "Stay Ahead of the Wind with Aurora",
+            "Experience the Best of Outdoor Wear",
+            "Unleash Your Potential with SoftShell Technology"
+          ],
+          "description": "Our Aurora SoftShell Jacket is the perfect companion for your outdoor adventures. With its packable hood, reflective seams, and zippered pockets, you'll be able to focus on what matters most - your performance. Say goodbye to wind and hello to comfort with our cutting-edge SoftShell technology",
+          "cta": "SHOP_NOW",
+          "audience": "Active individuals in the United States, aged 25-45, interested in outdoor activities such as running and hiking",
+          "creativeBrief": "Hook: Imagine being able to tackle any outdoor challenge without worrying about the weather. Pain Points: Wind, cold, and discomfort can ruin an otherwise great outdoor experience. Benefits: Our Aurora SoftShell Jacket offers windproof and breathable protection, allowing you to stay focused on your goals. Offer: Get the Aurora SoftShell Jacket and experience the freedom to perform at your best. Tone of Voice: Empowering, motivational, and adventurous, with a focus on helping active individuals unlock their full potential.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "dailyBudget": 45
+          }
+        }
+      ],
+      "sessionId": "cms7cov550005i0zsvk4ig0s0",
+      "provider": "GROQ",
+      "model": "llama-3.3-70b-versatile",
+      "score": {
+        "pass": true,
+        "fails": 0,
+        "warns": 0,
+        "checks": {
+          "field_campaignName": "PASS",
+          "placeholder_campaignName": "PASS",
+          "field_primaryText": "PASS",
+          "placeholder_primaryText": "PASS",
+          "field_headlines": "PASS",
+          "placeholder_headlines": "PASS",
+          "field_description": "PASS",
+          "placeholder_description": "PASS",
+          "field_cta": "PASS",
+          "placeholder_cta": "PASS",
+          "field_audience": "PASS",
+          "placeholder_audience": "PASS",
+          "field_creativeBrief": "PASS",
+          "placeholder_creativeBrief": "PASS",
+          "field_objective": "PASS",
+          "placeholder_objective": "PASS",
+          "brief_hook": "PASS",
+          "brief_pain": "PASS",
+          "brief_benefits": "PASS",
+          "brief_offer": "PASS",
+          "brief_tone": "PASS",
+          "budget": "PASS",
+          "objective_match": "PASS",
+          "audience_country": "PASS",
+          "product_grounding": "PASS",
+          "cta_format": "PASS",
+          "dto_campaignType": "PASS",
+          "dto_campaignName": "PASS",
+          "dto_objective": "PASS",
+          "dto_audience": "PASS",
+          "dto_budget": "PASS",
+          "dto_cta": "PASS",
+          "dto_headlines": "PASS",
+          "dto_primaryText": "PASS",
+          "dto_description": "PASS",
+          "dto_creativeBrief": "PASS",
+          "dto_headlines_array": "PASS",
+          "dto_budget_shape": "PASS"
+        },
+        "issues": []
+      },
+      "diversity": {
+        "pairs": [
+          {
+            "a": 1,
+            "b": 2,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 1,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 2,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          }
+        ],
+        "allMeaningful": true
+      },
+      "db": {
+        "pass": true,
+        "issues": [],
+        "records": {
+          "campaign": {
+            "id": "cms7cpy2i001mi0zsgxb1533x",
+            "name": "Aurora SoftShell Jacket for Active Lifestyles",
+            "status": "DRAFT"
+          },
+          "adSet": {
+            "id": "cms7cpy4i001oi0zseilkxc5i",
+            "name": "Aurora SoftShell Jacket for Active Lifestyles Ad Set",
+            "status": "DRAFT"
+          },
+          "ad": {
+            "id": "cms7cpy5e001qi0zstpmcbs3e",
+            "name": "Aurora SoftShell Jacket for Active Lifestyles Ad",
+            "status": "DRAFT"
+          },
+          "creative": {
+            "id": "cms7cpy1j001ki0zsr4upj0do",
+            "primaryText": "Get ready to take on the elements with our windproof and breathable Aurora SoftShell Jacket, designed for active individuals like you",
+            "headline": "Stay Ahead of the Wind with Aurora"
+          }
+        }
+      },
+      "pass": true
+    },
+    {
+      "productId": "cms7btk1s000di0cgoxygk2d5",
+      "title": "[AI-QA] EmberCast Pour-Over Kit",
+      "steps": {
+        "entry": "PASS",
+        "interview": "PASS",
+        "generate": "PASS",
+        "regenerate_1": "PASS",
+        "regenerate_2": "PASS",
+        "regeneration_diversity": "PASS",
+        "save_draft": "PASS",
+        "reload": "PASS",
+        "draft_persistence": "PASS",
+        "db_records": "PASS"
+      },
+      "issues": [],
+      "snapshots": [
+        {
+          "version": 1,
+          "campaignName": "EmberCast Pour-Over Kit Campaign",
+          "primaryText": "Get your EmberCast Pour-Over Kit today and start brewing like a pro in under four minutes!",
+          "headlines": [
+            "Brew Café-Grade Coffee at Home",
+            "Experience the Perfect Pour-Over with EmberCast"
+          ],
+          "description": "With its ceramic pour-over dripper, gooseneck-compatible design, and dual paper filters, the EmberCast Pour-Over Kit is the perfect addition to your kitchen. Dishwasher-safe and easy to use, this kit is ideal for coffee enthusiasts looking to elevate their home brewing experience.",
+          "cta": "SHOP_NOW",
+          "audience": "Coffee lovers in the United States, particularly those interested in home brewing and kitchen accessories",
+          "creativeBrief": "Hook: Imagine sipping on a perfectly brewed cup of coffee in the comfort of your own home. Pain Points: Coffee lovers often struggle to find the perfect brewing method that meets their standards. Benefits: The EmberCast Pour-Over Kit provides a convenient, easy-to-use, and high-quality brewing experience. Offer: Get your EmberCast Pour-Over Kit today and start enjoying café-grade coffee at home. Tone of Voice: Friendly, approachable, and enthusiastic, with a focus on the benefits of using the EmberCast Pour-Over Kit.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "currency": "USD",
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 2,
+          "campaignName": "EmberCast Coffee Connoisseurs",
+          "primaryText": "Discover the perfect blend of flavor and convenience with the EmberCast Pour-Over Kit, featuring a ceramic pour-over dripper and dual paper filters.",
+          "headlines": [
+            "Brew Café-Grade Coffee at Home",
+            "Elevate Your Morning Routine with EmberCast"
+          ],
+          "description": "Experience the rich taste of expertly brewed coffee in the comfort of your own home. The EmberCast Pour-Over Kit is designed for coffee enthusiasts who value quality and ease of use, with a gooseneck-compatible design for precise pouring and a dishwasher-safe dripper for effortless cleaning.",
+          "cta": "SHOP_NOW",
+          "audience": "Coffee lovers in the United States interested in high-quality kitchen products",
+          "creativeBrief": "Hook: Imagine starting your day with a perfectly brewed cup of coffee, made possible by the EmberCast Pour-Over Kit. Pain Points: Coffee lovers often struggle to find the perfect brewing method that balances flavor and convenience. Benefits: The EmberCast Pour-Over Kit offers a unique combination of a ceramic pour-over dripper, dual paper filters, and a gooseneck-compatible design, making it easy to brew café-grade coffee at home. Offer: Get the EmberCast Pour-Over Kit and elevate your coffee experience. Tone of Voice: Friendly, approachable, and passionate about coffee, with a focus on the benefits of using high-quality products to enhance your daily routine.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 3,
+          "campaignName": "Elevate Your Morning with EmberCast Pour-Over",
+          "primaryText": "Discover the perfect blend of flavor and convenience with the EmberCast Pour-Over Kit, featuring a ceramic dripper, gooseneck-compatible design, and dual paper filters.",
+          "headlines": [
+            "Brew Like a Pro at Home",
+            "Experience Café-Grade Coffee in Minutes",
+            "Upgrade Your Coffee Routine with EmberCast"
+          ],
+          "description": "Take your coffee game to the next level with our pour-over kit, designed for simplicity and great taste. The dishwasher-safe dripper makes cleanup easy, and the dual paper filters ensure a smooth, full-bodied flavor. With the EmberCast Pour-Over Kit, you can enjoy café-grade coffee in the comfort of your own home, in under four minutes.",
+          "cta": "SHOP_NOW",
+          "audience": "Coffee lovers in the United States looking for a high-quality, easy-to-use pour-over kit for home brewing",
+          "creativeBrief": "Hook: Imagine starting your day with a perfectly brewed cup of coffee, made easily in the comfort of your own home. Pain Points: Coffee lovers often struggle with complicated brewing methods or subpar flavor. Benefits: The EmberCast Pour-Over Kit offers a simple, high-quality brewing experience with a ceramic dripper and dual paper filters. Offer: Get the EmberCast Pour-Over Kit and elevate your morning routine with great-tasting, café-grade coffee. Tone of Voice: Friendly, approachable, and enthusiastic, with a focus on the convenience and quality of the EmberCast Pour-Over Kit.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "currency": "USD",
+            "dailyBudget": 45
+          }
+        }
+      ],
+      "sessionId": "cms7cqhup001yi0zsnbqw8wza",
+      "provider": "GROQ",
+      "model": "llama-3.3-70b-versatile",
+      "score": {
+        "pass": true,
+        "fails": 0,
+        "warns": 0,
+        "checks": {
+          "field_campaignName": "PASS",
+          "placeholder_campaignName": "PASS",
+          "field_primaryText": "PASS",
+          "placeholder_primaryText": "PASS",
+          "field_headlines": "PASS",
+          "placeholder_headlines": "PASS",
+          "field_description": "PASS",
+          "placeholder_description": "PASS",
+          "field_cta": "PASS",
+          "placeholder_cta": "PASS",
+          "field_audience": "PASS",
+          "placeholder_audience": "PASS",
+          "field_creativeBrief": "PASS",
+          "placeholder_creativeBrief": "PASS",
+          "field_objective": "PASS",
+          "placeholder_objective": "PASS",
+          "brief_hook": "PASS",
+          "brief_pain": "PASS",
+          "brief_benefits": "PASS",
+          "brief_offer": "PASS",
+          "brief_tone": "PASS",
+          "budget": "PASS",
+          "objective_match": "PASS",
+          "audience_country": "PASS",
+          "product_grounding": "PASS",
+          "cta_format": "PASS",
+          "dto_campaignType": "PASS",
+          "dto_campaignName": "PASS",
+          "dto_objective": "PASS",
+          "dto_audience": "PASS",
+          "dto_budget": "PASS",
+          "dto_cta": "PASS",
+          "dto_headlines": "PASS",
+          "dto_primaryText": "PASS",
+          "dto_description": "PASS",
+          "dto_creativeBrief": "PASS",
+          "dto_headlines_array": "PASS",
+          "dto_budget_shape": "PASS"
+        },
+        "issues": []
+      },
+      "diversity": {
+        "pairs": [
+          {
+            "a": 1,
+            "b": 2,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 1,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 2,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          }
+        ],
+        "allMeaningful": true
+      },
+      "db": {
+        "pass": true,
+        "issues": [],
+        "records": {
+          "campaign": {
+            "id": "cms7crjod003fi0zsvkuoqunk",
+            "name": "Elevate Your Morning with EmberCast Pour-Over",
+            "status": "DRAFT"
+          },
+          "adSet": {
+            "id": "cms7crjot003hi0zsv9p79nbv",
+            "name": "Elevate Your Morning with EmberCast Pour-Over Ad Set",
+            "status": "DRAFT"
+          },
+          "ad": {
+            "id": "cms7crjrl003ji0zs1853wcy4",
+            "name": "Elevate Your Morning with EmberCast Pour-Over Ad",
+            "status": "DRAFT"
+          },
+          "creative": {
+            "id": "cms7crjo1003di0zsc7yw1n6y",
+            "primaryText": "Discover the perfect blend of flavor and convenience with the EmberCast Pour-Over Kit, featuring a ceramic dripper, gooseneck-compatible design, and dual paper filters.",
+            "headline": "Brew Like a Pro at Home"
+          }
+        }
+      },
+      "pass": true
+    },
+    {
+      "productId": "cms7btjxn0001i0cgnxbngjll",
+      "title": "[AI-QA] HydraGlow Serum",
+      "steps": {
+        "entry": "PASS",
+        "interview": "PASS",
+        "generate": "PASS",
+        "regenerate_1": "PASS",
+        "regenerate_2": "PASS",
+        "regeneration_diversity": "PASS",
+        "save_draft": "PASS",
+        "reload": "PASS",
+        "draft_persistence": "PASS",
+        "db_records": "PASS"
+      },
+      "issues": [],
+      "snapshots": [
+        {
+          "version": 1,
+          "campaignName": "HydraGlow Serum Campaign",
+          "primaryText": "Discover the power of hyaluronic acid and niacinamide in our fragrance-free HydraGlow Serum, designed to lock in moisture for 24 hours",
+          "headlines": [
+            "Unlock 24-Hour Hydration with HydraGlow Serum",
+            "Get Brighter, Plumper Skin with Our Lightweight Serum"
+          ],
+          "description": "Say goodbye to dry, dull skin and hello to a radiant glow. Our serum is perfect for all skin types, providing long-lasting hydration and a smoother complexion. With its gentle, non-irritating formula, you can trust HydraGlow Serum to deliver noticeable results",
+          "cta": "SHOP_NOW",
+          "audience": "Women and men in the United States, aged 25-55, interested in skincare and beauty products, particularly those seeking hydrating serums for brighter and plumper skin",
+          "creativeBrief": "Hook: Are you tired of using moisturizers that don't last? Pain Points: Dry, dull skin can be frustrating and affect our confidence. Benefits: HydraGlow Serum provides 24-hour hydration, brighter and plumper skin, and a fragrance-free formula suitable for all skin types. Offer: Try HydraGlow Serum today and experience the transformative power of hyaluronic acid and niacinamide. Tone of Voice: Friendly, approachable, and informative, with a focus on the benefits of using HydraGlow Serum for a healthier, more radiant complexion.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 2,
+          "campaignName": "HydraGlow Serum Revitalization",
+          "primaryText": "Discover a brighter, more radiant you with the HydraGlow Serum, featuring a lightweight, fragrance-free formula that combines the potent hydrating power of hyaluronic acid with the brightening benefits of niacinamide.",
+          "headlines": [
+            "Unlock 24-Hour Hydration with HydraGlow Serum",
+            "Revitalize Your Skin with the Power of Hyaluronic Acid",
+            "Say Goodbye to Dryness with Our Fragrance-Free Formula"
+          ],
+          "description": "Designed for daily use, our serum is perfect for all skin types, providing long-lasting moisture and a smoother, more even complexion. With its unique blend of ingredients, HydraGlow Serum not only hydrates but also enhances skin elasticity and tone, giving you a fresher, more vibrant appearance.",
+          "cta": "SHOP_NOW",
+          "audience": "Individuals in the United States interested in skincare, particularly those seeking hydrating and brightening products for their daily routines",
+          "creativeBrief": "Hook: Imagine waking up to skin that feels refreshed, rejuvenated, and ready to take on the day. Pain Points: Dry, dull skin can be a constant battle, affecting our confidence and overall well-being. Benefits: The HydraGlow Serum offers a game-changing solution, providing 24-hour hydration and a brighter, more even skin tone. Offer: Experience the transformative power of our serum, with its unique blend of hyaluronic acid and niacinamide, and discover a more radiant you. Tone of Voice: Friendly, approachable, and informative, emphasizing the real benefits of using HydraGlow Serum for a healthier, happier skin routine.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "currency": "USD",
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 3,
+          "campaignName": "HydraGlow Serum Skincare Revival",
+          "primaryText": "Discover the power of hyaluronic acid and niacinamide with our fragrance-free HydraGlow Serum, designed to provide long-lasting hydration and a brighter complexion",
+          "headlines": [
+            "Reveal Your Radiant Glow",
+            "Lock in Moisture for 24 Hours",
+            "Transform Your Skin with HydraGlow"
+          ],
+          "description": "Say goodbye to dull, dehydrated skin and hello to a radiant glow. Our lightweight serum is perfect for daily use, morning and night, to help you achieve the healthy, plump skin you deserve. With its unique blend of hyaluronic acid and niacinamide, HydraGlow Serum works to lock in moisture and support your skin's natural barrier, leaving you with a smoother, more even-toned complexion",
+          "cta": "SHOP_NOW",
+          "audience": "Women and men in the United States, aged 25-45, interested in skincare and beauty products, particularly those seeking hydrating solutions for brighter, plumper skin",
+          "creativeBrief": "Hook: Imagine waking up to brighter, more radiant skin every day. Pain Points: Dull, dehydrated skin can affect our confidence and overall well-being. Benefits: Our HydraGlow Serum provides long-lasting hydration and helps to improve skin elasticity, giving you a more youthful and vibrant appearance. Offer: Try our fragrance-free HydraGlow Serum, formulated with hyaluronic acid and niacinamide, to transform your skincare routine. Tone of Voice: Friendly, approachable, and knowledgeable, with a focus on empowering our audience to take control of their skincare journey. Note: Due to limited historical data, our creative strategy will focus on showcasing the key benefits and unique selling points of our product, while continually monitoring and optimizing our campaign for the best possible results.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "dailyBudget": 45
+          }
+        }
+      ],
+      "sessionId": "cms7cs3c6003ri0zsrm1qcab7",
+      "provider": "GROQ",
+      "model": "llama-3.3-70b-versatile",
+      "score": {
+        "pass": true,
+        "fails": 0,
+        "warns": 0,
+        "checks": {
+          "field_campaignName": "PASS",
+          "placeholder_campaignName": "PASS",
+          "field_primaryText": "PASS",
+          "placeholder_primaryText": "PASS",
+          "field_headlines": "PASS",
+          "placeholder_headlines": "PASS",
+          "field_description": "PASS",
+          "placeholder_description": "PASS",
+          "field_cta": "PASS",
+          "placeholder_cta": "PASS",
+          "field_audience": "PASS",
+          "placeholder_audience": "PASS",
+          "field_creativeBrief": "PASS",
+          "placeholder_creativeBrief": "PASS",
+          "field_objective": "PASS",
+          "placeholder_objective": "PASS",
+          "brief_hook": "PASS",
+          "brief_pain": "PASS",
+          "brief_benefits": "PASS",
+          "brief_offer": "PASS",
+          "brief_tone": "PASS",
+          "budget": "PASS",
+          "objective_match": "PASS",
+          "audience_country": "PASS",
+          "product_grounding": "PASS",
+          "cta_format": "PASS",
+          "dto_campaignType": "PASS",
+          "dto_campaignName": "PASS",
+          "dto_objective": "PASS",
+          "dto_audience": "PASS",
+          "dto_budget": "PASS",
+          "dto_cta": "PASS",
+          "dto_headlines": "PASS",
+          "dto_primaryText": "PASS",
+          "dto_description": "PASS",
+          "dto_creativeBrief": "PASS",
+          "dto_headlines_array": "PASS",
+          "dto_budget_shape": "PASS"
+        },
+        "issues": []
+      },
+      "diversity": {
+        "pairs": [
+          {
+            "a": 1,
+            "b": 2,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 1,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 2,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          }
+        ],
+        "allMeaningful": true
+      },
+      "db": {
+        "pass": true,
+        "issues": [],
+        "records": {
+          "campaign": {
+            "id": "cms7ct605005ai0zsexgueatr",
+            "name": "HydraGlow Serum Skincare Revival",
+            "status": "DRAFT"
+          },
+          "adSet": {
+            "id": "cms7ct60v005ci0zst92sq3hv",
+            "name": "HydraGlow Serum Skincare Revival Ad Set",
+            "status": "DRAFT"
+          },
+          "ad": {
+            "id": "cms7ct61b005ei0zsmwyt3j4k",
+            "name": "HydraGlow Serum Skincare Revival Ad",
+            "status": "DRAFT"
+          },
+          "creative": {
+            "id": "cms7ct5zi0058i0zseaup2vq0",
+            "primaryText": "Discover the power of hyaluronic acid and niacinamide with our fragrance-free HydraGlow Serum, designed to provide long-lasting hydration and a brighter complexion",
+            "headline": "Reveal Your Radiant Glow"
+          }
+        }
+      },
+      "pass": true
+    },
+    {
+      "productId": "cms7btk2l000ji0cgrjhvs5jb",
+      "title": "[AI-QA] NovaDesk Standing Desk",
+      "steps": {
+        "entry": "PASS",
+        "interview": "PASS",
+        "generate": "PASS",
+        "regenerate_1": "PASS",
+        "regenerate_2": "PASS",
+        "regeneration_diversity": "PASS",
+        "save_draft": "PASS",
+        "reload": "PASS",
+        "draft_persistence": "PASS",
+        "db_records": "PASS"
+      },
+      "issues": [],
+      "snapshots": [
+        {
+          "version": 1,
+          "campaignName": "NovaDesk Standing Desk Campaign",
+          "primaryText": "Discover the electric standing desk with three memory presets, under-desk cable tray, and anti-collision sensors, designed to enhance your productivity and comfort.",
+          "headlines": [
+            "Upgrade Your Workspace with NovaDesk",
+            "Experience Ergonomic Comfort with NovaDesk Standing Desk"
+          ],
+          "description": "The NovaDesk Standing Desk is designed to provide a comfortable and healthy working experience. With its quiet dual motors and solid oak top, this desk is perfect for office workers and individuals looking to improve their workspace. The desk's height range of 28-48 inches allows for seamless transitions between sitting and standing throughout the day.",
+          "cta": "SHOP_NOW",
+          "audience": "Office workers and individuals in the United States seeking ergonomic furniture solutions",
+          "creativeBrief": "Hook: Imagine having a workspace that adapts to your needs, providing comfort and boosting productivity. \n   Pain Points: Traditional desks can lead to discomfort, decreased productivity, and long-term health issues. \n   Benefits: The NovaDesk Standing Desk offers a solution with its ergonomic design, three memory presets, and under-desk cable tray, promoting a healthier work environment. \n   Offer: Experience the benefits of a standing desk with NovaDesk's electric and adjustable design, perfect for office workers and individuals seeking a comfortable workspace. \n   Tone of Voice: Professional, friendly, and informative, highlighting the key features and benefits of the NovaDesk Standing Desk.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 2,
+          "campaignName": "Elevate Your Workspace with NovaDesk",
+          "primaryText": "Discover the electric standing desk that adjusts to your needs, with three memory presets and a solid oak top for unparalleled comfort and style.",
+          "headlines": [
+            "Upgrade to a healthier work environment",
+            "Experience the future of office desks"
+          ],
+          "description": "Say goodbye to back pain and hello to productivity with the NovaDesk Standing Desk. Featuring under-desk cable tray and anti-collision sensors for a seamless work experience. Learn how NovaDesk can elevate your workspace.",
+          "cta": "SHOP_NOW",
+          "audience": "Professionals and individuals in the United States seeking ergonomic office furniture solutions",
+          "creativeBrief": "Hook: Imagine a workspace that adapts to your every move, promoting health and productivity. \n   Pain Points: Traditional desks can lead to back pain and decreased productivity due to lack of adjustability and ergonomics. \n   Benefits: The NovaDesk Standing Desk offers a customizable, ergonomic solution with its electric height adjustment and solid oak top, ensuring comfort and style. \n   Offer: Experience the future of office desks with NovaDesk's innovative features, designed to elevate your work experience. \n   Tone of Voice: Professional, innovative, and health-conscious, emphasizing the benefits of an ergonomic workspace.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "currency": "USD",
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 3,
+          "campaignName": "Elevate Your Workspace with NovaDesk",
+          "primaryText": "Transform your work experience with the NovaDesk Standing Desk, featuring quiet dual motors, anti-collision sensors, and a solid oak top.",
+          "headlines": [
+            "Upgrade to a Smarter Workspace",
+            "Experience the Future of Standing Desks"
+          ],
+          "description": "Discover a healthier way to work with our electric standing desk, designed to promote comfort and productivity. With three memory presets and an under-desk cable tray, you can customize your workspace to fit your needs.",
+          "cta": "SHOP_NOW",
+          "audience": "Professionals and individuals in the United States seeking ergonomic office solutions",
+          "creativeBrief": "Hook: Are you tired of the same old desk? Pain Points: Traditional desks can lead to back and neck pain, decreasing productivity. Benefits: Our NovaDesk Standing Desk promotes better posture, reduces discomfort, and boosts energy levels. Offer: Get the NovaDesk Standing Desk, designed with your comfort and productivity in mind, and experience the difference for yourself. Tone of Voice: Friendly, informative, and motivational, encouraging users to take control of their workspace and well-being.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "dailyBudget": 45
+          }
+        }
+      ],
+      "sessionId": "cms7ctpke005mi0zsdhtkx1sz",
+      "provider": "GROQ",
+      "model": "llama-3.3-70b-versatile",
+      "score": {
+        "pass": true,
+        "fails": 0,
+        "warns": 0,
+        "checks": {
+          "field_campaignName": "PASS",
+          "placeholder_campaignName": "PASS",
+          "field_primaryText": "PASS",
+          "placeholder_primaryText": "PASS",
+          "field_headlines": "PASS",
+          "placeholder_headlines": "PASS",
+          "field_description": "PASS",
+          "placeholder_description": "PASS",
+          "field_cta": "PASS",
+          "placeholder_cta": "PASS",
+          "field_audience": "PASS",
+          "placeholder_audience": "PASS",
+          "field_creativeBrief": "PASS",
+          "placeholder_creativeBrief": "PASS",
+          "field_objective": "PASS",
+          "placeholder_objective": "PASS",
+          "brief_hook": "PASS",
+          "brief_pain": "PASS",
+          "brief_benefits": "PASS",
+          "brief_offer": "PASS",
+          "brief_tone": "PASS",
+          "budget": "PASS",
+          "objective_match": "PASS",
+          "audience_country": "PASS",
+          "product_grounding": "PASS",
+          "cta_format": "PASS",
+          "dto_campaignType": "PASS",
+          "dto_campaignName": "PASS",
+          "dto_objective": "PASS",
+          "dto_audience": "PASS",
+          "dto_budget": "PASS",
+          "dto_cta": "PASS",
+          "dto_headlines": "PASS",
+          "dto_primaryText": "PASS",
+          "dto_description": "PASS",
+          "dto_creativeBrief": "PASS",
+          "dto_headlines_array": "PASS",
+          "dto_budget_shape": "PASS"
+        },
+        "issues": []
+      },
+      "diversity": {
+        "pairs": [
+          {
+            "a": 1,
+            "b": 2,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 1,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 2,
+            "b": 3,
+            "differentFields": 4,
+            "meaningful": true
+          }
+        ],
+        "allMeaningful": true
+      },
+      "db": {
+        "pass": true,
+        "issues": [],
+        "records": {
+          "campaign": {
+            "id": "cms7curhg0073i0zs4huf84sp",
+            "name": "Elevate Your Workspace with NovaDesk",
+            "status": "DRAFT"
+          },
+          "adSet": {
+            "id": "cms7curhq0075i0zs4upvj67x",
+            "name": "Elevate Your Workspace with NovaDesk Ad Set",
+            "status": "DRAFT"
+          },
+          "ad": {
+            "id": "cms7curi00077i0zsxq1zj7e9",
+            "name": "Elevate Your Workspace with NovaDesk Ad",
+            "status": "DRAFT"
+          },
+          "creative": {
+            "id": "cms7curh80071i0zsybb6w6qe",
+            "primaryText": "Transform your work experience with the NovaDesk Standing Desk, featuring quiet dual motors, anti-collision sensors, and a solid oak top.",
+            "headline": "Upgrade to a Smarter Workspace"
+          }
+        }
+      },
+      "pass": true
+    },
+    {
+      "productId": "cms7btk100007i0cgpmguvu22",
+      "title": "[AI-QA] TrailRunner Pro Shoes",
+      "steps": {
+        "entry": "PASS",
+        "interview": "PASS",
+        "generate": "PASS",
+        "regenerate_1": "PASS",
+        "regenerate_2": "PASS",
+        "regeneration_diversity": "PASS",
+        "save_draft": "PASS",
+        "reload": "PASS",
+        "draft_persistence": "PASS",
+        "db_records": "PASS"
+      },
+      "issues": [],
+      "snapshots": [
+        {
+          "version": 1,
+          "campaignName": "TrailRunner Pro Shoes Campaign",
+          "primaryText": "Experience the ultimate in trail running with our waterproof TrailRunner Pro Shoes, featuring carbon plate propulsion and a cushioned rocker sole.",
+          "headlines": [
+            "Elevate Your Trail Runs",
+            "Waterproof Trail Shoes for the Modern Runner",
+            "Run with Confidence, Any Weather"
+          ],
+          "description": "Designed for the demands of rocky paths and rainy morning runs, our TrailRunner Pro Shoes keep you moving forward with reflective heel tabs for low-light visibility and a focus on comfort and performance.",
+          "cta": "SHOP_NOW",
+          "audience": "Active runners in the United States, aged 25-45, interested in outdoor activities and fitness",
+          "creativeBrief": "Hook: Imagine running through challenging trails without worrying about the weather. Pain Points: Runners often face difficulties with footwear that can't keep up with their active lifestyle, especially in harsh weather conditions. Benefits: Our TrailRunner Pro Shoes offer the perfect blend of waterproofing, propulsion, and comfort, making them ideal for runners who want to perform at their best. Offer: Get the TrailRunner Pro Shoes and take your trail runs to the next level. Tone of Voice: Inspirational, motivational, and focused on performance, with a hint of adventure and a commitment to helping runners achieve their goals.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 2,
+          "campaignName": "PeakPath Athletics TrailRunner Pro US Launch",
+          "primaryText": "Discover the TrailRunner Pro Shoes, expertly crafted with waterproof materials, carbon plate propulsion, and a cushioned rocker sole for the ultimate running experience.",
+          "headlines": [
+            "Elevate Your Trail Runs",
+            "Experience Peak Performance",
+            "Run with Confidence and Comfort"
+          ],
+          "description": "Take your trail runs to the next level with our innovative TrailRunner Pro Shoes. Featuring reflective heel tabs for increased visibility and a rugged design to tackle any terrain. Learn more about how our technology can enhance your running performance.",
+          "cta": "SHOP_NOW",
+          "audience": "Active runners in the United States who frequently participate in outdoor activities and value high-quality footwear",
+          "creativeBrief": "Hook: Imagine running through challenging trails with confidence and ease. Pain Points: Runners often struggle with footwear that lacks support, traction, and durability. Benefits: Our TrailRunner Pro Shoes provide superior comfort, stability, and propulsion. Offer: Experience the ultimate in trail running technology with our expertly crafted shoes. Tone of Voice: Empowering, motivational, and focused on performance enhancement.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "dailyBudget": 45
+          }
+        },
+        {
+          "version": 3,
+          "campaignName": "Peak Path Trail Blazer",
+          "primaryText": "Experience the ultimate in trail running with our waterproof TrailRunner Pro Shoes, featuring a cushioned rocker sole for a smoother stride and a reflective heel tab for enhanced visibility",
+          "headlines": [
+            "Run Wilder with TrailRunner Pro",
+            "Unleash Your Trail Potential",
+            "Propel Your Run with Carbon Plate Technology"
+          ],
+          "description": "Designed for the demands of rocky paths and rainy morning runs, our TrailRunner Pro Shoes combine innovative carbon plate propulsion with a comfortable fit, ensuring you can tackle any trail with confidence. With a focus on durability and performance, these shoes are perfect for runners seeking a reliable partner for their outdoor adventures",
+          "cta": "SHOP_NOW",
+          "audience": "Active runners in the United States, particularly those who frequent trails and value high-performance footwear",
+          "creativeBrief": "Hook: Imagine running through challenging trails with ease and confidence. Pain Points: Runners often struggle with footwear that fails to provide adequate support, traction, or protection from the elements. Benefits: Our TrailRunner Pro Shoes offer a unique combination of carbon plate technology, waterproofing, and reflective visibility, addressing the key pain points of trail runners. Offer: Get the TrailRunner Pro Shoes and discover a new level of performance and comfort on your runs. Tone of Voice: Inspirational, yet grounded in the technical benefits of our product, speaking directly to the aspirations and needs of trail runners in the United States.",
+          "objective": "CONVERSIONS",
+          "budget": {
+            "currency": "USD",
+            "dailyBudget": 45
+          }
+        }
+      ],
+      "sessionId": "cms7cvayg007fi0zs541q20hy",
+      "provider": "GROQ",
+      "model": "llama-3.3-70b-versatile",
+      "score": {
+        "pass": true,
+        "fails": 0,
+        "warns": 0,
+        "checks": {
+          "field_campaignName": "PASS",
+          "placeholder_campaignName": "PASS",
+          "field_primaryText": "PASS",
+          "placeholder_primaryText": "PASS",
+          "field_headlines": "PASS",
+          "placeholder_headlines": "PASS",
+          "field_description": "PASS",
+          "placeholder_description": "PASS",
+          "field_cta": "PASS",
+          "placeholder_cta": "PASS",
+          "field_audience": "PASS",
+          "placeholder_audience": "PASS",
+          "field_creativeBrief": "PASS",
+          "placeholder_creativeBrief": "PASS",
+          "field_objective": "PASS",
+          "placeholder_objective": "PASS",
+          "brief_hook": "PASS",
+          "brief_pain": "PASS",
+          "brief_benefits": "PASS",
+          "brief_offer": "PASS",
+          "brief_tone": "PASS",
+          "budget": "PASS",
+          "objective_match": "PASS",
+          "audience_country": "PASS",
+          "product_grounding": "PASS",
+          "cta_format": "PASS",
+          "dto_campaignType": "PASS",
+          "dto_campaignName": "PASS",
+          "dto_objective": "PASS",
+          "dto_audience": "PASS",
+          "dto_budget": "PASS",
+          "dto_cta": "PASS",
+          "dto_headlines": "PASS",
+          "dto_primaryText": "PASS",
+          "dto_description": "PASS",
+          "dto_creativeBrief": "PASS",
+          "dto_headlines_array": "PASS",
+          "dto_budget_shape": "PASS"
+        },
+        "issues": []
+      },
+      "diversity": {
+        "pairs": [
+          {
+            "a": 1,
+            "b": 2,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 1,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          },
+          {
+            "a": 2,
+            "b": 3,
+            "differentFields": 5,
+            "meaningful": true
+          }
+        ],
+        "allMeaningful": true
+      },
+      "db": {
+        "pass": true,
+        "issues": [],
+        "records": {
+          "campaign": {
+            "id": "cms7cwcqk008wi0zsuolp6j8g",
+            "name": "Peak Path Trail Blazer",
+            "status": "DRAFT"
+          },
+          "adSet": {
+            "id": "cms7cwcqx008yi0zsah9qnhyw",
+            "name": "Peak Path Trail Blazer Ad Set",
+            "status": "DRAFT"
+          },
+          "ad": {
+            "id": "cms7cwcrb0090i0zsfk5bvbkg",
+            "name": "Peak Path Trail Blazer Ad",
+            "status": "DRAFT"
+          },
+          "creative": {
+            "id": "cms7cwcqc008ui0zs124t8utb",
+            "primaryText": "Experience the ultimate in trail running with our waterproof TrailRunner Pro Shoes, featuring a cushioned rocker sole for a smoother stride and a reflective heel tab for enhanced visibility",
+            "headline": "Run Wilder with TrailRunner Pro"
+          }
+        }
+      },
+      "pass": true
+    }
+  ]
+}

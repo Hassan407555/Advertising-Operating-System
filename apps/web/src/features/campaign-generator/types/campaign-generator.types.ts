@@ -12,7 +12,8 @@ export type GeneratorCreativeType =
   | "PLAYABLE"
   | "AUDIO"
   | "TEXT"
-  | "HTML5";
+  | "HTML5"
+  | "NONE";
 
 export interface GenerateCampaignPayload {
   productId: string;

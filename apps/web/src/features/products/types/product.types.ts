@@ -9,6 +9,7 @@ export interface StoreProduct {
   title: string;
   handle: string;
   vendor: string | null;
+  brand: string | null;
   productType: string | null;
   description: string | null;
   status: string;
@@ -20,6 +21,39 @@ export interface StoreProduct {
   /** Backend-computed — do not recompute readiness on the client. */
   canAdvertise: boolean;
   activeSessionId: string | null;
+}
+
+export interface StoreProductVariant {
+  id: string;
+  externalId: string;
+  title: string | null;
+  sku: string | null;
+  barcode: string | null;
+  price: string | null;
+  compareAtPrice: string | null;
+  inventoryQuantity: number | null;
+  option1: string | null;
+  option2: string | null;
+  option3: string | null;
+  isDefault: boolean;
+}
+
+export interface StoreProductImage {
+  id: string;
+  url: string;
+  alt: string | null;
+  width: number | null;
+  height: number | null;
+  displayOrder: number;
+}
+
+export interface StoreProductDetail extends StoreProduct {
+  price: string | null;
+  compareAtPrice: string | null;
+  inventory: number | null;
+  variants: StoreProductVariant[];
+  images: StoreProductImage[];
+  collections: string[];
 }
 
 export interface StoreProductsListResponse {
@@ -44,3 +78,11 @@ export interface StoreProductsListQuery {
 export interface StartAdvertisingEntryPayload {
   productId: string;
 }
+
+export type GenerateCampaignProgressStep =
+  | "idle"
+  | "creating_session"
+  | "completing_interview"
+  | "generating"
+  | "saving_draft"
+  | "redirecting";

@@ -12,6 +12,7 @@ export interface StoreCapabilities {
   productCount: number;
   lastSyncAt: string | null;
   adAccountSelected: boolean;
+  businessManagerSelected?: boolean;
   facebookPageSelected: boolean;
   instagramSelected: boolean;
   pixelSelected: boolean;

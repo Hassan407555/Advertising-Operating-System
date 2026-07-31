@@ -132,19 +132,19 @@ test.describe("RC-1 full customer journey", () => {
       lastName: "Owner",
       password,
     });
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "AI Meta Ads Studio" })).toBeVisible({ timeout: 20_000 });
   });
 
   test("04 session persists across browser refresh", async ({ page }) => {
     await page.reload();
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "AI Meta Ads Studio" })).toBeVisible();
   });
 
   test("05 logout then login restores session", async ({ page }) => {
     await logoutViaUi(page);
     await loginViaUi(page, ownerEmail, password);
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "AI Meta Ads Studio" })).toBeVisible();
   });
 
   test("06 API refresh token rotation works", async ({ request }) => {
@@ -296,7 +296,7 @@ test.describe("RC-1 full customer journey", () => {
 
   test("21 no critical console errors on dashboard happy path", async ({ page }) => {
     await loginViaUi(page, ownerEmail, password);
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "AI Meta Ads Studio" })).toBeVisible();
     const critical = consoleErrors.filter(
       (entry) =>
         !entry.includes("Download the React DevTools") &&

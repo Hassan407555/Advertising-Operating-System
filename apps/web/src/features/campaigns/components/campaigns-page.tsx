@@ -17,16 +17,19 @@ import { useStoresQuery } from "@/features/stores/hooks/use-stores";
 import { useActiveStore } from "@/features/stores/hooks/use-active-store";
 import { usePermission } from "@/hooks/use-permission";
 import { AppError } from "@/lib/api/errors";
+import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/utils/errors";
 import type { CreateCampaignFormValues } from "@/features/campaigns/schemas/campaign.schemas";
 import type { AiCampaignType, CampaignListQuery } from "@/types/campaign";
 import { PageEmpty } from "@/components/shared/states/page-empty";
 import { PageError } from "@/components/shared/states/page-error";
 import { PageHeader } from "@/components/shared/page-header";
+import { SectionHeader } from "@/components/shared/section-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-const CAMPAIGN_TYPE_OPTIONS: AiCampaignType[] = ["IMAGE", "CAROUSEL", "VIDEO"];
+const CAMPAIGN_TYPE_OPTIONS: AiCampaignType[] = ["IMAGE", "CAROUSEL", "VIDEO", "NONE"];
 
 const SORT_PRESETS: Array<{
   label: string;
@@ -38,12 +41,23 @@ const SORT_PRESETS: Array<{
   { label: "Recently Updated", sortBy: "updatedAt", sortOrder: "desc" },
 ];
 
+const selectClassName = cn(
+  "h-9 w-full rounded-[var(--radius-md)] border border-border/60 bg-input/40 px-3 text-sm",
+  "shadow-[var(--shadow-xs)] outline-none transition-surface",
+  "focus-visible:border-primary/50 focus-visible:shadow-[var(--shadow-focus)]",
+);
+
 function toIsoDateTime(value?: string) {
   if (!value) {
     return undefined;
   }
   return new Date(value).toISOString();
 }
+
+const storeGateProps = {
+  emptyTitle: "No campaigns",
+  emptyDescription: "Connect a store under Commerce, then generate a campaign from Products.",
+} as const;
 
 export function CampaignsPageContent() {
   const router = useRouter();
@@ -105,17 +119,18 @@ export function CampaignsPageContent() {
 
   if (!canView) {
     return (
-      <RequireActiveStore>
+      <RequireActiveStore {...storeGateProps}>
         <PageEmpty title="Access restricted" description="Your role cannot view campaign history." />
       </RequireActiveStore>
     );
   }
 
   return (
-    <RequireActiveStore>
-      <div className="space-y-4">
+    <RequireActiveStore {...storeGateProps}>
+      <div className="page-stack animate-fade-in-up">
         <PageHeader
-          title="Campaign History"
+          eyebrow="AI Studio"
+          title="Campaigns"
           description="Saved drafts and previous AI-generated Meta campaigns. Open a draft to review or edit."
           actions={
             canCreate ? (
@@ -131,9 +146,8 @@ export function CampaignsPageContent() {
             <label className="sr-only" htmlFor="campaign-search">
               Search campaigns
             </label>
-            <input
+            <Input
               id="campaign-search"
-              className="h-9 rounded-md border border-border bg-transparent px-3 text-sm"
               placeholder="Search by campaign name"
               value={query.search ?? ""}
               onChange={(event) => patchQuery({ search: event.target.value, page: 1 })}
@@ -143,7 +157,7 @@ export function CampaignsPageContent() {
             </label>
             <select
               id="campaign-store-filter"
-              className="h-9 rounded-md border border-border bg-transparent px-3 text-sm"
+              className={selectClassName}
               value={storeFilterValue}
               onChange={(event) =>
                 patchQuery({
@@ -164,7 +178,7 @@ export function CampaignsPageContent() {
             </label>
             <select
               id="campaign-type-filter"
-              className="h-9 rounded-md border border-border bg-transparent px-3 text-sm"
+              className={selectClassName}
               value={query.campaignType ?? ""}
               onChange={(event) =>
                 patchQuery({
@@ -185,7 +199,7 @@ export function CampaignsPageContent() {
             </label>
             <select
               id="campaign-status-filter"
-              className="h-9 rounded-md border border-border bg-transparent px-3 text-sm"
+              className={selectClassName}
               value={query.status ?? "DRAFT"}
               onChange={(event) =>
                 patchQuery({
@@ -205,7 +219,7 @@ export function CampaignsPageContent() {
             </label>
             <select
               id="campaign-sort"
-              className="h-9 rounded-md border border-border bg-transparent px-3 text-sm"
+              className={selectClassName}
               value={activeSortPreset}
               onChange={(event) => {
                 const preset = SORT_PRESETS.find((item) => item.label === event.target.value);
@@ -248,8 +262,8 @@ export function CampaignsPageContent() {
         </Card>
 
         {createOpen && canCreate ? (
-          <Card>
-            <h2 className="mb-3 text-lg font-semibold">Create Campaign</h2>
+          <Card className="space-y-3">
+            <SectionHeader title="Create Campaign" />
             <CampaignForm
               adAccounts={adAccountsQuery.data ?? []}
               mode="create"

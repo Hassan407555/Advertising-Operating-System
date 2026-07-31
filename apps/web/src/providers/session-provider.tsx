@@ -32,19 +32,17 @@ interface SessionContextValue extends SessionState {
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
-const initialTokens = readTokens();
-if (initialTokens) {
-  syncAccessCookieFromStorage();
-}
 export function SessionProvider({ children }: PropsWithChildren) {
+  // Start identical on server and client to avoid AuthGuard hydration mismatches.
+  // Tokens are loaded from localStorage only after mount.
   const [session, setSession] = useState<SessionState>({
     user: null,
     organization: null,
     membership: null,
     organizations: [],
     memberships: [],
-    tokens: initialTokens,
-    isBootstrapping: Boolean(initialTokens?.accessToken),
+    tokens: null,
+    isBootstrapping: true,
   });
 
   const setTokens = useCallback((tokens: SessionTokens | null) => {
@@ -137,11 +135,22 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }, [clearSession]);
 
   useEffect(() => {
-    if (!initialTokens?.accessToken) {
-      return;
+    let isMounted = true;
+    const tokens = readTokens();
+
+    if (!tokens?.accessToken) {
+      setSession((prev) => ({
+        ...prev,
+        tokens: null,
+        isBootstrapping: false,
+      }));
+      return () => {
+        isMounted = false;
+      };
     }
 
-    let isMounted = true;
+    syncAccessCookieFromStorage();
+    setSession((prev) => ({ ...prev, tokens, isBootstrapping: true }));
 
     getCurrentUser()
       .then((payload) => {

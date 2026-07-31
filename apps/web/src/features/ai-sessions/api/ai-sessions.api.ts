@@ -1,5 +1,6 @@
 import type { PaginatedResponse } from "@/types/api";
 import { apiClient } from "@/lib/api/client";
+import { API_GENERATE_TIMEOUT_MS, API_GENERATE_VIDEO_TIMEOUT_MS } from "@/lib/api/env";
 import { unwrapEnvelope } from "@/lib/api/response";
 import type {
   AdvanceAiSessionPayload,
@@ -7,6 +8,7 @@ import type {
   AiSessionListQuery,
   AiSessionMessage,
   CreateAiSessionPayload,
+  GenerateVideoPreviewResult,
   SaveAiSessionDraftPayload,
 } from "@/features/ai-sessions/types/ai-session.types";
 
@@ -41,8 +43,17 @@ export async function cancelAiSession(id: string) {
 }
 
 export async function generateAiSessionCampaign(id: string) {
-  const response = await apiClient.post(`/ai-sessions/${id}/generate`);
+  const response = await apiClient.post(`/ai-sessions/${id}/generate`, undefined, {
+    timeout: API_GENERATE_TIMEOUT_MS,
+  });
   return unwrapEnvelope<AiSession>(response.data);
+}
+
+export async function generateAiSessionVideo(id: string) {
+  const response = await apiClient.post(`/ai-sessions/${id}/generate-video`, undefined, {
+    timeout: API_GENERATE_VIDEO_TIMEOUT_MS,
+  });
+  return unwrapEnvelope<GenerateVideoPreviewResult>(response.data);
 }
 
 export async function saveAiSessionDraft(id: string, payload: SaveAiSessionDraftPayload) {

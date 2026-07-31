@@ -5,13 +5,13 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { AiSessionSource } from '@prisma/client';
+import { AiSessionSource, ShopifyProductStatus } from '@prisma/client';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import type { AiSessionResponseDto } from '../../ai-sessions/dto/ai-session.dto';
 import { AiSessionsService } from '../../ai-sessions/services/ai-sessions.service';
-import { getAdvertisingBlockingReasons } from '../utils/store-readiness.util';
+import { getGenerationBlockingReasons } from '../utils/store-readiness.util';
 import { StoresService } from './stores.service';
 
 @Injectable()
@@ -26,6 +26,7 @@ export class AdvertisingEntryService {
   /**
    * Starts or resumes AI campaign work for a store product.
    * Products UI must call this — never create AI sessions directly.
+   * Meta Advertising Configuration is not required (publish-only).
    */
   async startOrResume(
     storeId: string,
@@ -34,22 +35,26 @@ export class AdvertisingEntryService {
   ): Promise<AiSessionResponseDto> {
     const store = await this.storesService.getStore(storeId, currentUser);
 
-    if (!store.advertisingReady) {
-      const reasons = getAdvertisingBlockingReasons({
-        shopifyConnected: store.capabilities.shopifyConnected,
-        metaConnected: store.capabilities.metaConnected,
-        productsSynced: store.capabilities.productsSynced,
-        productCount: store.capabilities.productCount,
-        lastSyncAt: store.capabilities.lastSyncAt,
-        adAccountSelected: store.capabilities.adAccountSelected,
-        facebookPageSelected: store.capabilities.facebookPageSelected,
-        instagramSelected: store.capabilities.instagramSelected,
-        pixelSelected: store.capabilities.pixelSelected,
-        catalogSelected: store.capabilities.catalogSelected,
-      });
+    const generationReasons = getGenerationBlockingReasons({
+      shopifyConnected: store.capabilities.shopifyConnected,
+      metaConnected: store.capabilities.metaConnected,
+      productsSynced: store.capabilities.productsSynced,
+      productCount: store.capabilities.productCount,
+      lastSyncAt: store.capabilities.lastSyncAt,
+      adAccountSelected: store.capabilities.adAccountSelected,
+      businessManagerSelected: store.capabilities.businessManagerSelected,
+      facebookPageSelected: store.capabilities.facebookPageSelected,
+      instagramSelected: store.capabilities.instagramSelected,
+      pixelSelected: store.capabilities.pixelSelected,
+      catalogSelected: store.capabilities.catalogSelected,
+    });
+
+    if (generationReasons.length > 0) {
       throw new BadRequestException(
-        `Store must be advertising-ready before starting AI campaign work.${
-          reasons.length > 0 ? ` ${reasons.join('; ')}.` : ''
+        `Store must have Shopify connected and products synced before starting AI campaign work.${
+          generationReasons.length > 0
+            ? ` ${generationReasons.join('; ')}.`
+            : ''
         }`,
       );
     }
@@ -61,12 +66,18 @@ export class AdvertisingEntryService {
         platformConnectionId: storeId,
         deletedAt: null,
       },
-      select: { id: true },
+      select: { id: true, status: true },
     });
 
     if (!product) {
       throw new NotFoundException(
         'Product was not found for this store and organization.',
+      );
+    }
+
+    if (product.status !== ShopifyProductStatus.ACTIVE) {
+      throw new BadRequestException(
+        'Only ACTIVE products can be advertised.',
       );
     }
 

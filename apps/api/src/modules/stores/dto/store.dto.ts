@@ -124,6 +124,9 @@ export class StoreCapabilitiesDto {
   adAccountSelected: boolean;
 
   @ApiProperty()
+  businessManagerSelected: boolean;
+
+  @ApiProperty()
   facebookPageSelected: boolean;
 
   @ApiProperty()
@@ -198,6 +201,7 @@ export class ListStoreProductsQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   search?: string;
 
   @ApiPropertyOptional({ default: 1 })
@@ -229,6 +233,64 @@ export class AdvertisingEligibilityDto {
   reasons!: string[];
 }
 
+export class StoreProductVariantResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  externalId!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  title!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  sku!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  barcode!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  price!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  compareAtPrice!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  inventoryQuantity!: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  option1!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  option2!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  option3!: string | null;
+
+  @ApiProperty()
+  isDefault!: boolean;
+}
+
+export class StoreProductImageResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  url!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  alt!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  width!: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  height!: number | null;
+
+  @ApiProperty()
+  displayOrder!: number;
+}
+
 export class StoreProductResponseDto {
   @ApiProperty()
   id!: string;
@@ -244,6 +306,12 @@ export class StoreProductResponseDto {
 
   @ApiPropertyOptional({ nullable: true })
   vendor!: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Brand alias — Shopify vendor when no separate brand is stored',
+  })
+  brand!: string | null;
 
   @ApiPropertyOptional({ nullable: true })
   productType!: string | null;
@@ -271,7 +339,7 @@ export class StoreProductResponseDto {
 
   @ApiProperty({
     description:
-      'Backend-computed: store is advertising-ready and product can be advertised',
+      'Backend-computed: store is generation-ready (Shopify + synced products) and product is ACTIVE. Meta is not required.',
   })
   canAdvertise!: boolean;
 
@@ -280,6 +348,38 @@ export class StoreProductResponseDto {
     description: 'Active AI session id for this product, if one exists',
   })
   activeSessionId!: string | null;
+}
+
+export class StoreProductDetailResponseDto extends StoreProductResponseDto {
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Price from the default (or first) variant',
+  })
+  price!: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Compare-at price from the default (or first) variant',
+  })
+  compareAtPrice!: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Sum of variant inventory quantities when available',
+  })
+  inventory!: number | null;
+
+  @ApiProperty({ type: [StoreProductVariantResponseDto] })
+  variants!: StoreProductVariantResponseDto[];
+
+  @ApiProperty({ type: [StoreProductImageResponseDto] })
+  images!: StoreProductImageResponseDto[];
+
+  @ApiProperty({
+    type: [String],
+    description: 'Collection titles when present in product metadata',
+  })
+  collections!: string[];
 }
 
 export class StoreProductsListResponseDto {

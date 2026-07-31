@@ -7,6 +7,7 @@ import {
   cancelAiSession,
   createAiSession,
   generateAiSessionCampaign,
+  generateAiSessionVideo,
   getAiSession,
   listAiSessions,
   resumeAiSession,
@@ -53,8 +54,10 @@ export function useAdvanceAiSessionMutation(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: AdvanceAiSessionPayload) => advanceAiSession(id, payload),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
+    onSuccess: (updated) => {
+      queryClient.setQueryData([...QUERY_KEYS.AI_SESSIONS, "detail", id], updated);
+      // Do not await — blocking invalidation races with the next interview answer input.
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
     },
   });
 }
@@ -63,8 +66,9 @@ export function useResumeAiSessionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => resumeAiSession(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
+    onSuccess: (updated, id) => {
+      queryClient.setQueryData([...QUERY_KEYS.AI_SESSIONS, "detail", id], updated);
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
     },
   });
 }
@@ -73,8 +77,9 @@ export function useCancelAiSessionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => cancelAiSession(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
+    onSuccess: (updated, id) => {
+      queryClient.setQueryData([...QUERY_KEYS.AI_SESSIONS, "detail", id], updated);
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
     },
   });
 }
@@ -83,9 +88,16 @@ export function useGenerateAiSessionCampaignMutation(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => generateAiSessionCampaign(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
+    onSuccess: (updated) => {
+      queryClient.setQueryData([...QUERY_KEYS.AI_SESSIONS, "detail", id], updated);
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
     },
+  });
+}
+
+export function useGenerateAiSessionVideoMutation(id: string) {
+  return useMutation({
+    mutationFn: () => generateAiSessionVideo(id),
   });
 }
 
@@ -93,9 +105,10 @@ export function useSaveAiSessionDraftMutation(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: SaveAiSessionDraftPayload) => saveAiSessionDraft(id, payload),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGNS });
+    onSuccess: (updated) => {
+      queryClient.setQueryData([...QUERY_KEYS.AI_SESSIONS, "detail", id], updated);
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AI_SESSIONS });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGNS });
     },
   });
 }

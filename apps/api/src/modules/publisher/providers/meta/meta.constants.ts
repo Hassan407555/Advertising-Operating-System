@@ -18,6 +18,7 @@ export const META_V1_SUPPORTED_CREATIVE_TYPES = [
   'IMAGE',
   'TEXT',
   'VIDEO',
+  'NONE',
 ] as const;
 
 /** MIME types accepted for Meta single-video upload (V1). */

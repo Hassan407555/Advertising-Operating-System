@@ -56,11 +56,12 @@ export default function LoginPage() {
   });
 
   return (
-    <Card>
-      <h1 className="text-xl font-semibold">Login</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Sign in to continue to your workspace.</p>
+    <Card variant="elevated" padding="lg" className="animate-fade-in-up">
+      <p className="text-eyebrow">AI Meta Ads Studio</p>
+      <h1 className="mt-2 text-title">Sign in</h1>
+      <p className="mt-2 text-body-sm">Continue to your advertising workspace.</p>
 
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+      <form className="mt-6 space-y-4" method="post" onSubmit={onSubmit}>
         <FormFieldText
           label="Email"
           name="email"
@@ -85,9 +86,9 @@ export default function LoginPage() {
         </FormActions>
       </form>
 
-      <p className="mt-4 text-xs text-muted-foreground">
+      <p className="mt-5 text-caption">
         Need an account?{" "}
-        <Link className="text-primary underline-offset-2 hover:underline" href={ROUTES.REGISTER}>
+        <Link className="font-medium text-primary underline-offset-2 hover:underline" href={ROUTES.REGISTER}>
           Register
         </Link>
       </p>

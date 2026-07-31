@@ -64,7 +64,7 @@ async function expectAuthenticatedShell(page: Page) {
 
 async function expectDashboard(page: Page) {
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: "Welcome to Advertising OS" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "AI Meta Ads Studio" })).toBeVisible({
     timeout: 20_000,
   });
 }

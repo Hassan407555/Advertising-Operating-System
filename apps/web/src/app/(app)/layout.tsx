@@ -19,13 +19,13 @@ export default function AppLayout({ children }: PropsWithChildren) {
             type="button"
             aria-label="Close sidebar overlay"
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 z-20 bg-black/30 md:hidden"
+            className="fixed inset-0 z-20 bg-black/50 backdrop-blur-[1px] md:hidden animate-fade-in"
           />
         ) : null}
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <TopBar setSidebarOpen={setSidebarOpen} />
           <BreadcrumbTrail />
-          <ContentContainer>{children}</ContentContainer>
+          <ContentContainer className="animate-fade-in">{children}</ContentContainer>
         </div>
       </div>
     </AuthGuard>

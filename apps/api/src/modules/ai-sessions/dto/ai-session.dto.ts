@@ -3,17 +3,21 @@ import {
   AiSessionMessageRole,
   AiSessionSource,
   AiSessionStatus,
+  StorageProvider,
 } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 
 export class CreateAiSessionDto {
@@ -47,6 +51,79 @@ export class AdvanceAiSessionDto {
   value?: string;
 }
 
+/** Preview media returned by generate-video; passed back on Save Draft (not stored on session). */
+export class GeneratedVideoPreviewDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2000)
+  url!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  storageKey!: string;
+
+  @ApiProperty({ enum: StorageProvider })
+  @IsEnum(StorageProvider)
+  storageProvider!: StorageProvider;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  fileName!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  originalFileName!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  mimeType!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  extension!: string;
+
+  @ApiProperty()
+  @IsInt()
+  @Min(0)
+  fileSize!: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  checksum?: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(0)
+  durationSeconds!: number;
+
+  @ApiProperty()
+  @IsInt()
+  @Min(1)
+  width!: number;
+
+  @ApiProperty()
+  @IsInt()
+  @Min(1)
+  height!: number;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  thumbnailUrl?: string | null;
+}
+
 export class SaveAiSessionDraftDto {
   @ApiProperty({
     description:
@@ -55,6 +132,26 @@ export class SaveAiSessionDraftDto {
   })
   @IsObject()
   payload!: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    description:
+      'VIDEO only: temporary preview media from POST /generate-video. Linked as CreativeAsset on save. Not stored on the AI session.',
+    type: GeneratedVideoPreviewDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => GeneratedVideoPreviewDto)
+  generatedVideo?: GeneratedVideoPreviewDto;
+}
+
+export class GenerateVideoPreviewResponseDto {
+  @ApiProperty({
+    description: 'Temporary preview URL for the review screen',
+  })
+  previewUrl!: string;
+
+  @ApiProperty({ type: GeneratedVideoPreviewDto })
+  media!: GeneratedVideoPreviewDto;
 }
 
 export class ListAiSessionsQueryDto {

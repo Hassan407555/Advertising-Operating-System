@@ -68,6 +68,20 @@ export class StoresController {
     return this.storesService.listProducts(storeId, query, currentUser);
   }
 
+  @Get(':storeId/products/:productId')
+  @Roles('OWNER', 'ADMIN', 'MEMBER', 'VIEWER')
+  @ApiOperation({
+    summary:
+      'Get a single store product with variants, images, and pricing details',
+  })
+  getProduct(
+    @Param('storeId') storeId: string,
+    @Param('productId') productId: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.storesService.getProduct(storeId, productId, currentUser);
+  }
+
   @Post(':storeId/advertising-entry')
   @Roles('OWNER', 'ADMIN', 'MEMBER')
   @ApiOperation({

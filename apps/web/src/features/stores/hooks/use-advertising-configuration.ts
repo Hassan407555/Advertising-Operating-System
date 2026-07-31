@@ -35,7 +35,13 @@ export function useUpsertAdvertisingConfigurationMutation(storeId: string) {
     mutationFn: (payload: UpsertStoreAdvertisingConfigurationPayload) =>
       upsertStoreAdvertisingConfiguration(storeId, payload),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.STORES });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.STORES }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGNS }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CAMPAIGN_DETAILS }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.DASHBOARD }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ANALYTICS }),
+      ]);
     },
   });
 }

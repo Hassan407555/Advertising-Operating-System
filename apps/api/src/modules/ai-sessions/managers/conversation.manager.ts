@@ -70,8 +70,10 @@ export class ConversationManager implements AiSessionManager {
 
       if (currentStep.key === 'adType') {
         const adType = normalized.toUpperCase();
-        if (!['IMAGE', 'CAROUSEL', 'VIDEO'].includes(adType)) {
-          throw new BadRequestException('adType must be IMAGE, CAROUSEL, or VIDEO.');
+        if (!['IMAGE', 'CAROUSEL', 'VIDEO', 'NONE'].includes(adType)) {
+          throw new BadRequestException(
+            'adType must be IMAGE, CAROUSEL, VIDEO, or NONE.',
+          );
         }
         answers.adType = adType;
       } else if (currentStep.key === 'dailyBudget') {

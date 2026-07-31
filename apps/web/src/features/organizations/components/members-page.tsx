@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/dialogs/confirm-dialog";
 import { DataTable } from "@/components/shared/data-table/data-table";
 import { PageEmpty } from "@/components/shared/states/page-empty";
+import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MEMBERSHIP_ROLE_OPTIONS } from "@/features/organizations/constants/organization.constants";
@@ -120,11 +121,12 @@ export function MembersPageContent() {
   const targetMember = membersQuery.data?.find((member) => member.membershipId === confirmingMembershipId) ?? null;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Members</h1>
-        <p className="text-sm text-muted-foreground">Review organization members, adjust roles, and remove memberships.</p>
-      </div>
+    <div className="page-stack animate-fade-in-up">
+      <PageHeader
+        eyebrow="Workspace"
+        title="Members"
+        description="Review organization members, adjust roles, and remove memberships."
+      />
 
       {membersQuery.isError ? (
         <Card>

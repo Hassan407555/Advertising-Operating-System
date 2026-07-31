@@ -2,6 +2,7 @@
 
 import type { FieldValues, Path, UseFormRegister } from "react-hook-form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface FormFieldTextProps<T extends FieldValues> {
   label: string;
@@ -23,10 +24,8 @@ export function FormFieldText<T extends FieldValues>({
   const errorId = `${String(name)}-error`;
 
   return (
-    <div className="space-y-1">
-      <label className="text-sm font-medium" htmlFor={name}>
-        {label}
-      </label>
+    <div className="space-y-2">
+      <Label htmlFor={name}>{label}</Label>
       <Input
         id={name}
         type={type}
@@ -36,7 +35,7 @@ export function FormFieldText<T extends FieldValues>({
         {...register(name)}
       />
       {error ? (
-        <p id={errorId} role="alert" className="text-xs text-red-400">
+        <p id={errorId} role="alert" className="text-caption text-destructive">
           {error}
         </p>
       ) : null}

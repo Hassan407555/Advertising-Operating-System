@@ -1,4 +1,4 @@
-export type MetaCampaignAdType = 'IMAGE' | 'CAROUSEL' | 'VIDEO';
+export type MetaCampaignAdType = 'IMAGE' | 'CAROUSEL' | 'VIDEO' | 'NONE';
 
 export interface GeneratedCampaignBudget {
   dailyBudget: number;
@@ -44,10 +44,28 @@ export interface GeneratedVideoCampaign {
   cta: string;
 }
 
+/** Campaign plan with no uploaded media — creative attached later or via existing Meta IDs. */
+export interface GeneratedNoneCampaign {
+  campaignType: 'NONE';
+  campaignName: string;
+  objective: string;
+  audience: string;
+  budget: GeneratedCampaignBudget;
+  cta: string;
+  /** Always false — no image/video upload required. */
+  requiresCreative: false;
+  creativeNotes?: string;
+  existingCreativeId?: string;
+  existingPostId?: string;
+  headline?: string;
+  primaryText?: string;
+}
+
 export type GeneratedCampaignPayload =
   | GeneratedImageCampaign
   | GeneratedCarouselCampaign
-  | GeneratedVideoCampaign;
+  | GeneratedVideoCampaign
+  | GeneratedNoneCampaign;
 
 export interface StoredGeneratedCampaign {
   campaignType: MetaCampaignAdType;
@@ -69,6 +87,9 @@ export interface MetaCampaignGeneratorProductInput {
   id: string;
   title: string;
   description: string | null;
+  vendor: string | null;
+  productType: string | null;
+  tags: string[];
   featuredImageUrl: string | null;
   images: Array<{ url: string; alt: string | null }>;
   variants: Array<{
@@ -114,4 +135,6 @@ export interface MetaCampaignGeneratorInputs {
   store: MetaCampaignGeneratorStoreInput;
   interviewAnswers: Record<string, string>;
   campaignType: MetaCampaignAdType;
+  /** True when a prior generatedCampaign already exists on the session. */
+  isRegeneration?: boolean;
 }

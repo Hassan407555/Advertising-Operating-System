@@ -5,6 +5,7 @@ import {
   Get,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 
@@ -13,6 +14,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
 
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -53,12 +55,13 @@ export class ShopifyController {
   @Get('callback')
   @Public()
   @ApiOperation({
-    summary: 'Handle Shopify OAuth callback',
+    summary: 'Handle Shopify OAuth callback and redirect to app',
   })
   async callback(
     @Query() dto: ShopifyCallbackDto,
-  ) {
-    return this.shopifyService.callback(
+    @Res() res: Response,
+  ): Promise<void> {
+    const redirectUrl = await this.shopifyService.callback(
       dto.code,
       dto.shop,
       dto.state,
@@ -72,6 +75,7 @@ export class ShopifyController {
         hmac: dto.hmac,
       },
     );
+    res.redirect(redirectUrl);
   }
 
   @Get('store')

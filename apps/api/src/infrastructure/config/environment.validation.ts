@@ -8,7 +8,19 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
   'SHOPIFY_CLIENT_ID',
   'SHOPIFY_CLIENT_SECRET',
   'SHOPIFY_REDIRECT_URI',
+  'META_APP_ID',
+  'META_APP_SECRET',
+  'META_REDIRECT_URI',
 ] as const;
+
+function readStringEnv(
+  environment: Record<string, unknown>,
+  key: string,
+  fallback: string,
+): string {
+  const value = environment[key];
+  return typeof value === 'string' ? value : fallback;
+}
 
 export function validateEnvironment(
   environment: Record<string, unknown>,
@@ -26,9 +38,7 @@ export function validateEnvironment(
 
   const encryptionKey = String(environment.ENCRYPTION_KEY).trim();
   if (encryptionKey.length < 32) {
-    throw new Error(
-      'ENCRYPTION_KEY must be at least 32 characters.',
-    );
+    throw new Error('ENCRYPTION_KEY must be at least 32 characters.');
   }
 
   const jwtSecret = String(environment.JWT_SECRET).trim();
@@ -38,28 +48,28 @@ export function validateEnvironment(
 
   const refreshTokenSecret = String(environment.REFRESH_TOKEN_SECRET).trim();
   if (refreshTokenSecret.length < 32) {
-    throw new Error(
-      'REFRESH_TOKEN_SECRET must be at least 32 characters.',
-    );
+    throw new Error('REFRESH_TOKEN_SECRET must be at least 32 characters.');
   }
 
-  const aiProvider = String(environment.AI_PROVIDER ?? 'GEMINI')
+  const aiProvider = readStringEnv(environment, 'AI_PROVIDER', 'GEMINI')
     .trim()
     .toUpperCase();
 
   if (aiProvider === 'GEMINI') {
     const geminiApiKey = environment.GEMINI_API_KEY;
-    if (
-      typeof geminiApiKey !== 'string' ||
-      geminiApiKey.trim().length === 0
-    ) {
-      throw new Error(
-        'Missing required environment variable: GEMINI_API_KEY',
-      );
+    if (typeof geminiApiKey !== 'string' || geminiApiKey.trim().length === 0) {
+      throw new Error('Missing required environment variable: GEMINI_API_KEY');
     }
   }
 
-  const nodeEnv = String(environment.NODE_ENV ?? 'development')
+  if (aiProvider === 'GROQ') {
+    const groqApiKey = environment.GROQ_API_KEY;
+    if (typeof groqApiKey !== 'string' || groqApiKey.trim().length === 0) {
+      throw new Error('Missing required environment variable: GROQ_API_KEY');
+    }
+  }
+
+  const nodeEnv = readStringEnv(environment, 'NODE_ENV', 'development')
     .trim()
     .toLowerCase();
   const isProduction = nodeEnv === 'production';
@@ -111,6 +121,15 @@ export function validateEnvironment(
     throw new Error('INVITATION_EXPIRATION_HOURS must be a positive integer.');
   }
 
+  const metaGraphApiVersion = readStringEnv(
+    environment,
+    'META_GRAPH_API_VERSION',
+    'v23.0',
+  ).trim();
+  if (!/^v\d+\.\d+$/.test(metaGraphApiVersion)) {
+    throw new Error('META_GRAPH_API_VERSION must look like v23.0.');
+  }
+
   return {
     ...environment,
     NODE_ENV: nodeEnv,
@@ -123,7 +142,9 @@ export function validateEnvironment(
     AI_TEMPERATURE: environment.AI_TEMPERATURE ?? 0.7,
     AI_MAX_OUTPUT_TOKENS: environment.AI_MAX_OUTPUT_TOKENS ?? 2048,
     GEMINI_MODEL: environment.GEMINI_MODEL ?? 'gemini-2.0-flash',
+    GROQ_MODEL: environment.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
     CORS_ORIGIN: environment.CORS_ORIGIN ?? '*',
+    META_GRAPH_API_VERSION: metaGraphApiVersion,
     SWAGGER_ENABLED:
       environment.SWAGGER_ENABLED ?? (isProduction ? 'false' : 'true'),
   };

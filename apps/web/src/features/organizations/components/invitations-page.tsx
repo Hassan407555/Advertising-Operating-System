@@ -1,13 +1,17 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FormActions } from "@/components/shared/forms/form-actions";
 import { FormErrorBanner } from "@/components/shared/forms/form-error-banner";
 import { FormFieldText } from "@/components/shared/forms/form-field-text";
 import { PageEmpty } from "@/components/shared/states/page-empty";
+import { PageHeader } from "@/components/shared/page-header";
+import { SectionHeader } from "@/components/shared/section-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ROUTES } from "@/constants/routes";
 import { MEMBERSHIP_ROLE_OPTIONS } from "@/features/organizations/constants/organization.constants";
 import {
   acceptInvitationSchema,
@@ -25,6 +29,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/constants/query-keys";
 
 export function InvitationsPageContent() {
+  const router = useRouter();
   const canView = usePermission("view");
   const canManage = usePermission("manage");
   const queryClient = useQueryClient();
@@ -53,14 +58,15 @@ export function InvitationsPageContent() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Invitations</h1>
-        <p className="text-sm text-muted-foreground">Create organization invitations and accept invitation tokens.</p>
-      </div>
+    <div className="page-stack animate-fade-in-up">
+      <PageHeader
+        eyebrow="Workspace"
+        title="Invitations"
+        description="Create organization invitations and accept invitation tokens."
+      />
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-semibold">Invite Member</h2>
+        <SectionHeader title="Invite Member" />
         <form
           className="space-y-3"
           onSubmit={createForm.handleSubmit(async (values) => {
@@ -133,7 +139,7 @@ export function InvitationsPageContent() {
 
       {createInvitationMutation.data ? (
         <Card className="space-y-2">
-          <h3 className="text-lg font-semibold">Latest Invitation Result</h3>
+          <SectionHeader title="Latest Invitation Result" size="sm" />
           <p className="text-sm">
             Invitation ID: <span className="text-muted-foreground">{createInvitationMutation.data.invitation.id}</span>
           </p>
@@ -159,7 +165,7 @@ export function InvitationsPageContent() {
       ) : null}
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-semibold">Accept Invitation</h2>
+        <SectionHeader title="Accept Invitation" />
         <form
           className="space-y-3"
           onSubmit={acceptForm.handleSubmit(async (values) => {
@@ -180,6 +186,7 @@ export function InvitationsPageContent() {
               await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORGANIZATIONS });
               toast.success("Invitation accepted.");
               acceptForm.reset();
+              void router.push(ROUTES.DASHBOARD);
             } catch (error) {
               toast.error(getErrorMessage(error, "Failed to accept invitation."));
             }
