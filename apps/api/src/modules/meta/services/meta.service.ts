@@ -23,6 +23,10 @@ import { AuditLogsService } from '../../audit-logs/services/audit-logs.service';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 import {
+  isMetaTestMode,
+  META_TEST_OAUTH_CODE,
+} from '../../../infrastructure/config/meta-test-mode';
+import {
   META_OAUTH_SCOPES,
   META_OAUTH_STATE_TTL_MS,
   getMetaAuthorizeUrl,
@@ -92,6 +96,7 @@ export class MetaService {
       msg: 'meta.oauth.connect.env',
       metaAppId: process.env.META_APP_ID,
       redirectUri: process.env.META_REDIRECT_URI,
+      metaTestMode: isMetaTestMode(),
     });
     const intent: PendingMetaOAuthIntent = {
       organizationId: currentUser.organizationId,
@@ -104,18 +109,22 @@ export class MetaService {
 
     const state = this.createOAuthState(intent);
 
-    const authorizationUrl =
-      `${getMetaAuthorizeUrl()}` +
-      `?client_id=${encodeURIComponent(appId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&state=${encodeURIComponent(state)}` +
-      `&scope=${encodeURIComponent(META_OAUTH_SCOPES.join(','))}` +
-      `&response_type=code`;
+    // Local test mode: skip Facebook Login and complete via our own callback.
+    // Contract stays { authorizationUrl } — frontend navigates the same way.
+    const authorizationUrl = isMetaTestMode()
+      ? this.buildTestModeAuthorizationUrl(redirectUri, state)
+      : `${getMetaAuthorizeUrl()}` +
+        `?client_id=${encodeURIComponent(appId)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&state=${encodeURIComponent(state)}` +
+        `&scope=${encodeURIComponent(META_OAUTH_SCOPES.join(','))}` +
+        `&response_type=code`;
 
     console.log('COMPLETE authorizationUrl =', authorizationUrl);
     this.logger.log({
       msg: 'meta.oauth.connect.authorizationUrl',
       authorizationUrl,
+      metaTestMode: isMetaTestMode(),
     });
 
     this.logger.log({
@@ -124,11 +133,14 @@ export class MetaService {
       userId: currentUser.sub,
       storeId: storeId ?? null,
       redirectUri,
-      authorizeHost: getMetaAuthorizeUrl(),
+      authorizeHost: isMetaTestMode()
+        ? 'meta-test-mode-local-callback'
+        : getMetaAuthorizeUrl(),
       hasState: true,
       stateLength: state.length,
       pendingIntentStored: true,
       scopeCount: META_OAUTH_SCOPES.length,
+      metaTestMode: isMetaTestMode(),
       authorizationUrlPreview: authorizationUrl.replace(
         /([?&]state=)[^&]+/i,
         '$1[redacted]',
@@ -431,6 +443,14 @@ export class MetaService {
           remoteAdAccounts,
         );
         adAccountCount = remoteAdAccounts.length;
+        this.logger.log({
+          msg: 'meta.oauth.callback.account_discovery_completed',
+          step: 'account_discovery',
+          organizationId: decodedState.organizationId,
+          platformConnectionId: connection.id,
+          adAccountCount,
+          adAccountIds: remoteAdAccounts.slice(0, 20).map((a) => a.id),
+        });
       } catch (syncError) {
         // OAuth persistence already succeeded; resource sync can retry later.
         this.logger.warn({
@@ -1066,6 +1086,20 @@ export class MetaService {
         url.searchParams.set(key, value);
       }
     }
+    return url.toString();
+  }
+
+  /**
+   * Points the browser at our own OAuth callback with a synthetic code so
+   * MetaApiSimulatorService can complete connect without Facebook Login.
+   */
+  private buildTestModeAuthorizationUrl(
+    redirectUri: string,
+    state: string,
+  ): string {
+    const url = new URL(redirectUri);
+    url.searchParams.set('code', META_TEST_OAUTH_CODE);
+    url.searchParams.set('state', state);
     return url.toString();
   }
 

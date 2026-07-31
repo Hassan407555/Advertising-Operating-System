@@ -146,6 +146,15 @@ export class MetaPublisherProvider
   async publish(request: PublishRequest): Promise<PublishResult> {
     const startedAt = new Date();
     const dryRun = this.isDryRun(request);
+    this.logger.log({
+      msg: 'meta.publish.started',
+      campaignId: request.campaignId,
+      organizationId: request.organizationId,
+      adAccountId: request.adAccountId,
+      dryRun,
+      metaTestMode: process.env.META_TEST_MODE ?? null,
+      pageId: request.options?.pageId ?? null,
+    });
     const issues: PublishValidationIssue[] = [];
     const entities: PublishEntityResult[] = [];
     const stageTracker = new PublishStageTracker(MetaPublisherProvider.name);

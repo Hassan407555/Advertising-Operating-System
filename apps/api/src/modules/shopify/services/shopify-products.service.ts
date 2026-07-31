@@ -219,8 +219,8 @@ export class ShopifyProductsService {
   }
 
   /**
-   * Persists all Shopify products, variants and images
-   * inside a single database transaction.
+   * Persists Shopify products, variants, and images.
+   * One short transaction per product keeps large catalog syncs reliable.
    */
   private async persistProducts(
     connection: Prisma.PlatformConnectionGetPayload<{}>,
@@ -232,32 +232,35 @@ export class ShopifyProductsService {
       images: 0,
     };
 
-    await this.prisma.$transaction(async (tx) => {
-      for (const product of products) {
-        const savedProduct =
-          await this.upsertProduct(
+    for (const product of products) {
+      await this.prisma.$transaction(
+        async (tx) => {
+          const savedProduct = await this.upsertProduct(
             tx,
             connection,
             product,
           );
 
-        counters.products++;
+          counters.products++;
 
-        counters.variants +=
-          await this.upsertVariants(
+          counters.variants += await this.upsertVariants(
             tx,
             savedProduct.id,
             product,
           );
 
-        counters.images +=
-          await this.upsertImages(
+          counters.images += await this.upsertImages(
             tx,
             savedProduct.id,
             product,
           );
-      }
-    });
+        },
+        {
+          maxWait: 15_000,
+          timeout: 30_000,
+        },
+      );
+    }
 
     return {
       products: counters.products,

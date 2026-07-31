@@ -130,6 +130,19 @@ export function validateEnvironment(
     throw new Error('META_GRAPH_API_VERSION must look like v23.0.');
   }
 
+  const metaTestModeRaw = readStringEnv(
+    environment,
+    'META_TEST_MODE',
+    '',
+  ).trim().toLowerCase();
+  if (
+    metaTestModeRaw.length > 0 &&
+    metaTestModeRaw !== 'true' &&
+    metaTestModeRaw !== 'false'
+  ) {
+    throw new Error('META_TEST_MODE must be "true" or "false" when set.');
+  }
+
   return {
     ...environment,
     NODE_ENV: nodeEnv,
@@ -145,6 +158,7 @@ export function validateEnvironment(
     GROQ_MODEL: environment.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
     CORS_ORIGIN: environment.CORS_ORIGIN ?? '*',
     META_GRAPH_API_VERSION: metaGraphApiVersion,
+    META_TEST_MODE: metaTestModeRaw || undefined,
     SWAGGER_ENABLED:
       environment.SWAGGER_ENABLED ?? (isProduction ? 'false' : 'true'),
   };
