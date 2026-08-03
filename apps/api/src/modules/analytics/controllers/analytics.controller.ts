@@ -36,7 +36,7 @@ import { AnalyticsService } from '../services/analytics.service';
 @ApiTags('Analytics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('OWNER', 'ADMIN', 'MEMBER')
+@Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER')
 @Controller('analytics')
 export class AnalyticsController {
   constructor(

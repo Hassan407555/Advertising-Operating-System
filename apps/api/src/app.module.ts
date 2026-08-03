@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { validateEnvironment } from './infrastructure/config/environment.validation';
 import { EncryptionModule } from './infrastructure/encryption/encryption.module';
+import { EmailModule } from './infrastructure/email/email.module';
 import { PlatformInfrastructureModule } from './infrastructure/platform-infrastructure.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { AdAccountsModule } from './modules/ad-accounts/ad-accounts.module';
@@ -23,6 +24,7 @@ import { PlatformCredentialsModule } from './modules/platform-credentials/platfo
 import { ShopifyModule } from './modules/shopify/shopify.module';
 import { MetaModule } from './modules/meta/meta.module';
 import { PublisherModule } from './modules/publisher/publisher.module';
+import { SynchronizationModule } from './modules/synchronization/synchronization.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { AiSessionsModule } from './modules/ai-sessions/ai-sessions.module';
 import { StoresModule } from './modules/stores/stores.module';
@@ -35,8 +37,6 @@ import { VideoGenerationModule } from './modules/video-generation/video-generati
  * Legacy Advertising OS modules remain on disk (deprecated) but are not
  * registered here. Re-enable only after verifying Phase 10 dependencies:
  * - CampaignGeneratorModule
- * - PublisherModule
- * - SynchronizationModule
  * - AutomationModule
  * - AiCopyModule
  * - ReportingModule
@@ -50,6 +50,7 @@ import { VideoGenerationModule } from './modules/video-generation/video-generati
     }),
     PlatformInfrastructureModule,
     PrismaModule,
+    EmailModule,
     HealthModule,
     AuthModule,
     OrganizationsModule,
@@ -75,6 +76,7 @@ import { VideoGenerationModule } from './modules/video-generation/video-generati
     DashboardModule,
     AdAccountsModule,
     PublisherModule,
+    SynchronizationModule,
   ],
 })
 export class AppModule implements OnModuleInit {

@@ -462,6 +462,20 @@ export class SynchronizationPersistenceService {
         params.metrics.conversions != null
           ? new Prisma.Decimal(params.metrics.conversions)
           : null,
+      conversionValue:
+        params.metrics.conversionValue != null
+          ? new Prisma.Decimal(params.metrics.conversionValue)
+          : params.metrics.revenue != null
+            ? new Prisma.Decimal(params.metrics.revenue)
+            : null,
+      revenue:
+        params.metrics.revenue != null
+          ? new Prisma.Decimal(params.metrics.revenue)
+          : null,
+      roas:
+        params.metrics.roas != null
+          ? new Prisma.Decimal(params.metrics.roas)
+          : null,
       lastSyncedAt: new Date(),
       currency: params.currency,
     };

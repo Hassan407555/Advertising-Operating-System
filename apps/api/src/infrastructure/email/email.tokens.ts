@@ -1,0 +1,3 @@
+export const EMAIL_SERVICE = Symbol('EMAIL_SERVICE');
+
+export const INVITATION_EMAIL_SERVICE = Symbol('INVITATION_EMAIL_SERVICE');

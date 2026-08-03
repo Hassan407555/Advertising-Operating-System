@@ -20,6 +20,7 @@ const syncModuleLogger = new Logger('SynchronizationModule');
  *
  * Business modules → SynchronizationService → Registry → Meta/TikTok providers.
  * Explicit request only (no webhooks / queues / schedulers in V1).
+ * Also invoked inline after a successful live Meta publish.
  */
 @Module({
   controllers: [SynchronizationController],

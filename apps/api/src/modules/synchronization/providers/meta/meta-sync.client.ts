@@ -19,6 +19,11 @@ export interface MetaSyncObject {
   updated_time?: string;
 }
 
+export interface MetaSyncActionValue {
+  action_type?: string;
+  value?: string;
+}
+
 export interface MetaSyncInsights {
   spend?: string;
   impressions?: string;
@@ -27,7 +32,9 @@ export interface MetaSyncInsights {
   cpm?: string;
   cpc?: string;
   ctr?: string;
-  actions?: Array<{ action_type?: string; value?: string }>;
+  actions?: MetaSyncActionValue[];
+  action_values?: MetaSyncActionValue[];
+  purchase_roas?: MetaSyncActionValue[];
 }
 
 @Injectable()

@@ -1,18 +1,19 @@
 import { MembershipRole, UserStatus } from '@prisma/client';
 
 export class MemberResponseDto {
-  membershipId: string;
+  membershipId!: string;
 
-  role: MembershipRole;
+  role!: MembershipRole;
 
-  joinedAt: Date;
+  joinedAt!: Date;
 
-  user: {
+  user!: {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
     avatarUrl: string | null;
     status: UserStatus;
+    lastLoginAt: Date | null;
   };
 }

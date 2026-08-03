@@ -1,5 +1,15 @@
 import { InvitationStatus, MembershipRole } from '@prisma/client';
 
+export class InvitationInvitedByDto {
+  id!: string;
+
+  firstName!: string;
+
+  lastName!: string;
+
+  email!: string;
+}
+
 export class InvitationResponseDto {
   id!: string;
 
@@ -18,4 +28,16 @@ export class InvitationResponseDto {
   createdAt!: Date;
 
   updatedAt!: Date;
+
+  invitedBy?: InvitationInvitedByDto | null;
+}
+
+export class CreateInvitationResultDto {
+  invitation!: InvitationResponseDto;
+
+  token!: string;
+
+  invitationUrl!: string;
+
+  emailSent!: boolean;
 }

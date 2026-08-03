@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 
-import { MembershipRole, Prisma } from '@prisma/client';
+import { AuditAction, AuditEntity, MembershipRole, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 
@@ -33,6 +33,7 @@ type MembershipWithUserSelect = Prisma.MembershipGetPayload<{
         email: true;
         avatarUrl: true;
         status: true;
+        lastLoginAt: true;
       };
     };
   };
@@ -104,6 +105,7 @@ export class OrganizationsService {
             email: true,
             avatarUrl: true,
             status: true,
+            lastLoginAt: true,
           },
         },
       },
@@ -141,10 +143,31 @@ export class OrganizationsService {
 
     this.assertCanUpdateRole(currentUserRole, targetMembership.role, dto.role);
 
-    const updatedMembership = await this.prisma.membership.update({
-      where: { id: targetMembership.id },
-      data: { role: dto.role },
-      include: { user: true },
+    const previousRole = targetMembership.role;
+
+    const updatedMembership = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.membership.update({
+        where: { id: targetMembership.id },
+        data: { role: dto.role },
+        include: { user: true },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          organizationId: currentUser.organizationId,
+          actorId: currentUser.sub,
+          action: AuditAction.MEMBERSHIP_ROLE_UPDATED,
+          entity: AuditEntity.MEMBERSHIP,
+          entityId: updated.id,
+          metadata: {
+            previousRole,
+            newRole: dto.role,
+            updatedUserId: updated.userId,
+          },
+        },
+      });
+
+      return updated;
     });
 
     return this.toMemberResponseDto(updatedMembership);
@@ -173,8 +196,24 @@ export class OrganizationsService {
 
     this.assertCanRemoveMember(currentUserRole, targetMembership.role);
 
-    await this.prisma.membership.delete({
-      where: { id: targetMembership.id },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.membership.delete({
+        where: { id: targetMembership.id },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          organizationId: currentUser.organizationId,
+          actorId: currentUser.sub,
+          action: AuditAction.MEMBERSHIP_REMOVED,
+          entity: AuditEntity.MEMBERSHIP,
+          entityId: targetMembership.id,
+          metadata: {
+            removedUserId: targetMembership.userId,
+            removedRole: targetMembership.role,
+          },
+        },
+      });
     });
   }
 
@@ -360,6 +399,7 @@ export class OrganizationsService {
         email: membership.user.email,
         avatarUrl: membership.user.avatarUrl,
         status: membership.user.status,
+        lastLoginAt: membership.user.lastLoginAt ?? null,
       },
     };
   }

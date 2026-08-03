@@ -34,14 +34,16 @@ export class MetaSyncSimulatorClient {
   ): Promise<MetaSyncInsights | null> {
     this.logger.log(`META_TEST_MODE simulate getInsights id=${externalId}`);
     return {
-      spend: '0',
-      impressions: '0',
-      clicks: '0',
-      reach: '0',
-      cpm: '0',
-      cpc: '0',
-      ctr: '0',
-      actions: [],
+      spend: '125.50',
+      impressions: '18400',
+      clicks: '642',
+      reach: '15200',
+      cpm: '6.82',
+      cpc: '0.20',
+      ctr: '3.49',
+      actions: [{ action_type: 'purchase', value: '48' }],
+      action_values: [{ action_type: 'purchase', value: '960.00' }],
+      purchase_roas: [{ action_type: 'purchase', value: '7.65' }],
     };
   }
 }

@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
-import { JwtService, JwtSignOptions } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 
 import {
   AuditAction,
@@ -16,20 +18,28 @@ import {
 } from '@prisma/client';
 
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 
 import { generateUniqueOrganizationSlug } from '../../../common/utils/slug.util';
+import { EMAIL_SERVICE } from '../../../infrastructure/email/email.tokens';
+import type { EmailService } from '../../../infrastructure/email/interfaces/email.service.interface';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 
 import { AuditLogsService } from '../../audit-logs/services/audit-logs.service';
 
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { SwitchOrganizationDto } from '../dto/switch-organization.dto';
 
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 const BCRYPT_SALT_ROUNDS = 12;
+const PASSWORD_RESET_TOKEN_BYTES = 32;
+const PASSWORD_RESET_EXPIRY_MS = 30 * 60 * 1000;
+const FORGOT_PASSWORD_RESPONSE_MESSAGE =
+  'If an account exists, a reset email has been sent.';
 
 type AuthTokens = {
   accessToken: string;
@@ -91,11 +101,14 @@ type AuthDataResponse = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly auditLogsService: AuditLogsService,
+    @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -457,6 +470,157 @@ export class AuthService {
     };
   }
 
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const email = this.normalizeEmail(forgotPasswordDto.email);
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        status: true,
+        memberships: {
+          orderBy: { createdAt: 'asc' },
+          select: { organizationId: true },
+          take: 1,
+        },
+      },
+    });
+
+    // Always return the same message to avoid account enumeration.
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      return {
+        success: true,
+        data: { message: FORGOT_PASSWORD_RESPONSE_MESSAGE },
+      };
+    }
+
+    const rawToken = randomBytes(PASSWORD_RESET_TOKEN_BYTES).toString('hex');
+    const passwordResetTokenHash = this.hashPasswordResetToken(rawToken);
+    const passwordResetExpiresAt = new Date(
+      Date.now() + PASSWORD_RESET_EXPIRY_MS,
+    );
+
+    // Invalidate any previous reset token by overwriting hash + expiry.
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetTokenHash,
+        passwordResetExpiresAt,
+      },
+    });
+
+    const resetUrl = `${this.getWebAppUrl()}/reset-password?token=${rawToken}`;
+
+    await this.emailService.send({
+      to: user.email,
+      subject: 'Reset your password',
+      text: [
+        'You requested a password reset for AI Meta Ads Studio.',
+        '',
+        `Open this link to choose a new password (expires in 30 minutes):`,
+        resetUrl,
+        '',
+        'If you did not request this, you can ignore this email.',
+      ].join('\n'),
+      html: `<p>You requested a password reset for AI Meta Ads Studio.</p><p><a href="${resetUrl}">Reset your password</a> (expires in 30 minutes).</p><p>If you did not request this, you can ignore this email.</p>`,
+    });
+
+    const organizationId = user.memberships[0]?.organizationId;
+    if (organizationId) {
+      await this.logAudit({
+        organizationId,
+        actorId: user.id,
+        action: AuditAction.PASSWORD_RESET_REQUESTED,
+        entity: AuditEntity.USER,
+        entityId: user.id,
+        metadata: {
+          email: user.email,
+          expiresAt: passwordResetExpiresAt.toISOString(),
+        },
+      });
+    }
+
+    return {
+      success: true,
+      data: { message: FORGOT_PASSWORD_RESPONSE_MESSAGE },
+    };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const tokenHash = this.hashPasswordResetToken(resetPasswordDto.token);
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        passwordResetTokenHash: tokenHash,
+      },
+      select: {
+        id: true,
+        email: true,
+        status: true,
+        passwordResetExpiresAt: true,
+        memberships: {
+          orderBy: { createdAt: 'asc' },
+          select: { organizationId: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (
+      !user ||
+      !user.passwordResetExpiresAt ||
+      user.passwordResetExpiresAt.getTime() < Date.now()
+    ) {
+      throw new BadRequestException(
+        'Password reset token is invalid or has expired.',
+      );
+    }
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('User is inactive.');
+    }
+
+    const passwordHash = await bcrypt.hash(
+      resetPasswordDto.newPassword,
+      BCRYPT_SALT_ROUNDS,
+    );
+
+    // Single-use: clear reset token; also revoke refresh sessions.
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+        refreshTokenHash: null,
+      },
+    });
+
+    const organizationId = user.memberships[0]?.organizationId;
+    if (organizationId) {
+      await this.logAudit({
+        organizationId,
+        actorId: user.id,
+        action: AuditAction.PASSWORD_RESET_COMPLETED,
+        entity: AuditEntity.USER,
+        entityId: user.id,
+        metadata: {
+          email: user.email,
+        },
+      });
+    }
+
+    this.logger.log(`Password reset completed for user ${user.id}`);
+
+    return {
+      success: true,
+      data: {
+        message: 'Password has been reset. You can now sign in.',
+      },
+    };
+  }
+
   async getCurrentUser(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -644,6 +808,27 @@ export class AuthService {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private hashPasswordResetToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private getWebAppUrl(): string {
+    const explicit = this.configService.get<string>('WEB_APP_URL')?.trim();
+    if (explicit) {
+      return explicit.replace(/\/$/, '');
+    }
+
+    const corsOrigin = this.configService.get<string>('CORS_ORIGIN')?.trim();
+    if (corsOrigin && corsOrigin !== '*') {
+      const first = corsOrigin.split(',')[0]?.trim();
+      if (first) {
+        return first.replace(/\/$/, '');
+      }
+    }
+
+    return 'http://localhost:3000';
   }
 
   // =====================================

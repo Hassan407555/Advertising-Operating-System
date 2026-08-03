@@ -10,6 +10,9 @@ export interface SyncMetricsSnapshot {
   impressions?: number | null;
   clicks?: number | null;
   conversions?: number | null;
+  conversionValue?: number | null;
+  revenue?: number | null;
+  roas?: number | null;
   reach?: number | null;
   cpm?: number | null;
   cpc?: number | null;

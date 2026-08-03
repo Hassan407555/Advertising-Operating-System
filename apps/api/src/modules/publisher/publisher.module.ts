@@ -8,6 +8,7 @@ import { CreativeAssetsModule } from '../creative-assets/creative-assets.module'
 import { CreativesModule } from '../creatives/creatives.module';
 import { PlatformConnectionsModule } from '../platform-connections/platform-connections.module';
 import { StoresModule } from '../stores/stores.module';
+import { SynchronizationModule } from '../synchronization/synchronization.module';
 
 import { PublisherController } from './controllers/publisher.controller';
 import { PublisherMapper } from './mappers/publisher.mapper';
@@ -26,6 +27,7 @@ const publisherModuleLogger = new Logger('PublisherModule');
  *
  * Platform adapters register into PublisherRegistry.
  * V1 currently enables Meta only.
+ * Successful Meta publish triggers SynchronizationService for AnalyticsSnapshot.
  */
 @Module({
   imports: [
@@ -38,6 +40,7 @@ const publisherModuleLogger = new Logger('PublisherModule');
     AdAccountsModule,
     PlatformConnectionsModule,
     StoresModule,
+    SynchronizationModule,
   ],
   controllers: [PublisherController],
   providers: [

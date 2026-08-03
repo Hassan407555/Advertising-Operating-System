@@ -5,7 +5,7 @@ import { MemberResponseDto } from '../dto/member-response.dto';
 type MembershipWithUser = Membership & {
   user: Pick<
     User,
-    'id' | 'firstName' | 'lastName' | 'email' | 'avatarUrl' | 'status'
+    'id' | 'firstName' | 'lastName' | 'email' | 'avatarUrl' | 'status' | 'lastLoginAt'
   >;
 };
 
@@ -22,6 +22,7 @@ export class MemberMapper {
         email: membership.user.email,
         avatarUrl: membership.user.avatarUrl,
         status: membership.user.status,
+        lastLoginAt: membership.user.lastLoginAt ?? null,
       },
     };
   }

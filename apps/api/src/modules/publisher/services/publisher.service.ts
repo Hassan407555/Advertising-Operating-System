@@ -8,6 +8,7 @@ import { ConnectionStatus, PlatformType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { StoresService } from '../../stores/services/stores.service';
+import { SynchronizationService } from '../../synchronization/services/synchronization.service';
 import { PUBLISHER_V1_PLATFORMS } from '../constants/publisher.constants';
 import { PublishCampaignDto } from '../dto/publish-campaign.dto';
 import {
@@ -29,6 +30,7 @@ export class PublisherService {
     private readonly mapper: PublisherMapper,
     private readonly prisma: PrismaService,
     private readonly storesService: StoresService,
+    private readonly synchronizationService: SynchronizationService,
   ) {}
 
   /**
@@ -101,6 +103,15 @@ export class PublisherService {
           `diagnosticsErrorCode=${response.diagnostics?.errorCode ?? 'n/a'} ` +
           `issues=${response.issues.length}`,
       );
+
+      if (
+        result.success &&
+        request.platform === PublisherPlatform.META &&
+        request.options?.dryRun !== true
+      ) {
+        await this.syncCampaignAfterPublish(request.campaignId, currentUser);
+      }
+
       return response;
     } catch (error) {
       const exception = error as {
@@ -593,6 +604,31 @@ export class PublisherService {
     if (!PUBLISHER_V1_PLATFORMS.includes(platform)) {
       throw new BadRequestException(
         `Platform ${platform} is not supported in v1. Supported: ${PUBLISHER_V1_PLATFORMS.join(', ')}.`,
+      );
+    }
+  }
+
+  /**
+   * Pull Meta Insights into AnalyticsSnapshot after a live publish.
+   * Failures are logged only — publish already succeeded and manual sync remains available.
+   */
+  private async syncCampaignAfterPublish(
+    campaignId: string,
+    currentUser: JwtPayload,
+  ): Promise<void> {
+    try {
+      const syncResult = await this.synchronizationService.syncCampaign(
+        campaignId,
+        currentUser,
+      );
+      this.logger.log(
+        `post-publish sync campaignId=${campaignId} success=${syncResult.success} status=${syncResult.status} entities=${syncResult.entities.length}`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown sync error';
+      this.logger.warn(
+        `post-publish sync failed campaignId=${campaignId}: ${message}`,
       );
     }
   }

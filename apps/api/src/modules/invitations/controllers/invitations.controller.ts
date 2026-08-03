@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   Param,
   Post,
   UseGuards,
@@ -18,9 +20,17 @@ import { InvitationsService } from '../services/invitations.service';
 
 @Controller()
 export class InvitationsController {
-  constructor(
-    private readonly invitationsService: InvitationsService,
-  ) {}
+  constructor(private readonly invitationsService: InvitationsService) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'ADMIN')
+  @Get('organizations/:organizationId/invitations')
+  list(
+    @Param('organizationId') organizationId: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.invitationsService.list(organizationId, currentUser.sub);
+  }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'ADMIN')
@@ -37,15 +47,72 @@ export class InvitationsController {
     );
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'ADMIN')
+  @Post('organizations/:organizationId/invitations/:invitationId/resend')
+  resend(
+    @Param('organizationId') organizationId: string,
+    @Param('invitationId') invitationId: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.invitationsService.resend(
+      organizationId,
+      currentUser.sub,
+      invitationId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'ADMIN')
+  @Post('organizations/:organizationId/invitations/:invitationId/link')
+  regenerateLink(
+    @Param('organizationId') organizationId: string,
+    @Param('invitationId') invitationId: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.invitationsService.regenerateLink(
+      organizationId,
+      currentUser.sub,
+      invitationId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'ADMIN')
+  @Post('organizations/:organizationId/invitations/:invitationId/revoke')
+  revoke(
+    @Param('organizationId') organizationId: string,
+    @Param('invitationId') invitationId: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.invitationsService.revoke(
+      organizationId,
+      currentUser.sub,
+      invitationId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'ADMIN')
+  @Delete('organizations/:organizationId/invitations/:invitationId')
+  remove(
+    @Param('organizationId') organizationId: string,
+    @Param('invitationId') invitationId: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.invitationsService.remove(
+      organizationId,
+      currentUser.sub,
+      invitationId,
+    );
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('invitations/accept')
   accept(
     @CurrentUser() currentUser: JwtPayload,
     @Body() dto: AcceptInvitationDto,
   ) {
-    return this.invitationsService.accept(
-      currentUser,
-      dto,
-    );
+    return this.invitationsService.accept(currentUser, dto);
   }
 }

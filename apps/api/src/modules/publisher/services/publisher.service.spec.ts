@@ -61,6 +61,15 @@ describe('PublisherService', () => {
       },
       platformCredential: {
         findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'cred_1',
+            accessToken: 'encrypted-token',
+            isActive: true,
+            revokedAt: null,
+            createdAt: new Date(),
+          },
+        ]),
       },
       shopifyProduct: {
         findFirst: jest.fn(),
@@ -75,14 +84,23 @@ describe('PublisherService', () => {
       assertMetaPublishReady: jest.fn().mockResolvedValue(undefined),
     };
 
+    const synchronizationService = {
+      syncCampaign: jest.fn().mockResolvedValue({
+        success: true,
+        status: 'COMPLETED',
+        entities: [],
+      }),
+    };
+
     const service = new PublisherService(
       registry as never,
       mapper as never,
       prisma as never,
       storesService as never,
+      synchronizationService as never,
     );
 
-    return { service, provider, prisma, storesService };
+    return { service, provider, prisma, storesService, synchronizationService };
   }
 
   function mockReadyMetaCredentials(prisma: ReturnType<typeof createService>['prisma']) {
@@ -94,6 +112,15 @@ describe('PublisherService', () => {
       id: 'cred_1',
       accessToken: 'encrypted-token',
     });
+    prisma.platformCredential.findMany.mockResolvedValue([
+      {
+        id: 'cred_1',
+        accessToken: 'encrypted-token',
+        isActive: true,
+        revokedAt: null,
+        createdAt: new Date(),
+      },
+    ]);
     prisma.shopifyProduct.findFirst.mockResolvedValue(null);
   }
 
@@ -355,5 +382,78 @@ describe('PublisherService', () => {
         adAccountId: DRAFT_AD_ACCOUNT_ID,
       }),
     );
+  });
+
+  it('triggers campaign synchronization after a successful live Meta publish', async () => {
+    const { service, prisma, synchronizationService } = createService();
+
+    prisma.campaign.findFirst
+      .mockResolvedValueOnce({ shopifyStoreId: 'store_1' })
+      .mockResolvedValueOnce({ shopifyStoreId: 'store_1' })
+      .mockResolvedValueOnce({
+        id: 'campaign_1',
+        shopifyStoreId: 'store_1',
+        adAccountId: 'ad_account_1',
+      })
+      .mockResolvedValueOnce({
+        shopifyStoreId: 'store_1',
+        metadata: { productId: 'product_1' },
+      });
+    prisma.storeAdvertisingConfiguration.findUnique.mockResolvedValue({
+      facebookPageId: '123456789',
+      adAccountId: 'ad_account_1',
+    });
+    mockReadyMetaCredentials(prisma);
+
+    await service.publish(
+      {
+        campaignId: 'campaign_1',
+        organizationId: 'org_1',
+        platform: PublisherPlatform.META,
+        adAccountId: 'ad_account_1',
+        options: { dryRun: false },
+      },
+      currentUser as never,
+    );
+
+    expect(synchronizationService.syncCampaign).toHaveBeenCalledWith(
+      'campaign_1',
+      currentUser,
+    );
+  });
+
+  it('does not synchronize after a Meta dry-run publish', async () => {
+    const { service, prisma, synchronizationService } = createService();
+
+    prisma.campaign.findFirst
+      .mockResolvedValueOnce({ shopifyStoreId: 'store_1' })
+      .mockResolvedValueOnce({ shopifyStoreId: 'store_1' })
+      .mockResolvedValueOnce({
+        id: 'campaign_1',
+        shopifyStoreId: 'store_1',
+        adAccountId: 'ad_account_1',
+      })
+      .mockResolvedValueOnce({
+        shopifyStoreId: 'store_1',
+        metadata: { productId: 'product_1' },
+      });
+    prisma.storeAdvertisingConfiguration.findUnique.mockResolvedValue({
+      facebookPageId: '123456789',
+      adAccountId: 'ad_account_1',
+    });
+    mockReadyMetaCredentials(prisma);
+
+    await service.publish(
+      {
+        campaignId: 'campaign_1',
+        organizationId: 'org_1',
+        platform: PublisherPlatform.META,
+        adAccountId: 'ad_account_1',
+        options: { dryRun: true },
+      },
+      currentUser as never,
+    );
+
+    expect(synchronizationService.syncCampaign).not.toHaveBeenCalled();
   });
 });

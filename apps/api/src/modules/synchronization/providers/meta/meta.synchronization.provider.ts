@@ -23,6 +23,8 @@ import type {
   SynchronizationProvider,
 } from '../interfaces/synchronization-provider.interface';
 import { MetaSyncClient } from './meta-sync.client';
+import type { MetaSyncActionValue, MetaSyncInsights } from './meta-sync.client';
+import { META_SYNC_PURCHASE_ACTION_TYPES } from './meta.sync.constants';
 
 @Injectable()
 export class MetaSynchronizationProvider
@@ -394,30 +396,80 @@ export class MetaSynchronizationProvider
     }
   }
 
+  /**
+   * Map Meta Insights into AnalyticsSnapshot fields.
+   * Returns zeros when Insights are empty so a snapshot still exists
+   * after publish/sync (brand-new campaigns often have no delivery yet).
+   */
   private toMetrics(
-    insights: Awaited<ReturnType<MetaSyncClient['getInsights']>>,
-  ): SyncMetricsSnapshot | undefined {
+    insights: MetaSyncInsights | null,
+  ): SyncMetricsSnapshot {
     if (!insights) {
-      return undefined;
+      return this.emptyMetrics();
     }
 
-    const conversions = insights.actions?.find(
-      (action) =>
-        action.action_type === 'offsite_conversion.fb_pixel_purchase' ||
-        action.action_type === 'purchase' ||
-        action.action_type === 'omni_purchase',
+    const spend = this.toNumber(insights.spend);
+    const conversions = this.toNumber(
+      this.findPurchaseAction(insights.actions)?.value,
     );
+    const revenue = this.toNumber(
+      this.findPurchaseAction(insights.action_values)?.value,
+    );
+    const purchaseRoas = this.toNumber(
+      this.findPurchaseAction(insights.purchase_roas)?.value,
+    );
+    const computedRoas =
+      spend != null && spend > 0 && revenue != null ? revenue / spend : null;
+    const roas = purchaseRoas ?? computedRoas;
 
     return {
-      spend: this.toNumber(insights.spend),
+      spend,
       impressions: this.toInt(insights.impressions),
       clicks: this.toInt(insights.clicks),
       reach: this.toInt(insights.reach),
       cpm: this.toNumber(insights.cpm),
       cpc: this.toNumber(insights.cpc),
       ctr: this.toNumber(insights.ctr),
-      conversions: this.toNumber(conversions?.value),
+      conversions,
+      conversionValue: revenue,
+      revenue,
+      roas,
     };
+  }
+
+  private emptyMetrics(): SyncMetricsSnapshot {
+    return {
+      spend: 0,
+      impressions: 0,
+      clicks: 0,
+      reach: 0,
+      cpm: 0,
+      cpc: 0,
+      ctr: 0,
+      conversions: 0,
+      conversionValue: 0,
+      revenue: 0,
+      roas: 0,
+    };
+  }
+
+  private findPurchaseAction(
+    values?: MetaSyncActionValue[] | null,
+  ): MetaSyncActionValue | undefined {
+    if (!values?.length) {
+      return undefined;
+    }
+
+    for (const actionType of META_SYNC_PURCHASE_ACTION_TYPES) {
+      const match = values.find((entry) => entry.action_type === actionType);
+      if (match) {
+        return match;
+      }
+    }
+
+    return values.find((entry) =>
+      Boolean(entry.action_type?.toLowerCase().includes('purchase')),
+    );
   }
 
   private toNumber(value?: string | null): number | null {
